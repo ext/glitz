@@ -299,6 +299,10 @@ void
 glitz_surface_set_polyedge (glitz_surface_t *surface,
                             glitz_polyedge_t polyedge);
 
+void
+glitz_surface_set_polyopacity (glitz_surface_t *surface,
+                               unsigned short polyopacity);
+
 typedef enum {
   GLITZ_CLIP_OPERATOR_SET,
   GLITZ_CLIP_OPERATOR_UNION,

@@ -1,5 +1,22 @@
 2004-05-10  David Reveman  <c99drn@cs.umu.se>
 
+	* TODO: Added polygon opacity support.
+
+	* src/glitz_tri.c (glitz_int_composite_triangles): Added polygon
+	opacity support.
+
+	* src/glitz_trap.c (glitz_composite_trapezoids): Added polygon
+	opacity support.
+
+	* src/glitz_surface.c (glitz_surface_init): Initialize polyopacity
+	to 1.0.
+	Added glitz_surface_set_polyopacity.
+
+	* src/glitzint.h: Added surface attribute polyopacity.
+	Added glitz_surface_set_polyopacity.
+
+	* src/glitz.h: Added glitz_surface_set_polyopacity.
+
 	* src/glitz_agl_surface.c: region_box -> bounding_box,
 	sub_pixel_region_box -> bounding_box_double.
 

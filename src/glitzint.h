@@ -312,6 +312,7 @@ struct _glitz_surface {
   glitz_matrix_t *convolution;
   unsigned int clip_mask;
   unsigned long hint_mask;
+  unsigned short polyopacity;
 };
 
 #define GLITZ_COLOR_RANGE_UPDATE_TEXTURE_MASK (1L << 0)
@@ -730,6 +731,7 @@ slim_hidden_proto(glitz_surface_set_convolution)
 slim_hidden_proto(glitz_surface_set_repeat)
 slim_hidden_proto(glitz_surface_set_filter)
 slim_hidden_proto(glitz_surface_set_polyedge)
+slim_hidden_proto(glitz_surface_set_polyopacity)
 slim_hidden_proto(glitz_surface_get_width)
 slim_hidden_proto(glitz_surface_get_height)
 slim_hidden_proto(glitz_surface_update_size)

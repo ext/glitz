@@ -187,7 +187,7 @@ glitz_composite_trapezoids (glitz_operator_t op,
   int width, height;
 
   if (n_traps == 0)
-	return;
+    return;
 
   x_dst = traps[0].left.p1.x >> 16;
   y_dst = traps[0].left.p1.y >> 16;
@@ -238,6 +238,17 @@ glitz_composite_trapezoids (glitz_operator_t op,
                                mask, -bounds.x1, -bounds.y1,
                                &color, traps, n_traps);
 
+    if (dst->polyopacity != 0xffff) {
+      glitz_rectangle_t rect;
+      glitz_color_t color;
+
+      rect.x = rect.y = 0;
+      rect.width = mask->width;
+      rect.height = mask->height;
+      color.red = color.green = color.blue = color.alpha = dst->polyopacity;
+      glitz_int_fill_rectangles (GLITZ_OPERATOR_IN, mask, &color, &rect, 1);
+    }
+
     glitz_surface_dirty (mask, NULL);
     glitz_surface_pop_current (mask);
     
@@ -267,7 +278,14 @@ glitz_composite_trapezoids (glitz_operator_t op,
     y_offset = trap_bounds.y1;
     width = trap_bounds.x2 - trap_bounds.x1;
     height = trap_bounds.y2 - trap_bounds.y1;
-    mask = NULL;
+
+    if (dst->polyopacity != 0xffff) {
+      glitz_color_t color;
+
+      color.red = color.green = color.blue = color.alpha = dst->polyopacity;
+      mask = glitz_surface_create_solid (&color);
+    } else
+      mask = NULL;
   }
   
   glitz_composite (op,
@@ -280,9 +298,10 @@ glitz_composite_trapezoids (glitz_operator_t op,
                    x_offset, y_offset,
                    width, height);
 
-  if (use_mask) {
+  if (mask)
     glitz_surface_destroy (mask);
-  } else {
+
+  if (!use_mask) {
     glitz_int_clip_operator_t clip_op;
     static glitz_rectangle_t rect = { 0, 0, MAXSHORT, MAXSHORT };
     

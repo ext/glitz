@@ -48,6 +48,7 @@ glitz_surface_init (glitz_surface_t *surface,
 
   surface->filter = GLITZ_FILTER_NEAREST;
   surface->polyedge = GLITZ_POLYEDGE_SMOOTH;
+  surface->polyopacity = 0xffff;
 
   surface->programs = programs;
   surface->format = format;
@@ -379,6 +380,14 @@ glitz_surface_set_polyedge (glitz_surface_t *surface,
   surface->polyedge = polyedge;
 }
 slim_hidden_def(glitz_surface_set_polyedge);
+
+void
+glitz_surface_set_polyopacity (glitz_surface_t *surface,
+                               unsigned short polyopacity)
+{
+  surface->polyopacity = polyopacity;
+}
+slim_hidden_def(glitz_surface_set_polyopacity);
 
 int
 glitz_surface_get_width (glitz_surface_t *surface)

@@ -203,6 +203,17 @@ glitz_int_composite_triangles (glitz_operator_t op,
                               -bounds.x1, -bounds.y1,
                               &color, points, n_points);
 
+    if (dst->polyopacity != 0xffff) {
+      glitz_rectangle_t rect;
+      glitz_color_t color;
+      
+      rect.x = rect.y = 0;
+      rect.width = mask->width;
+      rect.height = mask->height;
+      color.red = color.green = color.blue = color.alpha = dst->polyopacity;
+      glitz_int_fill_rectangles (GLITZ_OPERATOR_IN, mask, &color, &rect, 1);
+    }
+
     glitz_surface_dirty (mask, NULL);
     glitz_surface_pop_current (mask);
 
@@ -233,7 +244,14 @@ glitz_int_composite_triangles (glitz_operator_t op,
     y_offset = tri_bounds.y1;
     width = tri_bounds.x2 - tri_bounds.x1;
     height = tri_bounds.y2 - tri_bounds.y1;
-    mask = NULL;
+
+    if (dst->polyopacity != 0xffff) {
+      glitz_color_t color;
+
+      color.red = color.green = color.blue = color.alpha = dst->polyopacity;
+      mask = glitz_surface_create_solid (&color);
+    } else
+      mask = NULL;
   }
 
   glitz_composite (op,
@@ -246,9 +264,10 @@ glitz_int_composite_triangles (glitz_operator_t op,
                    x_offset, y_offset,
                    width, height);
 
-  if (use_mask) {
+  if (mask)
     glitz_surface_destroy (mask);
-  } else {
+  
+  if (!use_mask) {
     glitz_int_clip_operator_t clip_op;
     static glitz_rectangle_t rect = { 0, 0, MAXSHORT, MAXSHORT };
     

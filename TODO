@@ -3,8 +3,6 @@
 
 * Copy area operation.
 
-* Alpha scaling of source surface with polygon rendering.
-
 * Text support. Glyph set management, glyph and string compositing
   operations. Some ideas: Multi-texturing for compositing multiple glyphs 
   per render pass, Sub-pixel rendering, vector text; glyphs loaded into 
