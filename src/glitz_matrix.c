@@ -33,65 +33,64 @@
 
 #include <math.h>
 
-static void
-_glitz_matrix_transform_distance (glitz_matrix_t *matrix,
-                                  double *dx,
-                                  double *dy)
-{
-  double new_x, new_y;
-
-  new_x = (matrix->m[0][0] * *dx + matrix->m[1][0] * *dy);
-  new_y = (matrix->m[0][1] * *dx + matrix->m[1][1] * *dy);
-    
-  *dx = new_x;
-  *dy = new_y;
-}
-
 void
 glitz_matrix_transform_point (glitz_matrix_t *matrix,
-                              glitz_point_t *point)
+                              double *x, double *y)
 {
-  _glitz_matrix_transform_distance (matrix, &point->x, &point->y);
-
-  point->x += matrix->m[2][0];
-  point->y += matrix->m[2][1];
+  double _x, _y;
+  
+  _x = matrix->m[0][0] * *x + matrix->m[1][0] * *y + matrix->m[2][0];
+  _y = matrix->m[0][1] * *x + matrix->m[1][1] * *y + matrix->m[2][1];
+  
+  *x = _x;
+  *y = _y;
 }
 
 void
 glitz_matrix_transform_bounding_box (glitz_matrix_t *matrix,
-                                     glitz_bounding_box_t *box)
+                                     double *x1, double *y1,
+                                     double *x2, double *y2)
 {
-  glitz_point_t point;
+  int i;
+  double quad_x[4], quad_y[4];
+  double min_x, max_x;
+  double min_y, max_y;
 
-  point.x = box->x1;
-  point.y = box->y1;
-  _glitz_matrix_transform_distance (matrix, &point.x, &point.y);
-  box->x1 = floor (point.x);
-  box->y1 = floor (point.y);
+  quad_x[0] = *x1;
+  quad_y[0] = *y1;
+  glitz_matrix_transform_point (matrix, &quad_x[0], &quad_y[0]);
 
-  point.x = box->x2;
-  point.y = box->y2;
-  _glitz_matrix_transform_distance (matrix, &point.x, &point.y);
-  box->x2 = ceil (point.x);
-  box->y2 = ceil (point.y);
+  quad_x[1] = *x2;
+  quad_y[1] = *y1;
+  glitz_matrix_transform_point (matrix, &quad_x[1], &quad_y[1]);
+
+  quad_x[2] = *x2;
+  quad_y[2] = *y2;
+  glitz_matrix_transform_point (matrix, &quad_x[2], &quad_y[2]);
+
+  quad_x[3] = *x1;
+  quad_y[3] = *y2;
+  glitz_matrix_transform_point (matrix, &quad_x[3], &quad_y[3]);
+
+  min_x = max_x = quad_x[0];
+  min_y = max_y = quad_y[0];
+
+  for (i = 1; i < 4; i++) {
+    if (quad_x[i] < min_x)
+      min_x = quad_x[i];
+    if (quad_x[i] > max_x)
+      max_x = quad_x[i];
+    
+    if (quad_y[i] < min_y)
+      min_y = quad_y[i];
+    if (quad_y[i] > max_y)
+      max_y = quad_y[i];
+  }
   
-  box->x1 += (int) floor (matrix->m[2][0]);
-  box->y1 += (int) floor (matrix->m[2][1]);
-  box->x2 += (int) ceil (matrix->m[2][0]);
-  box->y2 += (int) ceil (matrix->m[2][1]);
-}
-
-void
-glitz_matrix_transform_bounding_box_double (glitz_matrix_t *matrix,
-                                            glitz_bounding_box_double_t *box)
-{
-  _glitz_matrix_transform_distance (matrix, &box->x1, &box->y1);
-  _glitz_matrix_transform_distance (matrix, &box->x2, &box->y2);
-  
-  box->x1 += matrix->m[2][0];
-  box->y1 += matrix->m[2][1];
-  box->x2 += matrix->m[2][0];
-  box->y2 += matrix->m[2][1];
+  *x1 = min_x;
+  *y2 = min_y;
+  *x2 = max_x;
+  *y2 = max_y;
 }
 
 static void
@@ -155,7 +154,7 @@ glitz_matrix_invert (glitz_matrix_t *matrix)
   double det;
 
   _glitz_matrix_compute_determinant (matrix, &det);
-    
+
   if (det == 0)
     return GLITZ_STATUS_INVALID_MATRIX;
 

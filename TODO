@@ -1,5 +1,3 @@
-* Projective transformations (Add filter type GLITZ_FILTER_ANISOTROPIC).
-
 * Text support. Glyph set management, glyph and string compositing
   operations. Some ideas: Multi-texturing for compositing multiple glyphs 
   per render pass, Sub-pixel rendering, vector text; glyphs loaded into 
@@ -7,5 +5,7 @@
 
 * A programmable surface type which can store a set of rendering operations
   in a display list.
+
+* Projective transformations.
 
 * WGL (Windows GL) backend.

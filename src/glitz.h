@@ -336,12 +336,24 @@ glitz_surface_get_height (glitz_surface_t *surface);
 void
 glitz_surface_update_size (glitz_surface_t *surface);
 
+typedef enum {
+  GLITZ_BUFFER_FRONT,
+  GLITZ_BUFFER_BACK
+} glitz_buffer_t;
+
 void
-glitz_surface_flush (glitz_surface_t *surface,
-                     int x,
-                     int y,
-                     unsigned int width,
-                     unsigned int height);
+glitz_surface_set_read_buffer (glitz_surface_t *surface,
+                               glitz_buffer_t buffer);
+
+void
+glitz_surface_set_draw_buffer (glitz_surface_t *surface,
+                               glitz_buffer_t buffer);
+
+void
+glitz_surface_flush (glitz_surface_t *surface);
+  
+void
+glitz_surface_swap_buffers (glitz_surface_t *surface);
 
 void
 glitz_surface_read_pixels (glitz_surface_t *surface,

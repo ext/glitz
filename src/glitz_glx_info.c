@@ -99,10 +99,10 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   1
 };
 
-void *
+glitz_function_pointer_t
 glitz_glx_get_proc_address (glitz_glx_thread_info_t *info, const char *name)
 {
-  void *address = NULL;
+  glitz_function_pointer_t address = NULL;
   
   if (info->glx.get_proc_address_arb)
     address = info->glx.get_proc_address_arb ((glitz_gl_ubyte_t *) name);
@@ -110,8 +110,13 @@ glitz_glx_get_proc_address (glitz_glx_thread_info_t *info, const char *name)
   if (!address) {
     if (!info->dlhand)
       info->dlhand = dlopen (info->gl_library, RTLD_LAZY);
-    
-    address = dlsym (info->dlhand, name);
+
+    if (info->dlhand) {
+      dlerror ();
+      address = (glitz_function_pointer_t) dlsym (info->dlhand, name);
+      if (dlerror () != NULL)
+        address = NULL;
+    }
   }
   
   return address;

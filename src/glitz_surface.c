@@ -55,12 +55,17 @@ glitz_surface_init (glitz_surface_t *surface,
   surface->width = width;
   surface->height = height;
   surface->gl = gl;
+  surface->draw_buffer = surface->read_buffer = GLITZ_GL_FRONT;
 
-  if (surface->gl)
+  if (surface->gl) {
+    if (format->doublebuffer)
+      surface->draw_buffer = surface->read_buffer = GLITZ_GL_BACK;
+                     
     glitz_texture_init (&surface->texture,
                         width, height,
                         glitz_get_gl_format_from_bpp (format->bpp),
                         texture_mask);
+  }
 }
 
 void
@@ -325,8 +330,8 @@ glitz_surface_set_convolution (glitz_surface_t *surface,
     if (!surface->convolution) {
       surface->convolution = malloc (sizeof (glitz_matrix_t));
       if (!surface->convolution)
-		return;
-	}
+        return;
+    }
 
     for (row = 0; row < 3; row++)
       for (col = 0; col < 3; col++)
@@ -422,45 +427,67 @@ glitz_surface_update_size (glitz_surface_t *surface)
 }
 slim_hidden_def(glitz_surface_update_size);
 
-void
-glitz_surface_flush (glitz_surface_t *surface,
-                     int x,
-                     int y,
-                     unsigned int width,
-                     unsigned int height)
+static glitz_gl_enum_t
+_gl_buffer (glitz_buffer_t buffer)
 {
-  if (SURFACE_PROGRAMMATIC (surface))
-    return;
-  
-  if (surface->format->doublebuffer &&
-      x <= 0 && y <= 0 &&
-      (x + (int) width) >= surface->width &&
-      (y + (int) height) >= surface->height) {
-    surface->backend->flush (surface);
-  } else if (width > 0 && height > 0) {
-    if (x < 0) x = 0;
-    if (y < 0) y = 0;
-    if (glitz_surface_push_current (surface,
-                                    GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
-      if (surface->format->doublebuffer) {
-        surface->gl->read_buffer (GLITZ_GL_BACK);
-        surface->gl->draw_buffer (GLITZ_GL_FRONT);
-        surface->gl->disable (GLITZ_GL_SCISSOR_TEST);
-        surface->gl->disable (GLITZ_GL_DITHER);
-        glitz_set_operator (surface->gl, GLITZ_OPERATOR_SRC);
-
-        glitz_set_raster_pos (surface->gl, x, surface->height - (y + height));
-        surface->gl->copy_pixels (x, surface->height - (y + height),
-                                  width, height, GLITZ_GL_COLOR);
-        
-        surface->gl->draw_buffer (GLITZ_GL_BACK);
-      }
-      surface->gl->flush ();
-    }
-    glitz_surface_pop_current (surface);
+  switch (buffer) {
+  case GLITZ_BUFFER_FRONT:
+    return GLITZ_GL_FRONT;
+  case GLITZ_BUFFER_BACK:
+    return GLITZ_GL_BACK;
+  default:
+    return GLITZ_GL_BACK;
   }
 }
+
+void
+glitz_surface_set_read_buffer (glitz_surface_t *surface,
+                               glitz_buffer_t buffer)
+{
+  glitz_gl_enum_t mode;
+  
+  if (SURFACE_PROGRAMMATIC (surface) || (!surface->format->doublebuffer))
+    return;
+    
+  mode = _gl_buffer (buffer);
+  if (mode != surface->read_buffer) {
+    surface->read_buffer = mode;
+    glitz_surface_dirty (surface, NULL);
+  }
+}
+slim_hidden_def(glitz_surface_set_read_buffer);
+
+void
+glitz_surface_set_draw_buffer (glitz_surface_t *surface,
+                               glitz_buffer_t buffer)
+{
+  if (SURFACE_PROGRAMMATIC (surface) || (!surface->format->doublebuffer))
+    return;
+
+  surface->draw_buffer = _gl_buffer (buffer);
+}
+slim_hidden_def(glitz_surface_set_draw_buffer);
+
+void
+glitz_surface_flush (glitz_surface_t *surface)
+{
+  if (glitz_surface_try_push_current (surface,
+                                      GLITZ_CN_SURFACE_DRAWABLE_CURRENT))
+    surface->gl->flush ();
+  
+  glitz_surface_pop_current (surface);
+}
 slim_hidden_def(glitz_surface_flush);
+
+void
+glitz_surface_swap_buffers (glitz_surface_t *surface)
+{
+  if (SURFACE_PROGRAMMATIC (surface) || (!surface->format->doublebuffer))
+    return;
+  
+  surface->backend->swap_buffers (surface);
+}
+slim_hidden_def(glitz_surface_swap_buffers);
 
 glitz_bool_t
 glitz_surface_make_current_read (glitz_surface_t *surface)
@@ -471,7 +498,10 @@ glitz_surface_make_current_read (glitz_surface_t *surface)
 void
 glitz_surface_dirty (glitz_surface_t *surface,
                      glitz_bounding_box_t *box)
-{
+{ 
+  if (surface->draw_buffer != surface->read_buffer)
+    return;
+  
   if (!box) {
     surface->dirty_box.x1 = surface->dirty_box.y1 = 0;
     surface->dirty_box.x2 = surface->width;
@@ -486,8 +516,6 @@ glitz_surface_dirty (glitz_surface_t *surface,
   }
   
   surface->hint_mask |= GLITZ_INT_HINT_DIRTY_MASK;
-  
-  surface->gl->flush ();
 }
 
 void
@@ -528,6 +556,9 @@ glitz_surface_setup_environment (glitz_surface_t *surface)
   gl->disable (GLITZ_GL_POLYGON_SMOOTH);
   gl->shade_model (GLITZ_GL_FLAT);
   gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE, GLITZ_GL_TRUE, GLITZ_GL_TRUE);
+  
+  if (surface->format->doublebuffer)
+    gl->draw_buffer (surface->draw_buffer);
 
   if (surface->clip_mask)
     glitz_set_clip_operator (gl, GLITZ_INT_CLIP_OPERATOR_CLIP,
@@ -574,6 +605,14 @@ glitz_surface_read_pixels (glitz_surface_t *surface,
     
     rowstride = (rowstride + 3) & -4;
     pixel_buf = malloc (surface->height * rowstride);
+    if (!pixel_buf) {
+      glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
+      glitz_surface_pop_current (surface);
+      return;
+    }
+    if (surface->format->doublebuffer)
+      surface->gl->read_buffer (surface->read_buffer);
+    
     surface->gl->read_pixels (0, 0, surface->width, surface->height,
                               format, type, pixel_buf);
   } else {
@@ -595,6 +634,11 @@ glitz_surface_read_pixels (glitz_surface_t *surface,
 
     rowstride = (rowstride + 3) & -4;
     pixel_buf = malloc (texture->height * rowstride);
+    if (!pixel_buf) {
+      glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
+      glitz_surface_pop_current (surface);
+      return;
+    }
 
     surface->gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, 0);
     surface->gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_ROWS, 0);
@@ -673,6 +717,11 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
     src_rowstride = (width + 3) & -4;
     dst_rowstride = (width * 2 + 3) & -4;
     pixel_buf = malloc (dst_rowstride * height);
+    if (!pixel_buf) {
+      glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
+      glitz_surface_pop_current (surface);
+      return;
+    }
 
     /* Pad and flip A8 image data. */
     for (i = 0; i < (int) height; i++) {
@@ -688,6 +737,11 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
 
     rowstride = (width * bytes_per_pixel + 3) & -4;
     pixel_buf = malloc (rowstride * height);
+    if (!pixel_buf) {
+      glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
+      glitz_surface_pop_current (surface);
+      return;
+    }
     
     /* Flip image data. */
     for (i = 0; i < (int) height; i++)
@@ -732,7 +786,6 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
                                    width, height,
                                    format, type,
                                    pixel_buf);
-    surface->gl->flush ();
 
     glitz_texture_unbind (surface->gl, &surface->texture);
   }

@@ -270,7 +270,7 @@ typedef struct glitz_surface_backend {
   (*update_size) (void *surface);
 
   void
-  (*flush) (void *surface);
+  (*swap_buffers) (void *surface);
 
   glitz_bool_t
   (*make_current_read) (void *surface);
@@ -321,6 +321,8 @@ struct _glitz_surface {
   unsigned int clip_mask;
   unsigned long hint_mask;
   unsigned short polyopacity;
+  glitz_gl_enum_t draw_buffer;
+  glitz_gl_enum_t read_buffer;
 };
 
 #define GLITZ_COLOR_RANGE_UPDATE_TEXTURE_MASK (1L << 0)
@@ -370,11 +372,12 @@ typedef struct _glitz_extension_map {
 
 extern void __internal_linkage
 glitz_matrix_transform_point (glitz_matrix_t *matrix,
-                              glitz_point_t *point);
+                              double *x, double *y);
 
 extern void __internal_linkage
 glitz_matrix_transform_bounding_box (glitz_matrix_t *matrix,
-                                     glitz_bounding_box_t *box);
+                                     double *x1, double *y1,
+                                     double *x2, double *y2);
      
 extern void __internal_linkage
 glitz_matrix_transform_bounding_box_double (glitz_matrix_t *matrix,
@@ -740,6 +743,8 @@ typedef glitz_fixed_16_16 glitz_fixed;
 #define FIXED_TO_DOUBLE(f) (((double) (f)) / 65536)
 #define DOUBLE_TO_FIXED(f) ((int) ((f) * 65536))
 
+typedef void (*glitz_function_pointer_t) (void);
+
 
 /* Avoid unnecessary PLT entries.  */
 
@@ -756,7 +761,10 @@ slim_hidden_proto(glitz_surface_set_polyopacity)
 slim_hidden_proto(glitz_surface_get_width)
 slim_hidden_proto(glitz_surface_get_height)
 slim_hidden_proto(glitz_surface_update_size)
+slim_hidden_proto(glitz_surface_set_read_buffer)
+slim_hidden_proto(glitz_surface_set_draw_buffer)
 slim_hidden_proto(glitz_surface_flush)
+slim_hidden_proto(glitz_surface_swap_buffers)
 slim_hidden_proto(glitz_surface_get_status)
 slim_hidden_proto(glitz_surface_get_gl_texture)
 slim_hidden_proto(glitz_surface_gl_begin)

@@ -258,10 +258,14 @@ glitz_glx_context_set_surface_anti_aliasing (glitz_glx_surface_t *surface)
 }
 
 void
-glitz_glx_context_make_current (glitz_glx_surface_t *surface)
+glitz_glx_context_make_current (glitz_glx_surface_t *surface,
+                                glitz_bool_t flush)
 {
   GLXContext context;
   Drawable drawable;
+
+  if (flush)
+    glFlush ();
   
   if (!surface->drawable) {
     drawable = surface->screen_info->root_drawable;
@@ -270,7 +274,7 @@ glitz_glx_context_make_current (glitz_glx_surface_t *surface)
     context = surface->context->context;
     drawable = surface->drawable;
   }
-
+  
   glXMakeCurrent (surface->screen_info->display_info->display,
                   drawable, context);
 
@@ -282,22 +286,24 @@ glitz_glx_context_make_current (glitz_glx_surface_t *surface)
 static void
 glitz_glx_context_update (glitz_glx_surface_t *surface,
                           glitz_constraint_t constraint)
-{ 
+{
+  GLXContext context = glXGetCurrentContext ();
+  
   switch (constraint) {
   case GLITZ_CN_NONE:
     break;
   case GLITZ_CN_ANY_CONTEXT_CURRENT:
-    if (glXGetCurrentContext () == NULL)
-      glitz_glx_context_make_current (surface);
+    if (context == NULL)
+      glitz_glx_context_make_current (surface, 0);
     break;
   case GLITZ_CN_SURFACE_CONTEXT_CURRENT:
-    if (glXGetCurrentContext () != surface->context->context)
-      glitz_glx_context_make_current (surface);
+    if (context != surface->context->context)
+      glitz_glx_context_make_current (surface, (context)? 1: 0);
     break;
   case GLITZ_CN_SURFACE_DRAWABLE_CURRENT:
-    if ((glXGetCurrentContext () != surface->context->context) ||
+    if ((context != surface->context->context) ||
         (glXGetCurrentDrawable () != surface->drawable))
-      glitz_glx_context_make_current (surface);
+      glitz_glx_context_make_current (surface, (context)? 1: 0);
     
     glitz_glx_context_set_surface_anti_aliasing (surface);
     break;

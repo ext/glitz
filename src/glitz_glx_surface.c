@@ -48,7 +48,7 @@ static void
 _glitz_glx_surface_update_size (void *abstract_surface);
 
 static void
-_glitz_glx_surface_flush (void *abstract_surface);
+_glitz_glx_surface_swap_buffers (void *abstract_surface);
 
 static glitz_bool_t
 _glitz_glx_surface_push_current (void *abstract_surface,
@@ -114,7 +114,7 @@ static const struct glitz_surface_backend glitz_glx_surface_backend = {
   _glitz_glx_surface_pop_current,
   _glitz_glx_surface_get_texture,
   _glitz_glx_surface_update_size,
-  _glitz_glx_surface_flush,
+  _glitz_glx_surface_swap_buffers,
   _glitz_glx_surface_make_current_read
 };
 
@@ -358,7 +358,7 @@ _glitz_glx_surface_destroy (void *abstract_surface)
 
   if (glXGetCurrentDrawable () == surface->drawable) {
     surface->drawable = None;
-    glitz_glx_context_make_current (surface);
+    glitz_glx_context_make_current (surface, 0);
   }
   
   glitz_surface_fini (&surface->base);
@@ -366,21 +366,42 @@ _glitz_glx_surface_destroy (void *abstract_surface)
   free (surface);
 }
 
-
 static void
 _glitz_glx_surface_update_size (void *abstract_surface)
 {
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
   
-  if ((! surface->pbuffer) && surface->drawable) {
+  if ((!surface->pbuffer) && surface->drawable) {
+    int width, height;
+    
     _glitz_glx_surface_update_size_for_window
       (surface->screen_info->display_info->display, surface->drawable,
-       &surface->base.width, &surface->base.height);
+       &width, &height);
+
+    if (width != surface->base.width || height != surface->base.height) {
+      glitz_texture_t texture;
+
+      glitz_texture_init (&texture,
+                          width, height,
+                          glitz_get_gl_format_from_bpp
+                          (surface->base.format->bpp),
+                          surface->screen_info->texture_mask);
+      
+      if (texture.width != surface->base.texture.width ||
+          texture.height != surface->base.texture.height ||
+          texture.target != surface->base.texture.target) {
+        texture.name = surface->base.texture.name;
+        surface->base.texture = texture;
+      }
+      
+      surface->base.width = width;
+      surface->base.height = height;
+    }
   }
 }
 
 static void
-_glitz_glx_surface_flush (void *abstract_surface)
+_glitz_glx_surface_swap_buffers (void *abstract_surface)
 {
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
 

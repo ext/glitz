@@ -88,6 +88,7 @@ struct _glitz_agl_surface_t {
   AGLDrawable drawable;
   AGLPbuffer pbuffer;
   WindowRef window;
+  glitz_gl_enum_t bound_buffer;
 };
 
 extern void __internal_linkage
@@ -125,7 +126,7 @@ extern void __internal_linkage
 glitz_agl_pbuffer_bind (AGLPbuffer pbuffer,
                         AGLContext context,
                         glitz_texture_t *texture,
-                        glitz_format_t *format);
+                        glitz_gl_enum_t buffer);
 
 extern void __internal_linkage
 glitz_agl_pbuffer_destroy (AGLPbuffer pbuffer);

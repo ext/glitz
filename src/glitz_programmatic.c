@@ -92,7 +92,7 @@ static void
 _glitz_programmatic_surface_update_size (void *abstract_surface) {}
 
 static void
-_glitz_programmatic_surface_flush (void *abstract_surface) {}
+_glitz_programmatic_surface_swap_buffers (void *abstract_surface) {}
 
 static glitz_bool_t
 _glitz_programmatic_surface_make_current_read (void *abstract_surface)
@@ -108,7 +108,7 @@ glitz_programmatic_surface_backend = {
   _glitz_programmatic_surface_pop_current,
   _glitz_programmatic_surface_get_texture,
   _glitz_programmatic_surface_update_size,
-  _glitz_programmatic_surface_flush,
+  _glitz_programmatic_surface_swap_buffers,
   _glitz_programmatic_surface_make_current_read
 };
 

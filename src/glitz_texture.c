@@ -235,13 +235,14 @@ glitz_texture_copy_surface (glitz_texture_t *texture,
     box->x2 - x_dst: (int) texture->width - x_dst;
   height = (box->x2 < (int) texture->height)?
     box->y2 - y_dst: (int) texture->height - y_dst;
+
+  if (surface->format->doublebuffer)
+    surface->gl->read_buffer (surface->read_buffer);
   
   surface->gl->copy_tex_sub_image_2d (texture->target, 0,
                                       x_dst, y_dst,
                                       x_src, y_src,
                                       width, height);
-  
-  surface->gl->flush ();
 
   glitz_texture_unbind (surface->gl, texture);
   glitz_surface_pop_current (surface);

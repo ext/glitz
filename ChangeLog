@@ -1,3 +1,58 @@
+2004-05-17  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: flush -> flush and swap_buffers. Added new
+	read/draw buffer interface. Minor updates to matrix functions. Added
+	glitz_function_pointer_t type.
+
+	* src/glitz_texture.c (glitz_texture_copy_surface): Added new 
+	read/draw buffer interface.
+
+	* src/glitz_surface.c (glitz_surface_init): Added new read/draw buffer
+	interface.
+	Added _gl_buffer, glitz_surface_set_read_buffer, 
+	glitz_surface_set_draw_buffer and glitz_surface_swap_buffers.
+	(glitz_surface_dirty): Only mark dirty if draw_buffer != read_buffer.
+	(glitz_surface_setup_environment): Added new read/draw buffer
+	interface.
+	(glitz_surface_read_pixels): Check for memory errors. Added new
+	read/draw buffer interface.
+	(glitz_surface_draw_pixels): Check for memory errors.
+
+	* src/glitz_programmatic.c: flush -> flush and swap_buffers.
+
+	* src/glitz_matrix.c: Minor updates to matrix functions.
+
+	* src/glitz_glxint.h: glitz_glx_get_proc_address returns
+	a glitz_function_pointer_t instead of void *.
+
+	* src/glitz_glxext.h: glitz_glx_get_proc_address_arb_t returns
+	a glitz_function_pointer_t instead of void *.
+
+	* src/glitz_glx_surface.c: flush -> flush and swap_buffers.
+	(_glitz_glx_surface_update_size): Update texture size.
+
+	* src/glitz_glx_info.c (glitz_glx_get_proc_address): Return
+	glitz_function_pointer_t instead of void *.
+	(glitz_glx_get_proc_address): Better error checking.
+
+	* src/glitz_aglint.h: Added bound_buffer variable to keep track
+	of currently pbuffer bound buffer.
+
+	* src/glitz_agl_surface.c: flush -> flush and swap_buffers.
+	Rebind pbuffer if needed.
+	(_glitz_agl_surface_update_size): Update texture size.
+
+	* src/glitz_agl_pbuffer.c (glitz_agl_pbuffer_bind): Support
+	rebinding to different buffers.
+
+	* src/glitz.h: New read/draw buffer interface.
+
+	* src/glitz.c (_glitz_composite_direct): Minor updates to
+	matrix functions.
+	(glitz_mask_bounds): Fixed mask bounding box calculations.
+	(glitz_composite): Minor updates to matrix functions.
+	(glitz_copy_area): Added new read/draw buffer interface.
+
 2004-05-13  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.c (glitz_copy_area): Fixed obvious memory leak.

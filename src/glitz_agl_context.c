@@ -98,11 +98,15 @@ glitz_agl_context_set_surface_anti_aliasing (glitz_agl_surface_t *surface)
 }
 
 void
-glitz_agl_context_make_current (glitz_agl_surface_t *surface)
+glitz_agl_context_make_current (glitz_agl_surface_t *surface,
+                                glitz_bool_t flush)
 {
   AGLContext context;
   AGLDrawable drawable = (AGLDrawable) 0;
   AGLPbuffer pbuffer = (AGLPbuffer) 0;
+
+  if (flush)
+    glFlush ();
   
   if ((!surface->drawable) && (!surface->pbuffer)) {
     context = surface->thread_info->root_context.context;
@@ -124,20 +128,22 @@ static void
 glitz_agl_context_update (glitz_agl_surface_t *surface,
                           glitz_constraint_t constraint)
 {
+  AGLContext context = aglGetCurrentContext ();
+  
   switch (constraint) {
   case GLITZ_CN_NONE:
     break;
   case GLITZ_CN_ANY_CONTEXT_CURRENT:
-    if (aglGetCurrentContext () == NULL)
-      glitz_agl_context_make_current (surface);
+    if (context == NULL)
+      glitz_agl_context_make_current (surface, 0);
     break;
   case GLITZ_CN_SURFACE_CONTEXT_CURRENT:
-    if (aglGetCurrentContext () != surface->context->context)
-      glitz_agl_context_make_current (surface);
+    if (context != surface->context->context)
+      glitz_agl_context_make_current (surface, (context)? 1: 0);
     break;
   case GLITZ_CN_SURFACE_DRAWABLE_CURRENT:
-    if (aglGetCurrentContext () != surface->context->context) {
-      glitz_agl_context_make_current (surface);
+    if (context != surface->context->context) {
+      glitz_agl_context_make_current (surface, (context)? 1: 0);
     } else {
       if (surface->pbuffer) {
         AGLPbuffer pbuffer;
@@ -147,11 +153,11 @@ glitz_agl_context_update (glitz_agl_surface_t *surface,
                        &unused, &unused, &unused);
         
         if (pbuffer != surface->pbuffer)
-          glitz_agl_context_make_current (surface);
+          glitz_agl_context_make_current (surface, (context)? 1: 0);
         
       } else if (surface->drawable) {
         if (aglGetDrawable (surface->context->context) != surface->drawable)
-          glitz_agl_context_make_current (surface);
+          glitz_agl_context_make_current (surface, (context)? 1: 0);
       }
     }
     

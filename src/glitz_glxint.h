@@ -140,7 +140,7 @@ extern glitz_glx_screen_info_t *__internal_linkage
 glitz_glx_screen_info_get (Display *display,
                            int screen);
 
-extern void *__internal_linkage
+extern glitz_function_pointer_t __internal_linkage
 glitz_glx_get_proc_address (glitz_glx_thread_info_t *info, const char *name);
 
 extern glitz_glx_context_t *__internal_linkage
@@ -159,7 +159,8 @@ extern glitz_glx_context_t *__internal_linkage
 glitz_glx_context_get_default (glitz_glx_screen_info_t *screen_info);
 
 extern void __internal_linkage
-glitz_glx_context_make_current (glitz_glx_surface_t *surface);
+glitz_glx_context_make_current (glitz_glx_surface_t *surface,
+                                glitz_bool_t flush);
 
 extern glitz_glx_surface_t *__internal_linkage
 glitz_glx_context_push_current (glitz_glx_surface_t *surface,

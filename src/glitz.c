@@ -156,8 +156,10 @@ _glitz_composite_direct (glitz_operator_t op,
   src_box.x2 = src->width;
   src_box.y2 = src->height;
   
-  if (src->transform)
-    glitz_matrix_transform_bounding_box_double (src->transform, &src_box);
+  if (src->transform) {
+    glitz_matrix_transform_point (src->transform, &src_box.x1, &src_box.y1);
+    glitz_matrix_transform_point (src->transform, &src_box.x2, &src_box.y2);
+  }
 
   src_width = src_box.x2 - src_box.x1;
   src_height = src_box.y2 - src_box.y1;
@@ -176,8 +178,10 @@ _glitz_composite_direct (glitz_operator_t op,
   mask_box.x2 = mask->width;
   mask_box.y2 = mask->height;
 
-  if (mask->transform)
-    glitz_matrix_transform_bounding_box_double (mask->transform, &mask_box);
+  if (mask->transform) {
+    glitz_matrix_transform_point (src->transform, &mask_box.x1, &mask_box.y1);
+    glitz_matrix_transform_point (src->transform, &mask_box.x2, &mask_box.y2);
+  }
 
   mask_width = mask_box.x2 - mask_box.x1;
   mask_height = mask_box.y2 - mask_box.y1;
@@ -318,78 +322,81 @@ glitz_mask_bounds (glitz_surface_t *src,
                    glitz_bounding_box_t *bounds,
                    glitz_bounding_box_t *mbounds)
 {
-  glitz_bounding_box_t box;
+  double x1, y1, x2, y2;
+  int ix1, iy1, ix2, iy2;
   
-  if (bounds->x1 <= 0)
+  if (bounds->x1 < 0)
     mbounds->x1 = 0;
   else
     mbounds->x1 = bounds->x1;
 
-  if (bounds->y1 <= 0)
+  if (bounds->y1 < 0)
     mbounds->y1 = 0;
   else
     mbounds->y1 = bounds->y1;
 
-  if (bounds->x2 >= dst->width)
+  if (bounds->x2 > dst->width)
     mbounds->x2 = dst->width;
   else
     mbounds->x2 = bounds->x2;
 
-  if (bounds->y2 >= dst->height)
+  if (bounds->y2 > dst->height)
     mbounds->y2 = dst->height;
   else
     mbounds->y2 = bounds->y2;
 
   if (!SURFACE_REPEAT (src)) {
-    box.x1 = x_dst;
-    box.y1 = y_dst;
-    if (x_src < 0) box.x1 -= x_src;
-    if (y_src < 0) box.y1 -= y_src;
-    box.x2 = box.x1 + src->width;
-    box.y2 = box.y1 + src->height;
-    if (x_src > 0) box.x2 -= x_src;
-    if (y_src > 0) box.y2 -= y_src;
+    x1 = y1 = 0;
+    x2 = src->width;
+    y2 = src->height;
 
     if (src->transform)
-      glitz_matrix_transform_bounding_box (src->transform, &box);
+      glitz_matrix_transform_bounding_box (src->transform,
+                                           &x1, &y1, &x2, &y2);
     
-    if (mbounds->x1 < box.x1)
-      mbounds->x1 = box.x1;
+    ix1 = (int) x1 + x_dst - x_src;
+    iy1 = (int) y1 + y_dst - y_src;
+    ix2 = (int) x2 + x_dst - x_src;
+    iy2 = (int) y2 + y_dst - y_src;
     
-    if (mbounds->y1 < box.y1)
-      mbounds->y1 = box.y1;
+    if (mbounds->x1 < ix1)
+      mbounds->x1 = ix1;
     
-    if (mbounds->x2 > box.x2)
-      mbounds->x2 = box.x2;
+    if (mbounds->y1 < iy1)
+      mbounds->y1 = iy1;
     
-    if (mbounds->y2 > box.y2)
-      mbounds->y2 = box.y2;
+    if (mbounds->x2 > ix2)
+      mbounds->x2 = ix2;
+    
+    if (mbounds->y2 > iy2)
+      mbounds->y2 = iy2;
   }
 
   if (!SURFACE_REPEAT (mask)) {
-    box.x1 = x_dst;
-    box.y1 = y_dst;
-    if (x_mask < 0) box.x1 -= x_mask;
-    if (y_mask < 0) box.y1 -= y_mask;
-    box.x2 = box.x1 + mask->width;
-    box.y2 = box.y1 + mask->height;
-    if (x_mask > 0) box.x2 -= x_mask;
-    if (y_mask > 0) box.y2 -= y_mask;
-    
+    x1 = y1 = 0;
+    x2 = mask->width;
+    y2 = mask->height;
+
     if (mask->transform)
-      glitz_matrix_transform_bounding_box (mask->transform, &box);
+      glitz_matrix_transform_bounding_box (mask->transform,
+                                           &x1, &y1, &x2, &y2);
     
-    if (mbounds->x1 < box.x1)
-      mbounds->x1 = box.x1;
+    ix1 = (int) x1 + x_dst - x_mask;
+    iy1 = (int) y1 + y_dst - y_mask;
+    ix2 = (int) x2 + x_dst - x_mask;
+    iy2 = (int) y2 + y_dst - y_mask;
     
-    if (mbounds->y1 < box.y1)
-      mbounds->y1 = box.y1;
+    if (mbounds->x1 < ix1)
+      mbounds->x1 = ix1;
     
-    if (mbounds->x2 > box.x2)
-      mbounds->x2 = box.x2;
+    if (mbounds->y1 < iy1)
+      mbounds->y1 = iy1;
     
-    if (mbounds->y2 > box.y2)
-      mbounds->y2 = box.y2;
+    if (mbounds->x2 > ix2)
+      mbounds->x2 = ix2;
+    
+    if (mbounds->y2 > iy2)
+      mbounds->y2 = iy2;
   }
 }
 
@@ -680,10 +687,10 @@ glitz_composite (glitz_operator_t op,
           tr = base_tr;
         
           if (src->transform) {
-            glitz_matrix_transform_point (src->transform, &tl);
-            glitz_matrix_transform_point (src->transform, &bl);
-            glitz_matrix_transform_point (src->transform, &tr);
-            glitz_matrix_transform_point (src->transform, &br);
+            glitz_matrix_transform_point (src->transform, &tl.x, &tl.y);
+            glitz_matrix_transform_point (src->transform, &bl.x, &bl.y);
+            glitz_matrix_transform_point (src->transform, &tr.x, &tr.y);
+            glitz_matrix_transform_point (src->transform, &br.x, &br.y);
           }
     
           /* Shift all coordinates with destination offset */
@@ -938,10 +945,8 @@ glitz_copy_area (glitz_surface_t *src,
 
     if (status) {
       if (src->format->doublebuffer)
-        gl->read_buffer (GLITZ_GL_BACK);
-      if (dst->format->doublebuffer)
-        gl->draw_buffer (GLITZ_GL_BACK);
-      
+        gl->read_buffer (src->read_buffer);
+
       gl->disable (GLITZ_GL_SCISSOR_TEST);
       gl->disable (GLITZ_GL_DITHER);    
       glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
@@ -993,9 +998,9 @@ glitz_copy_area (glitz_surface_t *src,
 
         glitz_texture_unbind (gl, texture);
       }
-      gl->flush ();
     }
     status = 1;
+    glitz_surface_dirty (dst, &dst_box);
     glitz_surface_pop_current (dst);
   }
 
@@ -1026,6 +1031,4 @@ glitz_copy_area (glitz_surface_t *src,
     glitz_surface_draw_pixels (dst, x_dst, y_dst, width, height, pixel_buf);
     free (pixel_buf);
   }
-  
-  glitz_surface_dirty (dst, &dst_box);
 }
