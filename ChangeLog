@@ -1,3 +1,7 @@
+2004-05-30  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz.c (glitz_copy_area): And another one.
+
 2004-05-29  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_matrix.c (glitz_matrix_transform_bounding_box): Fixed 

@@ -881,7 +881,7 @@ glitz_copy_area (glitz_surface_t *src,
     return;
 
   box.x1 = x_dst;
-  box.x1 = x_dst;
+  box.y1 = y_dst;
   box.x2 = box.x1 + width;
   box.y2 = box.y1 + height;
 
