@@ -1,3 +1,8 @@
+2005-02-01  David Reveman  <davidr@novell.com>
+
+	* src/glitz_surface.c (glitz_surface_set_transform): Fix typo in
+	comment and remove unnecessary code.
+
 2005-01-25  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.0.

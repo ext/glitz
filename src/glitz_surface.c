@@ -630,7 +630,7 @@ glitz_surface_set_transform (glitz_surface_t   *surface,
        good if someone could verify that this is actually a correct way for
        doing this.
        
-       We need to do we this:
+       We need to do this:
        
        scale (IDENTITY, 0, -1)
        translate (IDENTITY, 0, -texture_height)
@@ -673,8 +673,6 @@ glitz_surface_set_transform (glitz_surface_t   *surface,
     t[13] -= t[5] * height;
     t[15] -= t[7] * height;
 
-    height = surface->texture.texcoord_height_unit * surface->texture.box.y1;
-    
     /* Translate coordinates into texture. This only makes a difference when
        GL_ARB_texture_border_clamp is missing as box.x1 and box.y1 are
        otherwise always zero. This breaks projective transformations so
