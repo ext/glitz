@@ -1,3 +1,7 @@
+2005-02-09  David Reveman  <davidr@novell.com>
+
+	* Add preliminary support for EXT_framebuffer_object.
+
 2005-02-01  David Reveman  <davidr@novell.com>
 
 	* src/glitz_surface.c (glitz_surface_set_transform): Fix typo in

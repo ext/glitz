@@ -62,6 +62,7 @@ static glitz_extension_map gl_extensions[] = {
   { 0.0, "GL_EXT_blend_color", GLITZ_FEATURE_BLEND_COLOR_MASK },
   { 0.0, "GL_ARB_imaging", GLITZ_FEATURE_BLEND_COLOR_MASK },
   { 0.0, "GL_APPLE_packed_pixels", GLITZ_FEATURE_PACKED_PIXELS_MASK },
+  { 0.0, "GL_EXT_framebuffer_object", GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK },
   { 0.0, NULL, 0 }
 };
 
@@ -252,6 +253,27 @@ _glitz_gl_proc_address_lookup (glitz_backend_t               *backend,
       backend->feature_mask &= ~GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK;
       backend->feature_mask &= ~GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
     }
+  }
+
+  if (backend->feature_mask & GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK) {
+    backend->gl.gen_framebuffers = (glitz_gl_gen_framebuffers_t)
+      get_proc_address ("glGenFramebuffersEXT", closure);
+    backend->gl.delete_framebuffers = (glitz_gl_delete_framebuffers_t)
+      get_proc_address ("glDeleteFramebuffersEXT", closure);
+    backend->gl.bind_framebuffer = (glitz_gl_bind_framebuffer_t)
+      get_proc_address ("glBindFramebufferEXT", closure);
+    backend->gl.check_framebuffer_status =
+      (glitz_gl_check_framebuffer_status_t)
+      get_proc_address ("glCheckFramebufferStatusEXT", closure);
+    backend->gl.framebuffer_texture_2d = (glitz_gl_framebuffer_texture_2d_t)
+      get_proc_address ("glFramebufferTexture2DEXT", closure);
+    
+    if ((!backend->gl.gen_framebuffers) ||
+        (!backend->gl.delete_framebuffers) ||
+        (!backend->gl.bind_framebuffer) ||
+        (!backend->gl.check_framebuffer_status) ||
+        (!backend->gl.framebuffer_texture_2d))
+      backend->feature_mask &= ~GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK;
   }
 }
 

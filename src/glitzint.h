@@ -170,6 +170,11 @@ typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_get_buffer_sub_data_t        get_buffer_sub_data;
   glitz_gl_map_buffer_t                 map_buffer;
   glitz_gl_unmap_buffer_t               unmap_buffer;
+  glitz_gl_gen_framebuffers_t           gen_framebuffers;
+  glitz_gl_delete_framebuffers_t        delete_framebuffers;
+  glitz_gl_bind_framebuffer_t           bind_framebuffer;
+  glitz_gl_check_framebuffer_status_t   check_framebuffer_status;
+  glitz_gl_framebuffer_texture_2d_t     framebuffer_texture_2d;
 } glitz_gl_proc_address_list_t;
 
 typedef int glitz_surface_type_t;
@@ -525,6 +530,10 @@ typedef struct _glitz_matrix {
   glitz_float_t m[16];
 } glitz_matrix_t;
 
+typedef struct _glitz_framebuffer {
+    glitz_gl_uint_t name;
+} glitz_framebuffer_t;
+
 #define GLITZ_DAMAGE_TEXTURE_MASK  (1 << 0)
 #define GLITZ_DAMAGE_DRAWABLE_MASK (1 << 1)
 #define GLITZ_DAMAGE_SOLID_MASK    (1 << 2)
@@ -559,6 +568,7 @@ struct _glitz_surface {
   int                   *primcount;
   glitz_region_t        texture_damage;
   glitz_region_t        drawable_damage;
+  glitz_framebuffer_t   framebuffer;
 };
 
 #define GLITZ_GL_SURFACE(surface) \
@@ -807,6 +817,22 @@ glitz_geometry_draw_arrays (glitz_gl_proc_address_list_t *gl,
                             glitz_geometry_type_t        type,
                             glitz_box_t                  *bounds,
                             int                          damage);
+
+extern void __internal_linkage
+glitz_framebuffer_init (glitz_framebuffer_t *framebuffer);
+
+extern void __internal_linkage
+glitz_framebuffer_fini (glitz_gl_proc_address_list_t *gl,
+                        glitz_framebuffer_t          *framebuffer);
+
+extern void __internal_linkage
+glitz_framebuffer_unbind (glitz_gl_proc_address_list_t *gl);
+
+extern glitz_bool_t __internal_linkage
+glitz_framebuffer_complete (glitz_gl_proc_address_list_t *gl,
+                            glitz_framebuffer_t          *framebuffer,
+                            glitz_texture_t              *texture);
+
 
 #define MAXSHORT SHRT_MAX
 #define MINSHORT SHRT_MIN

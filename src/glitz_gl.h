@@ -303,6 +303,18 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_WRITE_ONLY 0x88B9
 #define GLITZ_GL_READ_WRITE 0x88BA
 
+#define GLITZ_GL_FRAMEBUFFER       0x8D40
+#define GLITZ_GL_COLOR_ATTACHMENT0 0x8CE0
+#define GLITZ_GL_FRAMEBUFFER_COMPLETE                        0x8CD5
+#define GLITZ_GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT           0x8CD6
+#define GLITZ_GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT   0x8CD7
+#define GLITZ_GL_FRAMEBUFFER_INCOMPLETE_DUPLICATE_ATTACHMENT 0x8CD8
+#define GLITZ_GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS           0x8CD9
+#define GLITZ_GL_FRAMEBUFFER_INCOMPLETE_FORMATS              0x8CDA
+#define GLITZ_GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER          0x8CDB
+#define GLITZ_GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER          0x8CDC
+#define GLITZ_GL_FRAMEBUFFER_UNSUPPORTED                     0x8CDD
+#define GLITZ_GL_FRAMEBUFFER_STATUS_ERROR                    0x8CDE
 
 typedef glitz_gl_void_t (* glitz_gl_enable_t)
      (glitz_gl_enum_t cap);
@@ -500,5 +512,16 @@ typedef glitz_gl_void_t *(* glitz_gl_map_buffer_t)
      (glitz_gl_enum_t, glitz_gl_enum_t);
 typedef glitz_gl_boolean_t (* glitz_gl_unmap_buffer_t)
      (glitz_gl_enum_t);
+typedef void (* glitz_gl_gen_framebuffers_t)
+     (glitz_gl_sizei_t, glitz_gl_uint_t *);
+typedef void (* glitz_gl_delete_framebuffers_t)
+     (glitz_gl_sizei_t, const glitz_gl_uint_t *);
+typedef glitz_gl_void_t (* glitz_gl_bind_framebuffer_t)
+     (glitz_gl_enum_t, glitz_gl_uint_t);
+typedef glitz_gl_enum_t (* glitz_gl_check_framebuffer_status_t)
+     (glitz_gl_enum_t);
+typedef void (* glitz_gl_framebuffer_texture_2d_t)
+    (glitz_gl_enum_t, glitz_gl_enum_t, glitz_gl_enum_t,
+     glitz_gl_uint_t, glitz_gl_int_t);
 
 #endif /* GLITZ_GL_H_INCLUDED */

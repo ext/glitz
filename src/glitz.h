@@ -135,6 +135,7 @@ typedef enum {
 #define GLITZ_FEATURE_BLEND_COLOR_MASK              (1L << 13)
 #define GLITZ_FEATURE_PACKED_PIXELS_MASK            (1L << 14)
 #define GLITZ_FEATURE_MULTI_DRAW_ARRAYS_MASK        (1L << 15)
+#define GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK       (1L << 16)
 
 typedef enum {
   GLITZ_STANDARD_ARGB32,
@@ -369,6 +370,9 @@ glitz_surface_set_clip_region (glitz_surface_t *surface,
                                int             y_origin,
                                glitz_box_t     *box,
                                int             n_box);
+
+glitz_bool_t
+glitz_surface_valid_target (glitz_surface_t *surface);
 
   
 /* glitz_rect.c */

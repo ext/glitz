@@ -91,6 +91,8 @@ glitz_surface_create (glitz_drawable_t           *drawable,
     glitz_texture_init (&surface->texture, width, height,
                         drawable->backend->texture_formats[format->id],
                         feature_mask, unnormalized);
+
+    glitz_framebuffer_init (&surface->framebuffer);
   
     if (width > 64 || height > 64)
     {
@@ -122,7 +124,11 @@ glitz_surface_destroy (glitz_surface_t *surface)
 
   if (surface->texture.name) {
     glitz_surface_push_current (surface, GLITZ_ANY_CONTEXT_CURRENT);
+    if (surface->framebuffer.name)
+        glitz_framebuffer_fini (&surface->drawable->backend->gl,
+                                &surface->framebuffer);
     glitz_texture_fini (&surface->drawable->backend->gl, &surface->texture);
+  
     glitz_surface_pop_current (surface);
   }
 
@@ -416,40 +422,52 @@ glitz_surface_status_add (glitz_surface_t *surface,
 static void
 _glitz_surface_update_state (glitz_surface_t *surface)
 {
-    glitz_rectangle_t *viewport;
+    glitz_drawable_t  *drawable;
+    int               width, height;
     
     GLITZ_GL_SURFACE (surface);
+
+    if (surface->attached)
+    {
+        drawable = surface->attached;
+        width    = drawable->width;
+        height   = drawable->height;
+    }
+    else
+    {
+        drawable = surface->drawable;
+        width    = surface->texture.width;
+        height   = surface->texture.height;
+    }
     
-    viewport = &surface->attached->viewport;
-    
-    if (surface->attached->update_all ||
-        viewport->x != surface->x ||
-        viewport->y != surface->y ||
-        viewport->width != surface->box.x2 ||
-        viewport->height != surface->box.y2)
+    if (drawable->update_all                          ||
+        drawable->viewport.x      != surface->x      ||
+        drawable->viewport.y      != surface->y      ||
+        drawable->viewport.width  != surface->box.x2 ||
+        drawable->viewport.height != surface->box.y2)
     {
         gl->viewport (surface->x,
-                      surface->attached->height - surface->y - surface->box.y2,
+                      height - surface->y - surface->box.y2,
                       surface->box.x2,
                       surface->box.y2);
         gl->matrix_mode (GLITZ_GL_PROJECTION);
         gl->load_identity ();
         gl->ortho (0.0,
                    surface->box.x2,
-                   surface->attached->height - surface->box.y2,
-                   surface->attached->height,
+                   height - surface->box.y2,
+                   height,
                    -1.0, 1.0);
         gl->matrix_mode (GLITZ_GL_MODELVIEW);
         gl->load_identity ();
         gl->scale_f (1.0f, -1.0f, 1.0f);
-        gl->translate_f (0.0f, -surface->attached->height, 0.0f);
+        gl->translate_f (0.0f, -height, 0.0f);
     
-        viewport->x = surface->x;
-        viewport->y = surface->y;
-        viewport->width = surface->box.x2;
-        viewport->height = surface->box.y2;
+        drawable->viewport.x      = surface->x;
+        drawable->viewport.y      = surface->y;
+        drawable->viewport.width  = surface->box.x2;
+        drawable->viewport.height = surface->box.y2;
     
-        surface->attached->update_all = 0;
+        drawable->update_all = 0;
     }
     
     gl->draw_buffer (surface->buffer);
@@ -458,14 +476,6 @@ _glitz_surface_update_state (glitz_surface_t *surface)
         gl->enable (GLITZ_GL_DITHER);
     else
         gl->disable (GLITZ_GL_DITHER);
-
-    if (surface->attached->format->samples > 1)
-    {
-        gl->enable (GLITZ_GL_MULTISAMPLE);
-        if (surface->attached->backend->feature_mask &
-            GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK)
-            gl->hint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_NICEST);
-    }
 }
 
 void
@@ -512,6 +522,9 @@ glitz_surface_detach (glitz_surface_t *surface)
   
     glitz_drawable_destroy (surface->attached); 
     surface->attached = NULL;
+    surface->buffer = GLITZ_GL_FRONT;
+    surface->x = 0;
+    surface->y = 0;
     
     REGION_EMPTY (&surface->drawable_damage);
     REGION_INIT (&surface->drawable_damage, &surface->box);
@@ -535,18 +548,42 @@ glitz_bool_t
 glitz_surface_push_current (glitz_surface_t    *surface,
                             glitz_constraint_t constraint)
 {
-  if (surface->attached) {
-    surface->attached->backend->push_current (surface->attached, surface,
-                                              constraint);
-    if (constraint == GLITZ_DRAWABLE_CURRENT) {
-      _glitz_surface_update_state (surface);
-      _glitz_surface_sync_drawable (surface);
-    }
-  } else {
-    surface->drawable->backend->push_current (surface->drawable, NULL,
-                                              constraint);
-    if (constraint == GLITZ_DRAWABLE_CURRENT)
-      return 0;
+  if (surface->attached)
+  {
+      surface->attached->backend->push_current (surface->attached,
+                                                surface,
+                                                constraint);
+      if (constraint == GLITZ_DRAWABLE_CURRENT)
+      {
+          if (surface->attached->backend->feature_mask &
+              GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK)
+              glitz_framebuffer_unbind (&surface->attached->backend->gl);
+              
+          _glitz_surface_update_state (surface);
+          _glitz_surface_sync_drawable (surface);
+      }
+  }
+  else
+  {
+      surface->drawable->backend->push_current (surface->drawable,
+                                                surface,
+                                                constraint);
+      if (constraint == GLITZ_DRAWABLE_CURRENT)
+      {
+          if (surface->drawable->backend->feature_mask &
+              GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK)
+          {
+              if (glitz_framebuffer_complete (&surface->attached->backend->gl,
+                                              &surface->framebuffer,
+                                              &surface->texture))
+              {       
+                  _glitz_surface_update_state (surface);
+                  return 1;
+              }
+          }
+
+          return 0;
+      }
   }
   
   return 1;
@@ -873,3 +910,9 @@ glitz_surface_set_clip_region (glitz_surface_t *surface,
     }
 }
 slim_hidden_def(glitz_surface_set_clip_region);
+
+glitz_bool_t
+glitz_surface_valid_target (glitz_surface_t *surface)
+{
+    return glitz_surface_push_current (surface, GLITZ_DRAWABLE_CURRENT);
+}
