@@ -42,15 +42,19 @@
 #define GLITZ_GLX_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK  (1L <<  2)
 #define GLITZ_GLX_FEATURE_TEXTURE_BORDER_CLAMP_MASK     (1L <<  3)
 #define GLITZ_GLX_FEATURE_MULTISAMPLE_MASK              (1L <<  4)
-#define GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK       (1L <<  5)
-#define GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_HINT_MASK  (1L <<  6)
-#define GLITZ_GLX_FEATURE_MULTITEXTURE_MASK             (1L <<  7)
-#define GLITZ_GLX_FEATURE_TEXTURE_ENV_COMBINE_MASK      (1L <<  8)
-#define GLITZ_GLX_FEATURE_TEXTURE_ENV_DOT3_MASK         (1L <<  9)
-#define GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 10)
-#define GLITZ_GLX_FEATURE_GLX13_MASK                    (1L << 11)
-#define GLITZ_GLX_FEATURE_VERTEX_BUFFER_OBJECT_MASK     (1L << 12)
-#define GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 13)
+#define GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_HINT_MASK  (1L <<  5)
+#define GLITZ_GLX_FEATURE_MULTITEXTURE_MASK             (1L <<  6)
+#define GLITZ_GLX_FEATURE_TEXTURE_ENV_COMBINE_MASK      (1L <<  7)
+#define GLITZ_GLX_FEATURE_TEXTURE_ENV_DOT3_MASK         (1L <<  8)
+#define GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK         (1L <<  9)
+#define GLITZ_GLX_FEATURE_VERTEX_BUFFER_OBJECT_MASK     (1L << 10)
+#define GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 11)
+#define GLITZ_GLX_FEATURE_BLEND_COLOR_MASK              (1L << 12)
+#define GLITZ_GLX_FEATURE_GLX_FBCONFIG_MASK             (1L << 13)
+#define GLITZ_GLX_FEATURE_GLX_PBUFFER_MASK              (1L << 14)
+#define GLITZ_GLX_FEATURE_GLX_MAKE_CURRENT_READ_MASK    (1L << 15)
+#define GLITZ_GLX_FEATURE_GLX_GET_PROC_ADDRESS_MASK     (1L << 16)
+#define GLITZ_GLX_FEATURE_GLX_MULTISAMPLE_MASK          (1L << 17)
 
 typedef struct _glitz_glx_surface glitz_glx_surface_t;
 typedef struct _glitz_glx_screen_info_t glitz_glx_screen_info_t;
@@ -65,13 +69,11 @@ typedef struct _glitz_glx_static_proc_address_list_t {
   glitz_glx_destroy_pbuffer_t destroy_pbuffer;
   glitz_glx_make_context_current_t make_context_current;
   glitz_glx_create_new_context_t create_new_context;
-  glitz_bool_t need_lookup;
 } glitz_glx_static_proc_address_list_t;
 
 typedef struct _glitz_glx_thread_info_t {
   glitz_glx_display_info_t **displays;
   int n_displays;
-  glitz_glx_static_proc_address_list_t glx;
   char *gl_library;
   void *dlhand;
 } glitz_glx_thread_info_t;
@@ -93,6 +95,9 @@ typedef struct _glitz_glx_context_t {
   XID id;
   GLXFBConfig fbconfig;
   glitz_surface_backend_t backend;
+  glitz_gl_int_t max_viewport_dims[2];
+  glitz_gl_int_t max_texture_2d_size;
+  glitz_gl_int_t max_texture_rect_size;
 } glitz_glx_context_t;
 
 struct _glitz_glx_screen_info_t {
@@ -116,6 +121,9 @@ struct _glitz_glx_screen_info_t {
   unsigned long feature_mask;
   unsigned long glx_feature_mask;
   glitz_gl_float_t gl_version;
+  glitz_gl_float_t glx_version;
+
+  glitz_glx_static_proc_address_list_t glx;
 
   glitz_program_map_t program_map;
 };
@@ -137,7 +145,8 @@ glitz_glx_screen_info_get (Display *display,
                            int screen);
 
 extern glitz_function_pointer_t __internal_linkage
-glitz_glx_get_proc_address (glitz_glx_thread_info_t *info, const char *name);
+glitz_glx_get_proc_address (glitz_glx_screen_info_t *screen_info,
+                            const char *name);
 
 extern glitz_glx_context_t *__internal_linkage
 glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
@@ -174,12 +183,12 @@ extern void __internal_linkage
 glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info);
 
 extern GLXPbuffer __internal_linkage
-glitz_glx_pbuffer_create (glitz_glx_display_info_t *display_info,
+glitz_glx_pbuffer_create (glitz_glx_screen_info_t *screen_info,
                           GLXFBConfig fbconfig,
                           glitz_texture_t *texture);
 
 extern void __internal_linkage
-glitz_glx_pbuffer_destroy (glitz_glx_display_info_t *display_info,
+glitz_glx_pbuffer_destroy (glitz_glx_screen_info_t *screen_info,
                            GLXPbuffer pbuffer);
 
 extern void __internal_linkage

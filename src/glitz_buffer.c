@@ -33,11 +33,13 @@ static glitz_status_t
 _glitz_buffer_init (glitz_buffer_t *buffer,
                     glitz_surface_t *surface,
                     void *data,
+                    unsigned int size,
                     glitz_buffer_hint_t hint)
 {
   glitz_gl_enum_t usage;
 
   buffer->ref_count = 1;
+  buffer->name = 0;
   
   switch (hint) {
   case GLITZ_BUFFER_HINT_STREAM_DRAW:
@@ -72,26 +74,31 @@ _glitz_buffer_init (glitz_buffer_t *buffer,
   if (surface) {
     buffer->surface = surface;
     glitz_surface_reference (surface);
-    
+
+    glitz_surface_push_current (buffer->surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+
     surface->backend->gl.gen_buffers (1, &buffer->name);
     if (buffer->name) {
       surface->backend->gl.bind_buffer (buffer->target, buffer->name);
-      surface->backend->gl.buffer_data (buffer->target, buffer->size,
-                                        data, usage);
+      surface->backend->gl.buffer_data (buffer->target, size, data, usage);
       surface->backend->gl.bind_buffer (buffer->target, 0);
     }
+    glitz_surface_pop_current (buffer->surface);
   } else
     buffer->surface = NULL;
   
-  if (buffer->name == 0) {
-    buffer->data = malloc (buffer->size);
+  if (size > 0 && buffer->name == 0) {
+    buffer->data = malloc (size);
     if (buffer->data == NULL)
       return GLITZ_STATUS_NO_MEMORY;
     
     if (data)
-      memcpy (buffer->data, data, buffer->size);
+      memcpy (buffer->data, data, size);
     
     buffer->owns_data = 1;
+  } else {
+    buffer->owns_data = 0;
+    buffer->data = data;
   }
   
   return GLITZ_STATUS_SUCCESS;
@@ -106,18 +113,19 @@ glitz_geometry_buffer_create (glitz_surface_t *surface,
   glitz_buffer_t *buffer;
   glitz_status_t status;
 
+  if (size == 0)
+    return NULL;
+
   buffer = malloc (sizeof (glitz_buffer_t));
   if (buffer == NULL)
     return NULL;
   
-  buffer->size = size;
-  buffer->name = 0;
   buffer->target = GLITZ_GL_ARRAY_BUFFER;
 
   if (surface->backend->feature_mask & GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK)
-    status = _glitz_buffer_init (buffer, surface, data, hint);
+    status = _glitz_buffer_init (buffer, surface, data, size, hint);
   else
-    status = _glitz_buffer_init (buffer, NULL, data, hint);
+    status = _glitz_buffer_init (buffer, NULL, data, size, hint);
   
   if (status != GLITZ_STATUS_SUCCESS) {
     free (buffer);
@@ -135,13 +143,13 @@ glitz_pixel_buffer_create (glitz_surface_t *surface,
 {
   glitz_buffer_t *buffer;
   glitz_status_t status;
+
+  if (size == 0)
+    return NULL;
   
   buffer = malloc (sizeof (glitz_buffer_t));
   if (buffer == NULL)
     return NULL;
-  
-  buffer->size = size;
-  buffer->name = 0;
   
   switch (hint) {
   case GLITZ_BUFFER_HINT_STREAM_READ:
@@ -153,13 +161,33 @@ glitz_pixel_buffer_create (glitz_surface_t *surface,
     buffer->target = GLITZ_GL_PIXEL_UNPACK_BUFFER;
     break;
   }
-  
+
   if (surface->backend->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
-    status = _glitz_buffer_init (buffer, surface, data, hint);
+    status = _glitz_buffer_init (buffer, surface, data, size, hint);
   else
-    status = _glitz_buffer_init (buffer, NULL, data, hint);
+    status = _glitz_buffer_init (buffer, NULL, data, size, hint);
 
   if (status != GLITZ_STATUS_SUCCESS) {
+    free (buffer);
+    return NULL;
+  }
+  
+  return buffer;
+}
+
+glitz_buffer_t *
+glitz_buffer_create_for_data (void *data)
+{
+  glitz_buffer_t *buffer;
+  
+  if (data == NULL)
+    return NULL;
+  
+  buffer = malloc (sizeof (glitz_buffer_t));
+  if (buffer == NULL)
+    return NULL;
+
+  if (_glitz_buffer_init (buffer, NULL, data, 0, 0)) {
     free (buffer);
     return NULL;
   }
@@ -178,7 +206,9 @@ glitz_buffer_destroy (glitz_buffer_t *buffer)
     return;
   
   if (buffer->surface) {
+    glitz_surface_push_current (buffer->surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
     buffer->surface->backend->gl.delete_buffers (1, &buffer->name);
+    glitz_surface_pop_current (buffer->surface);
     glitz_surface_destroy (buffer->surface);
   } else if (buffer->owns_data)
     free (buffer->data);

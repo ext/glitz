@@ -89,7 +89,6 @@ typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_color_4f_t color_4f;
   glitz_gl_scissor_t scissor;
   glitz_gl_blend_func_t blend_func;
-  glitz_gl_blend_color_t blend_color;
   glitz_gl_clear_t clear;
   glitz_gl_clear_color_t clear_color;
   glitz_gl_clear_stencil_t clear_stencil;
@@ -131,7 +130,8 @@ typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_get_tex_level_parameter_iv_t get_tex_level_parameter_iv;
   glitz_gl_copy_tex_sub_image_2d_t copy_tex_sub_image_2d;
   glitz_gl_get_integer_v_t get_integer_v;
-  
+
+  glitz_gl_blend_color_t blend_color;
   glitz_gl_active_texture_t active_texture;
   glitz_gl_gen_programs_t gen_programs;
   glitz_gl_delete_programs_t delete_programs;
@@ -231,9 +231,10 @@ typedef struct _glitz_vec_t {
   glitz_float_t v[4];
 } glitz_vec4_t;
 
-#define GLITZ_TEXTURE_FLAG_ALLOCATED_MASK     (1L <<  0)
-#define GLITZ_TEXTURE_FLAG_REPEATABLE_MASK    (1L <<  1)
-#define GLITZ_TEXTURE_FLAG_PADABLE_MASK       (1L <<  2)
+#define GLITZ_TEXTURE_FLAG_ALLOCATED_MASK    (1L <<  0)
+#define GLITZ_TEXTURE_FLAG_REPEATABLE_MASK   (1L <<  1)
+#define GLITZ_TEXTURE_FLAG_PADABLE_MASK      (1L <<  2)
+#define GLITZ_TEXTURE_FLAG_INVALID_SIZE_MASK (1L <<  3)
 
 #define TEXTURE_ALLOCATED(texture) \
   ((texture)->flags & GLITZ_TEXTURE_FLAG_ALLOCATED_MASK)
@@ -243,6 +244,9 @@ typedef struct _glitz_vec_t {
 
 #define TEXTURE_PADABLE(texture) \
   ((texture)->flags & GLITZ_TEXTURE_FLAG_PADABLE_MASK)
+
+#define TEXTURE_INVALID_SIZE(texture) \
+  ((texture)->flags & GLITZ_TEXTURE_FLAG_INVALID_SIZE_MASK)
 
 typedef struct _glitz_texture {
   glitz_gl_uint_t name;
@@ -263,7 +267,6 @@ typedef struct _glitz_texture {
 } glitz_texture_t;
 
 struct _glitz_buffer {
-  glitz_gl_sizei_t size;
   glitz_gl_uint_t name;
   glitz_gl_enum_t target;
   void *data;
@@ -280,8 +283,6 @@ typedef struct _glitz_geometry {
   glitz_buffer_t *buffer;
   glitz_float_t x_offset;
   glitz_float_t y_offset;
-
-  glitz_gl_uint_t default_name;
   glitz_gl_float_t data[8];
 } glitz_geometry_t;
 
@@ -509,6 +510,12 @@ glitz_texture_fini (glitz_gl_proc_address_list_t *gl,
                     glitz_texture_t *texture);
 
 void
+glitz_texture_size_check (glitz_gl_proc_address_list_t *gl,
+                          glitz_texture_t *texture,
+                          glitz_gl_int_t max_2d,
+                          glitz_gl_int_t max_rect);
+
+void
 glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
                         glitz_texture_t *texture);
 
@@ -673,14 +680,16 @@ glitz_filter_enable (glitz_surface_t *surface,
 
 extern void __internal_linkage
 glitz_geometry_enable_default (glitz_gl_proc_address_list_t *gl,
-                               glitz_surface_t *dst);
+                               glitz_surface_t *dst,
+                               glitz_bounding_box_t *box);
 
 extern void __internal_linkage
 glitz_geometry_enable (glitz_gl_proc_address_list_t *gl,
                        glitz_surface_t *dst,
                        glitz_gl_enum_t *primitive,
                        glitz_gl_int_t *first,
-                       glitz_gl_sizei_t *count);
+                       glitz_gl_sizei_t *count,
+                       glitz_bounding_box_t *box);
 
 extern void __internal_linkage
 glitz_geometry_disable (glitz_gl_proc_address_list_t *gl,

@@ -109,18 +109,23 @@ glitz_set_rectangles (glitz_surface_t *dst,
       GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
     };
     glitz_buffer_t *buffer;
-    unsigned int size, pixel, *p;
+    unsigned int i, width, height, pixel, *data;
 
-    size = (bounds.x2 - bounds.x1) * (bounds.y2 - bounds.y1);
-    buffer =
-      glitz_pixel_buffer_create (dst,
-                                 NULL,
-                                 size * 4,
-                                 GLITZ_BUFFER_HINT_STREAM_DRAW);
-    if (!buffer) {
+    width = bounds.x2 - bounds.x1;
+    height = bounds.y2 - bounds.y1;
+
+    data = malloc (width * height * 4);
+    if (data == NULL) {
       glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
       return;
     }
+    
+    buffer = glitz_buffer_create_for_data (data);
+    if (buffer == NULL) {
+      free (data);
+      glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
+      return;
+    }        
     
     pixel =
       ((((unsigned int) color->alpha * 0xff) / 0xffff) << 24) |
@@ -128,12 +133,11 @@ glitz_set_rectangles (glitz_surface_t *dst,
       ((((unsigned int) color->green * 0xff) / 0xffff) << 8) |
       ((((unsigned int) color->blue * 0xff) / 0xffff));
     
-    p = glitz_buffer_map (buffer, GLITZ_BUFFER_ACCESS_WRITE_ONLY);
+    for (i = 0; i < width; i++)
+      data[i] = pixel;
     
-    for (; size; size--, p++)
-      *p = pixel;
-    
-    glitz_buffer_unmap (buffer);
+    for (i = 1; i < height; i++)
+      memcpy (&data[i * width], data, width * sizeof (unsigned int));
 
     for (; n_rects; n_rects--, rects++)
       glitz_set_pixels (dst,
@@ -142,6 +146,7 @@ glitz_set_rectangles (glitz_surface_t *dst,
                         &pf, buffer);
 
     glitz_buffer_destroy (buffer);
+    free (data);
   }
   
   glitz_surface_pop_current (dst);

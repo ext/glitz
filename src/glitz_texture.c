@@ -63,7 +63,7 @@ glitz_texture_init (glitz_texture_t *texture,
     texture->target = GLITZ_GL_TEXTURE_2D;
   } else {
     texture->flags &= ~GLITZ_TEXTURE_FLAG_REPEATABLE_MASK;
-      
+
     if (feature_mask & GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK) {
       texture->target = GLITZ_GL_TEXTURE_RECTANGLE;
     } else {
@@ -80,11 +80,48 @@ glitz_texture_init (glitz_texture_t *texture,
 
   if (texture->target == GLITZ_GL_TEXTURE_2D) {
     texture->texcoord_width_unit = 1.0f / texture->width;
-    texture->texcoord_height_unit = 1.0f / texture->height;
+    texture->texcoord_height_unit = 1.0f / texture->height;   
   } else {
     texture->texcoord_width_unit = 1.0f;
     texture->texcoord_height_unit = 1.0f;
   }
+}
+
+void
+glitz_texture_size_check (glitz_gl_proc_address_list_t *gl,
+                          glitz_texture_t *texture,
+                          glitz_gl_int_t max_2d,
+                          glitz_gl_int_t max_rect) {
+  glitz_gl_enum_t proxy_target;
+  glitz_gl_int_t value, max;
+
+  if (texture->target == GLITZ_GL_TEXTURE_2D) {
+    max = max_2d;
+    proxy_target = GLITZ_GL_PROXY_TEXTURE_2D;
+  } else {
+    max = max_rect;
+    proxy_target = GLITZ_GL_PROXY_TEXTURE_RECTANGLE;
+  }
+    
+  if (texture->width > max || texture->height > max) {
+    texture->flags |= GLITZ_TEXTURE_FLAG_INVALID_SIZE_MASK;
+    return;
+  }
+    
+  gl->tex_image_2d (proxy_target, 0,
+                    texture->format, texture->width, texture->height,
+                    0, GLITZ_GL_RGBA, GLITZ_GL_UNSIGNED_BYTE, NULL);
+  gl->get_tex_level_parameter_iv (proxy_target, 0,
+                                  GLITZ_GL_TEXTURE_WIDTH, &value);
+  if (value != texture->width) {
+    texture->flags |= GLITZ_TEXTURE_FLAG_INVALID_SIZE_MASK;
+    return;
+  }
+  
+  gl->get_tex_level_parameter_iv (proxy_target, 0,
+                                  GLITZ_GL_TEXTURE_HEIGHT, &value);
+  if (value != texture->height)
+    texture->flags |= GLITZ_TEXTURE_FLAG_INVALID_SIZE_MASK;
 }
 
 void
@@ -95,22 +132,28 @@ glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
   
   if (!texture->name)
     gl->gen_textures (1, &texture->name);
-
+  
   texture->flags |= GLITZ_TEXTURE_FLAG_ALLOCATED_MASK;
   
   glitz_texture_bind (gl, texture);
 
   if (texture->box.x2 != texture->width ||
       texture->box.y2 != texture->height) {
-    data = malloc (texture->width * texture->height * 4);
+    data = malloc (texture->width * texture->height);
     if (data)
-      memset (data, 0, texture->width * texture->height * 4);
+      memset (data, 0, texture->width * texture->height);
+
+    gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, 0);
+    gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, 0);
+    gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_ROWS, 0);
+    gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_PIXELS, 0);
+    gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 1);
   }
-  
+
   gl->tex_image_2d (texture->target, 0, texture->format,
-                    texture->width, texture->height,
-                    0, GLITZ_GL_RGBA, GLITZ_GL_UNSIGNED_BYTE, data);
-  
+                    texture->width, texture->height, 0,
+                    GLITZ_GL_ALPHA, GLITZ_GL_UNSIGNED_BYTE, data);
+
   glitz_texture_unbind (gl, texture);
 
   if (data)

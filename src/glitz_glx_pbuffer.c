@@ -32,7 +32,7 @@
 #include "glitz_glxint.h"
 
 GLXPbuffer
-glitz_glx_pbuffer_create (glitz_glx_display_info_t *display_info,
+glitz_glx_pbuffer_create (glitz_glx_screen_info_t *screen_info,
                           GLXFBConfig fbconfig,
                           glitz_texture_t *texture)
 {
@@ -48,18 +48,18 @@ glitz_glx_pbuffer_create (glitz_glx_display_info_t *display_info,
     pbuffer_attr[i++] = GLX_LARGEST_PBUFFER;
     pbuffer_attr[i++] = 0;
     pbuffer_attr[i++] = 0;
-  
+
     return
-      display_info->thread_info->glx.create_pbuffer (display_info->display,
-                                                     fbconfig, pbuffer_attr);
+      screen_info->glx.create_pbuffer (screen_info->display_info->display,
+                                       fbconfig, pbuffer_attr);
   } else
     return (GLXPbuffer) 0;
 }
 
 void 
-glitz_glx_pbuffer_destroy (glitz_glx_display_info_t *display_info,
+glitz_glx_pbuffer_destroy (glitz_glx_screen_info_t *screen_info,
                            GLXPbuffer pbuffer)
 {
-  display_info->thread_info->glx.destroy_pbuffer (display_info->display,
-                                                  pbuffer);
+  screen_info->glx.destroy_pbuffer (screen_info->display_info->display,
+                                    pbuffer);
 }

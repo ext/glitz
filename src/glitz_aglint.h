@@ -49,6 +49,7 @@
 #define GLITZ_AGL_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 10)
 #define GLITZ_AGL_FEATURE_VERTEX_BUFFER_OBJECT_MASK     (1L << 11)
 #define GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 12)
+#define GLITZ_AGL_FEATURE_BLEND_COLOR_MASK              (1L << 13)
 
 typedef struct _glitz_agl_surface_t glitz_agl_surface_t;
 
@@ -62,6 +63,9 @@ typedef struct _glitz_agl_context_t {
   AGLPixelFormat pixel_format;
   glitz_bool_t offscreen;
   glitz_surface_backend_t backend;
+  glitz_gl_int_t max_viewport_dims[2];
+  glitz_gl_int_t max_texture_2d_size;
+  glitz_gl_int_t max_texture_rect_size;
 } glitz_agl_context_t;
 
 typedef struct _glitz_agl_thread_info_t {

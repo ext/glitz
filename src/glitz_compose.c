@@ -509,20 +509,24 @@ glitz_composite_op_init (glitz_composite_op_t *op,
     glitz_surface_ensure_solid (mask);
     op->alpha_mask = mask->solid;
     op->mask = NULL;
-    op->combine = combine;
     
-    if (op->src)
+    if (op->src) {
       op->per_component = 4;
+      op->combine = combine;
+    } else if (dst->backend->feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK)
+      op->combine = combine;
     
   } else if (mask_type != GLITZ_SURFACE_TYPE_NULL) {
     if (mask_type == GLITZ_SURFACE_TYPE_ARGBC) {
-      if (op->src)
+      if (op->src) {
         op->per_component = 4;
-      else
+        if (dst->backend->feature_mask &
+            GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
+          op->combine = combine;
+      } else if (dst->backend->feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK)
         op->combine = combine;
-    }
-
-    if (dst->backend->feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
+    } else if (dst->backend->feature_mask &
+               GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
       op->combine = combine;
   } else
     op->combine = combine;

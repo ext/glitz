@@ -536,6 +536,13 @@ glitz_set_pixels (glitz_surface_t *dst,
     glitz_buffer_unbind (buffer);
 
   if (to_drawable) {
+    glitz_bounding_box_t box;
+
+    box.x1 = x_dst;
+    box.y1 = y_dst;
+    box.x2 = box.x1 + width;
+    box.y2 = box.y1 + height;
+    
     glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, 0); 
 
     gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
@@ -547,15 +554,13 @@ glitz_set_pixels (glitz_surface_t *dst,
 
     glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
 
-    gl->scissor (x_dst,
-                 dst->height - (y_dst + height),
+    gl->scissor (box.x1,
+                 dst->height - box.y2,
                  width, height);
 
-    glitz_geometry_enable_default (gl, dst);
+    glitz_geometry_enable_default (gl, dst, &box);
 
     gl->draw_arrays (GLITZ_GL_QUADS, 0, 4);
-
-    glitz_geometry_disable (gl, dst);
 
     if (x_dst == 0 && y_dst == 0 &&
         width == dst->width && height == dst->height)
@@ -628,8 +633,8 @@ glitz_get_pixels (glitz_surface_t *src,
     if (transform & GLITZ_TRANSFORM_COPY_BOX_MASK) {
       src_w = texture->width;
       src_h = texture->height;
-      src_x = x_src + texture->box.x1;
-      src_y = y_src + texture->box.y1;
+      src_x = x_src + src->texture.box.x1;
+      src_y = y_src + src->texture.box.y1;
     }
 
     stride = (((src_w * gl_format->pixel.masks.bpp) / 8) + 3) & -4;
@@ -671,6 +676,10 @@ glitz_get_pixels (glitz_surface_t *src,
   }
 
   if (from_drawable) {
+    if (SURFACE_OFFSCREEN (src)) {
+       x_src += src->texture.box.x1;
+       y_src += src->texture.box.y1;
+    }
     gl->read_pixels (x_src, src->height - y_src - height,
                      width, height,
                      gl_format->format, gl_format->type,
@@ -685,18 +694,24 @@ glitz_get_pixels (glitz_surface_t *src,
 
   if (transform) {
     glitz_image_t src_image, dst_image;
+    int stride;
 
-    src_image.data = data + src_y * gl_format->pixel.bytes_per_line;
+    src_image.data = data + src_y * bytes_per_line;
     src_image.format = &gl_format->pixel;
-    src_image.width = src_w;
-    src_image.height = src_h;
+    src_image.width = src->width;
+    src_image.height = src->height;
 
+    if (format->bytes_per_line)
+      stride = format->bytes_per_line;
+    else
+      stride = (((width * format->masks.bpp) / 8) + 3) & -4;
+    
     dst_image.data = glitz_buffer_map (buffer, GLITZ_BUFFER_ACCESS_WRITE_ONLY);
-    dst_image.data += format->skip_lines * format->bytes_per_line;
+    dst_image.data += format->skip_lines * stride;
     dst_image.format = format;
     dst_image.width = width;
     dst_image.height = height;
-
+    
     _glitz_pixel_transform (transform,
                             &src_image,
                             &dst_image,

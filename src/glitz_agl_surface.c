@@ -125,6 +125,9 @@ _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
   glitz_agl_surface_t *surface;
   glitz_agl_context_t *context;
 
+  if (width <= 0 || height <= 0)
+    return NULL;
+
   context = glitz_agl_context_get (thread_info, format, 1);
   if (!context)
     return NULL;
@@ -152,6 +155,22 @@ _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
     glitz_agl_context_pop_current (surface);
   }
 
+  if (width > 64 || height > 64) {
+    glitz_agl_context_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+    glitz_texture_size_check (&surface->base.backend->gl,
+                              &surface->base.texture,
+                              context->max_texture_2d_size,
+                              context->max_texture_rect_size);
+    glitz_agl_context_pop_current (surface);
+    if (TEXTURE_INVALID_SIZE (&surface->base.texture) ||
+        (format->draw.offscreen &&
+         ((width > context->max_viewport_dims[0]) ||
+          (height > context->max_viewport_dims[1])))) {
+      glitz_surface_destroy (&surface->base);
+      return NULL;
+    }
+  }
+
   return &surface->base;
 }
 
@@ -160,8 +179,13 @@ glitz_agl_surface_create (glitz_format_t *format,
                           int width,
                           int height)
 {
-  return _glitz_agl_surface_create (glitz_agl_thread_info_get (),
-                                    format, width, height);
+  glitz_agl_thread_info_t *thread_info;
+
+  thread_info = glitz_agl_thread_info_get ();
+  if (!thread_info)
+    return NULL;
+  
+  return _glitz_agl_surface_create (thread_info, format, width, height);
 }
 slim_hidden_def(glitz_agl_surface_create_offscreen);
 
@@ -173,7 +197,19 @@ glitz_agl_surface_create_for_window (glitz_format_t *format,
 {
   glitz_agl_surface_t *surface;
   glitz_agl_context_t *context;
-  glitz_agl_thread_info_t *thread_info = glitz_agl_thread_info_get ();
+  glitz_agl_thread_info_t *thread_info;
+  AGLDrawable drawable;
+
+  if (width <= 0 || height <= 0)
+    return NULL;
+
+  drawable = GetWindowPort (window);
+  if (!drawable)
+    return NULL;
+
+  thread_info = glitz_agl_thread_info_get ();
+  if (!thread_info)
+    return NULL;
 
   context = glitz_agl_context_get (thread_info, format, 0);
   if (!context)
@@ -192,13 +228,28 @@ glitz_agl_surface_create_for_window (glitz_format_t *format,
   surface->thread_info = thread_info;
   surface->context = context;
   surface->window = window;
-  surface->drawable = GetWindowPort (window);
+  surface->drawable = drawable;
 
   surface->base.flags |= GLITZ_SURFACE_FLAG_DRAWABLE_MASK;
 
   if (surface->context->backend.gl.need_lookup) {
     glitz_agl_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
     glitz_agl_context_pop_current (surface);
+  }
+
+  if (width > 64 || height > 64) {
+    glitz_agl_context_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+    glitz_texture_size_check (&surface->base.backend->gl,
+                              &surface->base.texture,
+                              context->max_texture_2d_size,
+                              context->max_texture_rect_size);
+    glitz_agl_context_pop_current (surface);
+    if (TEXTURE_INVALID_SIZE (&surface->base.texture) ||
+        (width > context->max_viewport_dims[0]) ||
+        (height > context->max_viewport_dims[1])) {
+      glitz_surface_destroy (&surface->base);
+      return NULL;
+    }
   }
   
   return &surface->base;

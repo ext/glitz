@@ -49,7 +49,6 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_color_4f_t) glColor4f,
   (glitz_gl_scissor_t) glScissor,
   (glitz_gl_blend_func_t) glBlendFunc,
-  (glitz_gl_blend_color_t) glBlendColor,
   (glitz_gl_clear_t) glClear,
   (glitz_gl_clear_color_t) glClearColor,
   (glitz_gl_clear_stencil_t) glClearStencil,
@@ -91,7 +90,8 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_get_tex_level_parameter_iv_t) glGetTexLevelParameteriv,
   (glitz_gl_copy_tex_sub_image_2d_t) glCopyTexSubImage2D,
   (glitz_gl_get_integer_v_t) glGetIntegerv,
-  
+
+  (glitz_gl_blend_color_t) 0,
   (glitz_gl_active_texture_t) 0,
   (glitz_gl_gen_programs_t) 0,
   (glitz_gl_delete_programs_t) 0,
@@ -293,6 +293,19 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
   thread_info->n_contexts = 0;
 
   glitz_program_map_init (&thread_info->program_map);
+
+  glitz_agl_surface_backend_init (&thread_info->root_context.backend);
+
+  memcpy (&thread_info->root_context.backend.gl,
+          &_glitz_agl_gl_proc_address,
+          sizeof (glitz_gl_proc_address_list_t));
+  
+  thread_info->root_context.backend.formats = NULL;
+  thread_info->root_context.backend.n_formats = 0;
+  thread_info->root_context.backend.program_map = NULL;
+  thread_info->root_context.backend.feature_mask = 0;
+
+  thread_info->agl_feature_mask = thread_info->feature_mask = 0;
   
   thread_info->root_context.pixel_format =
     aglChoosePixelFormat (NULL, 0, attrib);
@@ -304,6 +317,8 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
       aglSetCurrentContext (thread_info->root_context.context);
   
       if (glitz_agl_query_extensions (thread_info) == GLITZ_STATUS_SUCCESS) {
+          thread_info->root_context.backend.feature_mask =
+            thread_info->feature_mask;
         glitz_agl_context_proc_address_lookup (thread_info,
                                                &thread_info->root_context);
         glitz_agl_query_formats (thread_info);
@@ -311,18 +326,9 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
     }
   }
 
-  glitz_agl_surface_backend_init (&thread_info->root_context.backend);
-
-  memcpy (&thread_info->root_context.backend.gl,
-          &_glitz_agl_gl_proc_address,
-          sizeof (glitz_gl_proc_address_list_t));
-  
   thread_info->root_context.backend.formats = thread_info->formats;
   thread_info->root_context.backend.n_formats = thread_info->n_formats;
   thread_info->root_context.backend.program_map = &thread_info->program_map;
-  thread_info->root_context.backend.feature_mask = thread_info->feature_mask;
-  
-  thread_info->root_context.backend.gl.need_lookup = 1;
 
   thread_info->context_stack_size = 1;
   thread_info->context_stack->surface = NULL;

@@ -211,24 +211,19 @@ slim_hidden_def(glitz_set_geometry);
 
 void
 glitz_geometry_enable_default (glitz_gl_proc_address_list_t *gl,
-                               glitz_surface_t *dst)
+                               glitz_surface_t *dst,
+                               glitz_bounding_box_t *box)
 {
-  if (dst->backend->feature_mask & GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK) {
-    if (!dst->geometry.default_name) {
-      gl->gen_buffers (1, &dst->geometry.default_name);
-      if (dst->geometry.default_name) {
-        gl->bind_buffer (GLITZ_GL_ARRAY_BUFFER,
-                         dst->geometry.default_name);
-        gl->buffer_data (GLITZ_GL_ARRAY_BUFFER, sizeof (dst->geometry.data),
-                         dst->geometry.data, GLITZ_GL_STATIC_DRAW);
-      }
-    } else
-      gl->bind_buffer (GLITZ_GL_ARRAY_BUFFER,
-                       dst->geometry.default_name);
-    
-    gl->vertex_pointer (2, GLITZ_GL_FLOAT, 0, NULL);
-  } else
-    gl->vertex_pointer (2, GLITZ_GL_FLOAT, 0, dst->geometry.data);
+  dst->geometry.data[0] = box->x1;
+  dst->geometry.data[1] = box->y1;
+  dst->geometry.data[2] = box->x2;
+  dst->geometry.data[3] = box->y1;
+  dst->geometry.data[4] = box->x2;
+  dst->geometry.data[5] = box->y2;
+  dst->geometry.data[6] = box->x1;
+  dst->geometry.data[7] = box->y2;
+  
+  gl->vertex_pointer (2, GLITZ_GL_FLOAT, 0, dst->geometry.data);
 }
 
 void
@@ -236,7 +231,8 @@ glitz_geometry_enable (glitz_gl_proc_address_list_t *gl,
                        glitz_surface_t *dst,
                        glitz_gl_enum_t *primitive,
                        glitz_gl_int_t *first,
-                       glitz_gl_sizei_t *count)
+                       glitz_gl_sizei_t *count,
+                       glitz_bounding_box_t *box)
 {
   if (dst->geometry.buffer) {
     void *ptr;
@@ -252,7 +248,7 @@ glitz_geometry_enable (glitz_gl_proc_address_list_t *gl,
     *first = dst->geometry.first;
     *count = dst->geometry.count;
   } else {
-    glitz_geometry_enable_default (gl, dst);
+    glitz_geometry_enable_default (gl, dst, box);
     *primitive = GLITZ_GL_QUADS;
     *first = 0;
     *count = 4;
@@ -263,6 +259,7 @@ void
 glitz_geometry_disable (glitz_gl_proc_address_list_t *gl,
                         glitz_surface_t *dst)
 {
-  if (dst->backend->feature_mask & GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK)
+  if (dst->geometry.buffer &&
+      (dst->backend->feature_mask & GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK))
     gl->bind_buffer (GLITZ_GL_ARRAY_BUFFER, 0);
 }

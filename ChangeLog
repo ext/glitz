@@ -1,3 +1,76 @@
+2004-10-04  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_texture.c: Added glitz_texture_size_check.
+
+	* src/glitz_rect.c (glitz_set_rectangles): Made the software fall-back
+	for fill rectangles a bit more efficient.
+
+	* src/glitz.c (glitz_composite): Tracking changes to geometry objects.
+
+	* src/glitz_pixel.c: Tracking changes to geometry objects.
+	Fixed a few offset problems.
+
+	* src/glitz_glxint.h: Added GLX features.
+
+	* src/glitz_glx_surface.c: Added surface size checks.
+
+	* src/glitz_glx_pbuffer.c: screen_info to glitz_glx_pbuffer_create
+	and glitz_glx_pbuffer_destroy.
+
+	* src/glitz_glx_info.c: glBlendColor needs function address lookup.
+	(glitz_glx_get_proc_address): Only lookup glXGetProcAddress if
+	GLITZ_GLX_FEATURE_GLX_GET_PROC_ADDRESS_MASK is present.
+	(_glitz_glx_proc_address_lookup): Fixed GLX function address lookup.
+	Fixed root context creation.
+	(glitz_glx_screen_info_get): Check GLX extension version.
+	Added underscore prefix to static function names.
+
+	* src/glitz_glx_format.c: glitz_glx_query_formats_glx12 ->
+	glitz_glx_query_formats.
+	glitz_glx_query_formats_glx13 -> glitz_glx_query_formats_fbconfig.
+
+	* src/glitz_glx_extension.c: Check GLX extensions.
+	Check for GL_EXT_blend_color.
+	client_glx -> glx.
+	gl_extensions_strings -> gl_extensions_string.
+
+	* src/glitz_glx_context.c: glitz_glx_context_create_glx12 ->
+	glitz_glx_context_create.
+	glitz_glx_context_create_glx13 -> glitz_glx_context_create_fbconfig.
+	GLX function pointers are now stored in screen_info.
+	(glitz_glx_context_proc_address_lookup): 
+	Function address lookup updates.
+
+	* src/glitz_gl.h: Added viewport and texture size tokens.
+
+	* src/glitz_geometry.c: Update default geometry to current clipping 
+	box.
+
+	* src/glitz_compose.c: Check for GLITZ_FEATURE_BLEND_COLOR_MASK
+	support.
+
+	* src/glitz_buffer.c: Added support for glitz_buffer_create_for_data
+	functionality.
+
+	* src/glitz_aglint.h: Added GLITZ_AGL_FEATURE_BLEND_COLOR_MASK.
+	Max texture sizes and viewport sizes in glitz_agl_context_t.
+
+	* src/glitz_agl_surface.c: Added surface size checks.
+
+	* src/glitz_agl_info.c: glBlendColor needs function address lookup.
+	(glitz_agl_thread_info_init): Fixed root context init.
+
+	* src/glitz_agl_extension.c: Check for GL_EXT_blend_color.
+	(_glitz_agl_extension_query_gl): gl_extensions_strings ->
+	gl_extensions_string.
+	(glitz_agl_query_extensions): Check GL_EXT_blend_color. 
+
+	* src/glitz_agl_context.c (glitz_agl_context_proc_address_lookup): 
+	Function address lookup updates.
+
+	* src/glitz.h: Added GLITZ_FEATURE_BLEND_COLOR_MASK.
+	Added glitz_buffer_create_for_data.
+
 2004-09-21  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_glxint.h: Added create_new_context to 

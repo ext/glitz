@@ -260,12 +260,11 @@ glitz_composite (glitz_operator_t op,
 
   gl->scissor (rect.x1,
                dst->height - rect.y2,
-               rect.x2 - rect.x1,
-               rect.y2 - rect.y1);
+               width, height);
 
   gl->push_matrix ();
 
-  glitz_geometry_enable (gl, dst, &primitive, &first, &count);
+  glitz_geometry_enable (gl, dst, &primitive, &first, &count, &rect);
 
   if (dst->indirect) {
     glitz_sample_offset_t *offsets;
@@ -294,8 +293,10 @@ glitz_composite (glitz_operator_t op,
     
     gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE, GLITZ_GL_TRUE,
                     GLITZ_GL_TRUE);
+
+    glitz_geometry_disable (gl, dst);
+    glitz_geometry_enable_default (gl, dst, &rect);
     
-    glitz_geometry_enable_default (gl, dst);
     primitive = GLITZ_GL_QUADS;
     first = 0;
     count = 4;
@@ -487,11 +488,9 @@ glitz_copy_area (glitz_surface_t *src,
                      dst->height - box.y2,
                      width, height);
         
-        glitz_geometry_enable_default (gl, dst);
+        glitz_geometry_enable_default (gl, dst, &box);
         
         gl->draw_arrays (GLITZ_GL_QUADS, 0, 4);
-        
-        glitz_geometry_disable (gl, dst);
 
         glitz_texture_unbind (gl, texture);
       }

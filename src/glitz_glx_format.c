@@ -99,7 +99,7 @@ _glitz_move_out_ids (glitz_glx_screen_info_t *screen_info)
 }
 
 static void
-glitz_glx_query_formats_glx12 (glitz_glx_screen_info_t *screen_info)
+_glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info)
 {
   Display *display;
   glitz_format_t format;
@@ -113,7 +113,7 @@ glitz_glx_query_formats_glx12 (glitz_glx_screen_info_t *screen_info)
   visuals = XGetVisualInfo (display, VisualScreenMask,
                             &visual_templ, &num_visuals);
 
-  /* Offscreen drawing never supported if GLX is older than 1.3 */
+  /* Offscreen drawing never supported without fbconfigs */
   format.draw.offscreen = format.read.offscreen = 0;
   format.draw.onscreen = format.read.onscreen = 1;
 
@@ -169,23 +169,28 @@ glitz_glx_query_formats_glx12 (glitz_glx_screen_info_t *screen_info)
 }
 
 static glitz_bool_t
-glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
+_glitz_glx_query_formats_fbconfig (glitz_glx_screen_info_t *screen_info)
 {
   Display *display;
   glitz_format_t format;
   GLXFBConfig *fbconfigs;
-  int i, num_configs, pbuffer_check = 1, pbuffer_support = 1;
-  glitz_glx_static_proc_address_list_t *glx =
-    &screen_info->display_info->thread_info->glx;
+  int i, num_configs, pbuffer_support, pbuffer_check = 1;
+  glitz_glx_static_proc_address_list_t *glx = &screen_info->glx;
   
   display = screen_info->display_info->display;
 
   fbconfigs = glx->get_fbconfigs (display, screen_info->screen, &num_configs);
   if (!fbconfigs) {
-    /* GLX 1.3 is not support, falling back to GLX 1.2 */
-    screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_GLX13_MASK;
+    /* fbconfigs are not support, falling back to visuals */
+    screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_GLX_FBCONFIG_MASK;
+    screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_GLX_PBUFFER_MASK;
     return 1;
   }
+
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX_PBUFFER_MASK)
+    pbuffer_support = 1;
+  else
+    pbuffer_support = 0;
   
   for (i = 0; i < num_configs; i++) {
     int value;
@@ -276,11 +281,11 @@ glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info)
 {
   glitz_bool_t status = 1;
 
-  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX13_MASK)
-    status = glitz_glx_query_formats_glx13 (screen_info);
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX_FBCONFIG_MASK)
+    status = _glitz_glx_query_formats_fbconfig (screen_info);
 
   if (status)
-    glitz_glx_query_formats_glx12 (screen_info);
+    _glitz_glx_query_formats (screen_info);
 
   qsort (screen_info->formats, screen_info->n_formats, 
          sizeof (glitz_format_t), _glitz_glx_format_compare);
@@ -329,10 +334,9 @@ glitz_glx_get_visual_info_from_format (Display *display,
   XVisualInfo *vinfo = NULL;
   glitz_glx_screen_info_t *screen_info =
     glitz_glx_screen_info_get (display, screen);
-  glitz_glx_static_proc_address_list_t *glx =
-    &screen_info->display_info->thread_info->glx;
+  glitz_glx_static_proc_address_list_t *glx = &screen_info->glx;
 
-  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX13_MASK) {
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX_FBCONFIG_MASK) {
     GLXFBConfig *fbconfigs;
     int i, n_fbconfigs;
     int fbconfigid = screen_info->format_ids[format->id];

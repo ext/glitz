@@ -50,15 +50,6 @@ glitz_surface_init (glitz_surface_t *surface,
   surface->height = height;
   surface->update_mask = GLITZ_UPDATE_ALL_MASK;
 
-  surface->geometry.data[0] = 0.0f;
-  surface->geometry.data[1] = 0.0f;
-  surface->geometry.data[2] = (glitz_float_t) width;
-  surface->geometry.data[3] = 0.0f;
-  surface->geometry.data[4] = (glitz_float_t) width;
-  surface->geometry.data[5] = (glitz_float_t) height;
-  surface->geometry.data[6] = 0.0f;
-  surface->geometry.data[7] = (glitz_float_t) height;
-
   if (format->doublebuffer)
     surface->draw_buffer = surface->read_buffer = GLITZ_GL_BACK;
   else
@@ -81,6 +72,9 @@ glitz_surface_init (glitz_surface_t *surface,
 void
 glitz_surface_fini (glitz_surface_t *surface)
 {
+  if (surface->geometry.buffer)
+    glitz_buffer_destroy (surface->geometry.buffer);
+   
   if (surface->texture.name) {
     glitz_surface_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
     glitz_texture_fini (&surface->backend->gl, &surface->texture);
@@ -89,12 +83,9 @@ glitz_surface_fini (glitz_surface_t *surface)
   
   if (surface->transform)
     free (surface->transform);
-
+  
   if (surface->filter_params)
     glitz_filter_params_destroy (surface->filter_params);
-  
-  if (surface->geometry.default_name)
-    surface->backend->gl.delete_buffers (1, &surface->geometry.default_name);
 }
 
 glitz_format_t *
@@ -158,13 +149,19 @@ _glitz_surface_solid_store (glitz_surface_t *surface) {
   glitz_gl_proc_address_list_t *gl = &surface->backend->gl;
 
   if (SURFACE_DRAWABLE (surface)) {
+    glitz_bounding_box_t box;
+
+    box.x1 = box.y1 = 0;
+    box.x2 = box.y2 = 1;
+    
     gl->color_4us (surface->solid.red,
                    surface->solid.green,
                    surface->solid.blue,
                    surface->solid.alpha);
+    
     glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
-
-    glitz_geometry_enable_default (gl, surface);
+    
+    glitz_geometry_enable_default (gl, surface, &box);
     
     gl->draw_arrays (GLITZ_GL_QUADS, 0, 4);
     

@@ -36,10 +36,10 @@
 extern glitz_gl_proc_address_list_t _glitz_glx_gl_proc_address;
 
 static void
-_glitz_glx_context_create_glx12 (glitz_glx_screen_info_t *screen_info,
-                                 XID visualid,
-                                 GLXContext share_list,
-                                 glitz_glx_context_t *context)
+_glitz_glx_context_create (glitz_glx_screen_info_t *screen_info,
+                           XID visualid,
+                           GLXContext share_list,
+                           glitz_glx_context_t *context)
 {
   int vis_info_count, i;
   XVisualInfo *vis_infos;
@@ -61,16 +61,15 @@ _glitz_glx_context_create_glx12 (glitz_glx_screen_info_t *screen_info,
 }
 
 static void
-_glitz_glx_context_create_glx13 (glitz_glx_screen_info_t *screen_info,
-                                 XID fbconfigid,
-                                 GLXContext share_list,
-                                 glitz_glx_context_t *context)
+_glitz_glx_context_create_fbconfig (glitz_glx_screen_info_t *screen_info,
+                                    XID fbconfigid,
+                                    GLXContext share_list,
+                                    glitz_glx_context_t *context)
 {
   GLXFBConfig *fbconfigs;
   int i, n_fbconfigs;
   XVisualInfo *vinfo = NULL;
-  glitz_glx_static_proc_address_list_t *glx =
-    &screen_info->display_info->thread_info->glx;
+  glitz_glx_static_proc_address_list_t *glx = &screen_info->glx;
 
   fbconfigs = glx->get_fbconfigs (screen_info->display_info->display,
                                   screen_info->screen, &n_fbconfigs);
@@ -113,8 +112,7 @@ glitz_glx_ensure_pbuffer_support (glitz_glx_screen_info_t *screen_info,
 {
   GLXFBConfig *fbconfigs;
   int i, n_fbconfigs;
-  glitz_glx_static_proc_address_list_t *glx =
-    &screen_info->display_info->thread_info->glx;
+  glitz_glx_static_proc_address_list_t *glx = &screen_info->glx;
   int status = 1;
   
   fbconfigs = glx->get_fbconfigs (screen_info->display_info->display,
@@ -133,11 +131,9 @@ glitz_glx_ensure_pbuffer_support (glitz_glx_screen_info_t *screen_info,
     glitz_texture_t texture;
     
     texture.width = texture.height = 1;
-    pbuffer = glitz_glx_pbuffer_create (screen_info->display_info,
-                                        fbconfigs[i],
-                                        &texture);
+    pbuffer = glitz_glx_pbuffer_create (screen_info, fbconfigs[i], &texture);
     if (pbuffer) {
-      glitz_glx_pbuffer_destroy (screen_info->display_info, pbuffer);
+      glitz_glx_pbuffer_destroy (screen_info, pbuffer);
       
       status = 0;
     }
@@ -173,16 +169,16 @@ glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
   context = malloc (sizeof (glitz_glx_context_t));
   screen_info->contexts[index] = context;
 
-  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX13_MASK)
-    _glitz_glx_context_create_glx13 (screen_info,
-                                     screen_info->format_ids[format->id],
-                                     screen_info->root_context.context,
-                                     context);
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX_FBCONFIG_MASK)
+    _glitz_glx_context_create_fbconfig (screen_info,
+                                        screen_info->format_ids[format->id],
+                                        screen_info->root_context.context,
+                                        context);
   else
-    _glitz_glx_context_create_glx12 (screen_info,
-                                     screen_info->format_ids[format->id],
-                                     screen_info->root_context.context,
-                                     context);
+    _glitz_glx_context_create (screen_info,
+                               screen_info->format_ids[format->id],
+                               screen_info->root_context.context,
+                               context);
 
   glitz_glx_surface_backend_init (&context->backend);
 
@@ -213,127 +209,123 @@ void
 glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
                                        glitz_glx_context_t *context)
 {
-  glitz_glx_thread_info_t *thread_info =
-    screen_info->display_info->thread_info;
+  if (screen_info->feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK) {
+    if (screen_info->gl_version >= 1.4f) {
+      context->backend.gl.blend_color = (glitz_gl_blend_color_t)
+        glitz_glx_get_proc_address (screen_info, "glBlendColor");
+    } else {
+      context->backend.gl.blend_color = (glitz_gl_blend_color_t)
+        glitz_glx_get_proc_address (screen_info, "glBlendColorEXT");
+    }
 
-  if (screen_info->gl_version >= 1.3) {
-    context->backend.gl.active_texture =
-      (glitz_gl_active_texture_t)
-      glitz_glx_get_proc_address (thread_info, "glActiveTexture");
-  } else {
-    context->backend.gl.active_texture =
-      (glitz_gl_active_texture_t)
-      glitz_glx_get_proc_address (thread_info, "glActiveTextureARB");
-  }
-  
-  context->backend.gl.gen_programs =
-    (glitz_gl_gen_programs_t)
-    glitz_glx_get_proc_address (thread_info, "glGenProgramsARB");
-  context->backend.gl.delete_programs =
-    (glitz_gl_delete_programs_t)
-    glitz_glx_get_proc_address (thread_info, "glDeleteProgramsARB");
-  context->backend.gl.program_string =
-    (glitz_gl_program_string_t)
-    glitz_glx_get_proc_address (thread_info, "glProgramStringARB");
-  context->backend.gl.bind_program =
-    (glitz_gl_bind_program_t)
-    glitz_glx_get_proc_address (thread_info, "glBindProgramARB");
-  context->backend.gl.program_local_param_4fv =
-    (glitz_gl_program_local_param_4fv_t)
-    glitz_glx_get_proc_address (thread_info, "glProgramLocalParameter4fvARB");
-  context->backend.gl.get_program_iv =
-    (glitz_gl_get_program_iv_t)
-    glitz_glx_get_proc_address (thread_info, "glGetProgramivARB");
-
-  if (screen_info->gl_version >= 1.5) {
-    context->backend.gl.gen_buffers =
-      (glitz_gl_gen_buffers_t)
-      glitz_glx_get_proc_address (thread_info, "glGenBuffers");
-    context->backend.gl.delete_buffers =
-      (glitz_gl_delete_buffers_t)
-      glitz_glx_get_proc_address (thread_info, "glDeleteBuffers");
-    context->backend.gl.bind_buffer =
-      (glitz_gl_bind_buffer_t)
-      glitz_glx_get_proc_address (thread_info, "glBindBuffer");
-    context->backend.gl.buffer_data =
-      (glitz_gl_buffer_data_t)
-      glitz_glx_get_proc_address (thread_info, "glBufferData");
-    context->backend.gl.buffer_sub_data =
-      (glitz_gl_buffer_sub_data_t)
-      glitz_glx_get_proc_address (thread_info, "glBufferSubData");
-    context->backend.gl.get_buffer_sub_data =
-      (glitz_gl_get_buffer_sub_data_t)
-      glitz_glx_get_proc_address (thread_info, "glGetBufferSubData");
-    context->backend.gl.map_buffer =
-      (glitz_gl_map_buffer_t)
-      glitz_glx_get_proc_address (thread_info, "glMapBuffer");
-    context->backend.gl.unmap_buffer =
-      (glitz_gl_unmap_buffer_t)
-      glitz_glx_get_proc_address (thread_info, "glUnmapBuffer");
-  } else {
-    context->backend.gl.gen_buffers =
-      (glitz_gl_gen_buffers_t)
-      glitz_glx_get_proc_address (thread_info, "glGenBuffersARB");
-    context->backend.gl.delete_buffers =
-      (glitz_gl_delete_buffers_t)
-      glitz_glx_get_proc_address (thread_info, "glDeleteBuffersARB");
-    context->backend.gl.bind_buffer =
-      (glitz_gl_bind_buffer_t)
-      glitz_glx_get_proc_address (thread_info, "glBindBufferARB");
-    context->backend.gl.buffer_data =
-      (glitz_gl_buffer_data_t)
-      glitz_glx_get_proc_address (thread_info, "glBufferDataARB");
-    context->backend.gl.buffer_sub_data =
-      (glitz_gl_buffer_sub_data_t)
-      glitz_glx_get_proc_address (thread_info, "glBufferSubDataARB");
-    context->backend.gl.get_buffer_sub_data =
-      (glitz_gl_get_buffer_sub_data_t)
-      glitz_glx_get_proc_address (thread_info, "glGetBufferSubDataARB");
-    context->backend.gl.map_buffer =
-      (glitz_gl_map_buffer_t)
-      glitz_glx_get_proc_address (thread_info, "glMapBufferARB");
-    context->backend.gl.unmap_buffer =
-      (glitz_gl_unmap_buffer_t)
-      glitz_glx_get_proc_address (thread_info, "glUnmapBufferARB");
+    if (!context->backend.gl.blend_color)
+      context->backend.feature_mask &= ~GLITZ_FEATURE_BLEND_COLOR_MASK;
   }
 
-  context->backend.feature_mask &= ~GLITZ_FEATURE_MULTITEXTURE_MASK;
-  context->backend.feature_mask &= ~GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
-  context->backend.feature_mask &= ~GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
-  context->backend.feature_mask &= ~GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK;
-  context->backend.feature_mask &= ~GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
+  if (screen_info->feature_mask & GLITZ_FEATURE_MULTITEXTURE_MASK) {
+    if (screen_info->gl_version >= 1.3f) {
+      context->backend.gl.active_texture = (glitz_gl_active_texture_t)
+        glitz_glx_get_proc_address (screen_info, "glActiveTexture");
+    } else {
+      context->backend.gl.active_texture = (glitz_gl_active_texture_t)
+        glitz_glx_get_proc_address (screen_info, "glActiveTextureARB");
+    }
 
-  if (context->backend.gl.active_texture) {
-    context->backend.feature_mask |= GLITZ_FEATURE_MULTITEXTURE_MASK;
-
-    if (screen_info->feature_mask & GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK)
-      context->backend.feature_mask |=
-        GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
-    
-    if (context->backend.gl.gen_programs &&
-        context->backend.gl.delete_programs &&
-        context->backend.gl.program_string &&
-        context->backend.gl.bind_program &&
-        context->backend.gl.program_local_param_4fv) {
-      if (screen_info->feature_mask & GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK)
-        context->backend.feature_mask |= GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
+    if (!context->backend.gl.active_texture) {
+      context->backend.feature_mask &= ~GLITZ_FEATURE_MULTITEXTURE_MASK;
+      context->backend.feature_mask &=
+        ~GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
     }
   }
 
-  if (context->backend.gl.gen_buffers &&
-      context->backend.gl.delete_buffers &&
-      context->backend.gl.bind_buffer &&
-      context->backend.gl.buffer_data &&
-      context->backend.gl.buffer_sub_data &&
-      context->backend.gl.get_buffer_sub_data &&
-      context->backend.gl.map_buffer &&
-      context->backend.gl.unmap_buffer) {
-    if (screen_info->feature_mask & GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK)
-      context->backend.feature_mask |= GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK;
-    
-    if (screen_info->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
-      context->backend.feature_mask |= GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
+  if (screen_info->feature_mask & GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK) {
+    context->backend.gl.gen_programs = (glitz_gl_gen_programs_t)
+      glitz_glx_get_proc_address (screen_info, "glGenProgramsARB");
+    context->backend.gl.delete_programs = (glitz_gl_delete_programs_t)
+      glitz_glx_get_proc_address (screen_info, "glDeleteProgramsARB");
+    context->backend.gl.program_string = (glitz_gl_program_string_t)
+      glitz_glx_get_proc_address (screen_info, "glProgramStringARB");
+    context->backend.gl.bind_program = (glitz_gl_bind_program_t)
+      glitz_glx_get_proc_address (screen_info, "glBindProgramARB");
+    context->backend.gl.program_local_param_4fv =
+      (glitz_gl_program_local_param_4fv_t)
+      glitz_glx_get_proc_address (screen_info,
+                                  "glProgramLocalParameter4fvARB");
+    context->backend.gl.get_program_iv = (glitz_gl_get_program_iv_t)
+      glitz_glx_get_proc_address (screen_info, "glGetProgramivARB");
+
+    if ((!context->backend.gl.gen_programs) ||
+        (!context->backend.gl.delete_programs) ||
+        (!context->backend.gl.program_string) ||
+        (!context->backend.gl.bind_program) ||
+        (!context->backend.gl.program_local_param_4fv))
+      context->backend.feature_mask &= ~GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
   }
+
+  if ((screen_info->feature_mask & GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK) ||
+      (screen_info->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)) {
+    if (screen_info->gl_version >= 1.5f) {
+      context->backend.gl.gen_buffers = (glitz_gl_gen_buffers_t)
+        glitz_glx_get_proc_address (screen_info, "glGenBuffers");
+      context->backend.gl.delete_buffers = (glitz_gl_delete_buffers_t)
+        glitz_glx_get_proc_address (screen_info, "glDeleteBuffers");
+      context->backend.gl.bind_buffer = (glitz_gl_bind_buffer_t)
+        glitz_glx_get_proc_address (screen_info, "glBindBuffer");
+      context->backend.gl.buffer_data = (glitz_gl_buffer_data_t)
+        glitz_glx_get_proc_address (screen_info, "glBufferData");
+      context->backend.gl.buffer_sub_data = (glitz_gl_buffer_sub_data_t)
+        glitz_glx_get_proc_address (screen_info, "glBufferSubData");
+      context->backend.gl.get_buffer_sub_data =
+        (glitz_gl_get_buffer_sub_data_t)
+        glitz_glx_get_proc_address (screen_info, "glGetBufferSubData");
+      context->backend.gl.map_buffer = (glitz_gl_map_buffer_t)
+        glitz_glx_get_proc_address (screen_info, "glMapBuffer");
+      context->backend.gl.unmap_buffer = (glitz_gl_unmap_buffer_t)
+        glitz_glx_get_proc_address (screen_info, "glUnmapBuffer");
+    } else {
+      context->backend.gl.gen_buffers = (glitz_gl_gen_buffers_t)
+        glitz_glx_get_proc_address (screen_info, "glGenBuffersARB");
+      context->backend.gl.delete_buffers = (glitz_gl_delete_buffers_t)
+        glitz_glx_get_proc_address (screen_info, "glDeleteBuffersARB");
+      context->backend.gl.bind_buffer = (glitz_gl_bind_buffer_t)
+        glitz_glx_get_proc_address (screen_info, "glBindBufferARB");
+      context->backend.gl.buffer_data = (glitz_gl_buffer_data_t)
+        glitz_glx_get_proc_address (screen_info, "glBufferDataARB");
+      context->backend.gl.buffer_sub_data = (glitz_gl_buffer_sub_data_t)
+        glitz_glx_get_proc_address (screen_info, "glBufferSubDataARB");
+      context->backend.gl.get_buffer_sub_data =
+        (glitz_gl_get_buffer_sub_data_t)
+        glitz_glx_get_proc_address (screen_info, "glGetBufferSubDataARB");
+      context->backend.gl.map_buffer = (glitz_gl_map_buffer_t)
+        glitz_glx_get_proc_address (screen_info, "glMapBufferARB");
+      context->backend.gl.unmap_buffer = (glitz_gl_unmap_buffer_t)
+        glitz_glx_get_proc_address (screen_info, "glUnmapBufferARB");
+    }
+
+    if ((!context->backend.gl.gen_buffers) ||
+        (!context->backend.gl.delete_buffers) ||
+        (!context->backend.gl.bind_buffer) ||
+        (!context->backend.gl.buffer_data) ||
+        (!context->backend.gl.buffer_sub_data) ||
+        (!context->backend.gl.get_buffer_sub_data) ||
+        (!context->backend.gl.map_buffer) ||
+        (!context->backend.gl.unmap_buffer)) {
+      context->backend.feature_mask &=
+        ~GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK;
+      context->backend.feature_mask &= ~GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
+    }
+  }
+
+  context->backend.gl.get_integer_v (GLITZ_GL_MAX_VIEWPORT_DIMS,
+                                     context->max_viewport_dims);
+  context->backend.gl.get_integer_v (GLITZ_GL_MAX_TEXTURE_SIZE,
+                                     &context->max_texture_2d_size);
+
+  if (screen_info->feature_mask & GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK)
+    context->backend.gl.get_integer_v (GLITZ_GL_MAX_RECTANGLE_TEXTURE_SIZE,
+                                       &context->max_texture_rect_size);
+  else
+    context->max_texture_rect_size = 0;
   
   context->backend.gl.need_lookup = 0;
 }

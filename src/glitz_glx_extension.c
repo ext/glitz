@@ -31,8 +31,12 @@
 
 #include "glitz_glxint.h"
 
-static glitz_extension_map client_glx_extensions[] = {
-  { 0.0, "GLX_ARB_multisample", GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK },
+static glitz_extension_map glx_extensions[] = {
+  { 0.0, "GLX_SGIX_fbconfig", GLITZ_GLX_FEATURE_GLX_FBCONFIG_MASK },
+  { 0.0, "GLX_SGIX_pbuffer", GLITZ_GLX_FEATURE_GLX_PBUFFER_MASK },
+  { 0.0, "GLX_SGI_make_current_read",
+    GLITZ_GLX_FEATURE_GLX_MAKE_CURRENT_READ_MASK },
+  { 0.0, "GLX_ARB_multisample", GLITZ_GLX_FEATURE_GLX_MULTISAMPLE_MASK },
   { 0.0, NULL, 0 }
 }, gl_extensions[] = {
   { 0.0, "GL_ARB_texture_rectangle",
@@ -60,59 +64,57 @@ static glitz_extension_map client_glx_extensions[] = {
     GLITZ_GLX_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
   { 0.0, "GL_EXT_pixel_buffer_object",
     GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
+  { 0.0, "GL_EXT_blend_color",
+    GLITZ_GLX_FEATURE_BLEND_COLOR_MASK },
+  { 0.0, "GL_ARB_imaging",
+    GLITZ_GLX_FEATURE_BLEND_COLOR_MASK },
   { 0.0, NULL, 0 }
 };
 
 static unsigned long
-_glitz_glx_extension_query_client_glx (Display *display)
+_glitz_glx_extension_query_glx (Display *display,
+                                int screen,
+                                glitz_gl_float_t glx_version)
 {
-  const char *client_glx_extensions_strings;
+  const char *glx_extensions_string;
   
-  client_glx_extensions_strings = glXGetClientString (display, GLX_EXTENSIONS);
+  glx_extensions_string = glXQueryExtensionsString (display, screen);
   
-  return glitz_extensions_query (0.0,
-                                 client_glx_extensions_strings,
-                                 client_glx_extensions);
+  return glitz_extensions_query (glx_version,
+                                 glx_extensions_string,
+                                 glx_extensions);
 }
 
 static unsigned long
 _glitz_glx_extension_query_gl (glitz_gl_float_t gl_version)
 {
-  const char *gl_extensions_strings;
+  const char *gl_extensions_string;
   
-  gl_extensions_strings = (const char *) glGetString (GL_EXTENSIONS);
+  gl_extensions_string = (const char *) glGetString (GL_EXTENSIONS);
 
   return glitz_extensions_query (gl_version,
-                                 gl_extensions_strings,
+                                 gl_extensions_string,
                                  gl_extensions);
 }
 
 glitz_status_t
 glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
 {
-  glitz_glx_static_proc_address_list_t *glx =
-    &screen_info->display_info->thread_info->glx;
-
   screen_info->gl_version = atof ((const char *) glGetString (GL_VERSION));
-  if (screen_info->gl_version < 1.2)
+  if (screen_info->gl_version < 1.2f)
     return GLITZ_STATUS_NOT_SUPPORTED;
   
   screen_info->glx_feature_mask |=
-    _glitz_glx_extension_query_client_glx (screen_info->display_info->display);
+    _glitz_glx_extension_query_glx (screen_info->display_info->display,
+                                    screen_info->screen,
+                                    screen_info->glx_version);
   
   screen_info->glx_feature_mask |=
     _glitz_glx_extension_query_gl (screen_info->gl_version);
 
-  if (glx->get_fbconfigs &&
-      glx->get_fbconfig_attrib &&
-      glx->get_visual_from_fbconfig &&
-      glx->create_pbuffer &&
-      glx->destroy_pbuffer)
-    screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_GLX13_MASK;
-
-  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_MULTISAMPLE_MASK &&
-      screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK) {
+  if ((screen_info->glx_feature_mask &
+       GLITZ_GLX_FEATURE_GLX_MULTISAMPLE_MASK) &&
+      (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_MULTISAMPLE_MASK)) {
     const glitz_gl_ubyte_t *renderer = glGetString (GL_RENDERER);
     
     screen_info->feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;
@@ -132,12 +134,12 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
   }
 
   if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK)
-    screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK;
-
-  if (screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_TEXTURE_RECTANGLE_MASK)
     screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK;
+  
+  if (screen_info->glx_feature_mask &
+      GLITZ_GLX_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK)
+    screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK;
 
   if (screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK)
@@ -180,6 +182,9 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
   if (screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
     screen_info->feature_mask |= GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
+
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_BLEND_COLOR_MASK)
+    screen_info->feature_mask |= GLITZ_FEATURE_BLEND_COLOR_MASK;
 
   return GLITZ_STATUS_SUCCESS;
 }

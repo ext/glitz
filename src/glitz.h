@@ -108,6 +108,7 @@ typedef enum {
 #define GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK     (1L << 11)
 #define GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 12)
 #define GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK  (1L << 13)
+#define GLITZ_FEATURE_BLEND_COLOR_MASK              (1L << 14)
 
 typedef enum {
   GLITZ_STANDARD_ARGB32,
@@ -312,6 +313,9 @@ glitz_pixel_buffer_create (glitz_surface_t *surface,
                            void *data,
                            unsigned int size,
                            glitz_buffer_hint_t hint);
+
+glitz_buffer_t *
+glitz_buffer_create_for_data (void *data);
   
 void
 glitz_buffer_destroy (glitz_buffer_t *buffer);

@@ -42,7 +42,7 @@ _glitz_glx_surface_push_current (void *abstract_surface,
       (!surface->drawable)) {
     if (surface->base.format->draw.offscreen) {
       surface->drawable = surface->pbuffer =
-        glitz_glx_pbuffer_create (surface->screen_info->display_info,
+        glitz_glx_pbuffer_create (surface->screen_info,
                                   surface->context->fbconfig,
                                   &surface->base.texture);
     } else {
@@ -75,14 +75,15 @@ _glitz_glx_surface_pop_current (void *abstract_surface)
 static glitz_bool_t
 _glitz_glx_surface_make_current_read (void *abstract_surface)
 {
-  /* This doesn't seem to work. 
+  /* This doesn't seem to work.
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
   glitz_glx_static_proc_address_list_t *glx =
     &surface->screen_info->display_info->thread_info->glx;
-    
-  if (glx->make_context_current && surface->drawable) {
+  
+  if ((screen_info->glx_feature_mask &
+       GLITZ_GLX_FEATURE_GLX_MAKE_CURRENT_READ_MASK) && surface->drawable) {
     GLXContext context = glXGetCurrentContext ();
-
+    
     if (context == surface->context->context)
       return
         glx->make_context_current (surface->screen_info->display_info->display,
@@ -146,6 +147,9 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
   glitz_glx_surface_t *surface;
   glitz_glx_context_t *context;
 
+  if (width <= 0 || height <= 0)
+    return NULL;
+
   context = glitz_glx_context_get (screen_info, format);
   if (!context)
     return NULL;
@@ -173,6 +177,22 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
     glitz_glx_context_pop_current (surface);
   }
 
+  if (width > 64 || height > 64) {
+    glitz_glx_context_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+    glitz_texture_size_check (&surface->base.backend->gl,
+                              &surface->base.texture,
+                              context->max_texture_2d_size,
+                              context->max_texture_rect_size);
+    glitz_glx_context_pop_current (surface);
+    if (TEXTURE_INVALID_SIZE (&surface->base.texture) ||
+        (format->draw.offscreen &&
+         ((width > context->max_viewport_dims[0]) ||
+          (height > context->max_viewport_dims[1])))) {
+      glitz_surface_destroy (&surface->base);
+      return NULL;
+    }
+  }
+
   return &surface->base;
 }
 
@@ -183,10 +203,13 @@ glitz_glx_surface_create (Display *display,
                           int width,
                           int height)
 {
+  glitz_glx_screen_info_t *screen_info;
 
-  return
-    _glitz_glx_surface_create (glitz_glx_screen_info_get (display, screen),
-                               format, width, height);
+  screen_info = glitz_glx_screen_info_get (display, screen);
+  if (!screen_info)
+    return NULL;
+  
+  return _glitz_glx_surface_create (screen_info, format, width, height);
 }
 slim_hidden_def(glitz_glx_surface_create);
 
@@ -200,8 +223,14 @@ glitz_glx_surface_create_for_window (Display *display,
 {
   glitz_glx_surface_t *surface;
   glitz_glx_context_t *context;
-  glitz_glx_screen_info_t *screen_info =
-    glitz_glx_screen_info_get (display, screen);
+  glitz_glx_screen_info_t *screen_info;
+
+  if (width <= 0 || height <= 0)
+    return NULL;
+
+  screen_info = glitz_glx_screen_info_get (display, screen);
+  if (!screen_info)
+    return NULL;
   
   context = glitz_glx_context_get (screen_info, format);
   if (!context)
@@ -227,7 +256,22 @@ glitz_glx_surface_create_for_window (Display *display,
     glitz_glx_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
     glitz_glx_context_pop_current (surface);
   }
-  
+
+  if (width > 64 || height > 64) {
+    glitz_glx_context_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+    glitz_texture_size_check (&surface->base.backend->gl,
+                              &surface->base.texture,
+                              context->max_texture_2d_size,
+                              context->max_texture_rect_size);
+    glitz_glx_context_pop_current (surface);
+    if (TEXTURE_INVALID_SIZE (&surface->base.texture) ||
+        (width > context->max_viewport_dims[0]) ||
+        (height > context->max_viewport_dims[1])) {
+      glitz_surface_destroy (&surface->base);
+      return NULL;
+    }
+  }
+    
   return &surface->base;
 }
 slim_hidden_def(glitz_glx_surface_create_for_window);
@@ -260,8 +304,7 @@ _glitz_glx_surface_destroy (void *abstract_surface)
   }
 
   if (surface->pbuffer)
-    glitz_glx_pbuffer_destroy (surface->screen_info->display_info,
-                               surface->pbuffer);
+    glitz_glx_pbuffer_destroy (surface->screen_info, surface->pbuffer);
   
   free (surface);
 }

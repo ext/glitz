@@ -92,9 +92,14 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 
 #define GLITZ_GL_SCISSOR_TEST 0x0C11
 
+#define GLITZ_GL_MAX_TEXTURE_SIZE  0x0D33
+#define GLITZ_GL_MAX_VIEWPORT_DIMS 0x0D3A
+
+#define GLITZ_GL_TEXTURE_WIDTH  0x1000
+#define GLITZ_GL_TEXTURE_HEIGHT 0x1001
+
 #define GLITZ_GL_TEXTURE_ENV            0x2300
 #define GLITZ_GL_TEXTURE_ENV_MODE       0x2200
-#define GLITZ_GL_TEXTURE_1D             0x0DE0
 #define GLITZ_GL_TEXTURE_2D             0x0DE1
 #define GLITZ_GL_PROXY_TEXTURE_2D       0x8064
 #define GLITZ_GL_TEXTURE_WRAP_S         0x2802
@@ -224,7 +229,9 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 
 #define GLITZ_GL_COMPILE 0x1300
 
-#define GLITZ_GL_TEXTURE_RECTANGLE 0x84F5
+#define GLITZ_GL_TEXTURE_RECTANGLE          0x84F5
+#define GLITZ_GL_PROXY_TEXTURE_RECTANGLE    0x84F7
+#define GLITZ_GL_MAX_RECTANGLE_TEXTURE_SIZE 0x84F8
 
 #define GLITZ_GL_MIRRORED_REPEAT 0x8370
 

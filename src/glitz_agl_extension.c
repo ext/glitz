@@ -60,18 +60,22 @@ static glitz_extension_map gl_extensions[] = {
     GLITZ_AGL_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
   { 0.0, "GL_EXT_pixel_buffer_object",
     GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
+  { 0.0, "GL_EXT_blend_color",
+    GLITZ_AGL_FEATURE_BLEND_COLOR_MASK },
+  { 0.0, "GL_ARB_imaging",
+    GLITZ_AGL_FEATURE_BLEND_COLOR_MASK },
   { 0.0, NULL, 0 }
 };
 
 static unsigned long
 _glitz_agl_extension_query_gl (glitz_gl_float_t gl_version)
 {
-  const char *gl_extensions_strings;
+  const char *gl_extensions_string;
   
-  gl_extensions_strings = (const char *) glGetString (GL_EXTENSIONS);
+  gl_extensions_string = (const char *) glGetString (GL_EXTENSIONS);
 
   return glitz_extensions_query (gl_version,
-                                 gl_extensions_strings,
+                                 gl_extensions_string,
                                  gl_extensions);
 }
 
@@ -152,6 +156,9 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
   if (thread_info->agl_feature_mask &
       GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
     thread_info->feature_mask |= GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
+
+  if (thread_info->agl_feature_mask & GLITZ_AGL_FEATURE_BLEND_COLOR_MASK)
+    thread_info->feature_mask |= GLITZ_FEATURE_BLEND_COLOR_MASK;
 
   return GLITZ_STATUS_SUCCESS;
 }
