@@ -209,10 +209,23 @@ static int tsd_initialized = 0;
 static xthread_key_t info_tsd;
 
 static void
-glitz_glx_thread_info_destroy (void *p)
+glitz_glx_thread_info_destroy (glitz_glx_thread_info_t *thread_info)
 {
-  glitz_glx_thread_info_fini ((glitz_glx_thread_info_t *) p);
-  free (p);
+  xthread_set_specific (info_tsd, NULL);
+  
+  if (thread_info) {
+    glitz_glx_thread_info_fini (thread_info);
+    free (thread_info);
+  }
+}
+
+static void
+_tsd_destroy (void *p)
+{
+  if (p) {
+    glitz_glx_thread_info_fini ((glitz_glx_thread_info_t *) p);
+    free (p);
+  }
 }
 
 static glitz_glx_thread_info_t *
@@ -222,7 +235,7 @@ glitz_glx_thread_info_get (const char *gl_library)
   void *p;
     
   if (!tsd_initialized) {
-    xthread_key_create (&info_tsd, glitz_glx_thread_info_destroy);
+    xthread_key_create (&info_tsd, _tsd_destroy);
     tsd_initialized = 1;
   }
 
@@ -264,12 +277,26 @@ static glitz_glx_thread_info_t thread_info = {
   NULL
 };
 
+static void
+glitz_glx_thread_info_destroy (glitz_glx_thread_info_t *thread_info)
+{
+  if (thread_info)
+    glitz_glx_thread_info_fini (thread_info);
+}
+
 static glitz_glx_thread_info_t *
 glitz_glx_thread_info_get (char *gl_library)
 {
   if (!thread_info.glx.need_lookup) {
-    if (gl_library)
-      thread_info->gl_library = strdup (gl_library);
+    if (gl_library) {
+      int len = strlen (gl_library);
+      
+      thread_info->gl_library = malloc (len + 1);
+      if (thread_info->gl_library) {
+        memcpy (thread_info->gl_library, gl_library, len);
+        thread_info->gl_library[len] = '\0';
+      }
+    }
     
     glitz_glx_proc_address_lookup (&thread_info);
   }
@@ -350,13 +377,14 @@ glitz_glx_create_root_context (glitz_glx_screen_info_t *screen_info)
     vinfo = glXChooseVisual (display, screen, attrib_double);
   
   if (vinfo) {
+    screen_info->root_colormap = XCreateColormap (display,
+                                                  RootWindow (display, screen),
+                                                  vinfo->visual, AllocNone);
     win_attrib.background_pixel = 0;
     win_attrib.border_pixel = 0;
     win_attrib.event_mask = StructureNotifyMask | ExposureMask;
-    win_attrib.colormap = XCreateColormap (display,
-                                           RootWindow (display, screen),
-                                           vinfo->visual, AllocNone);
-  
+    win_attrib.colormap = screen_info->root_colormap;
+
     screen_info->root_drawable =
       XCreateWindow (display, RootWindow (display, screen),
                      0, 0, 100, 100, 0, vinfo->depth, InputOutput,
@@ -485,6 +513,9 @@ glitz_glx_screen_destroy (glitz_glx_screen_info_t *screen_info)
   if (screen_info->root_drawable)
     XDestroyWindow (display, screen_info->root_drawable);
 
+  if (screen_info->root_colormap)
+    XFreeColormap (display, screen_info->root_colormap);
+
   free (screen_info);
 }
 
@@ -501,6 +532,6 @@ glitz_glx_fini (void)
   glitz_glx_thread_info_t *info =
     glitz_glx_thread_info_get (NULL);
 
-  glitz_glx_thread_info_fini (info);
+  glitz_glx_thread_info_destroy (info);
 }
 slim_hidden_def(glitz_glx_fini);

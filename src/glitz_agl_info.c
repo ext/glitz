@@ -126,10 +126,23 @@ static int tsd_initialized = 0;
 static pthread_key_t info_tsd;
 
 static void
-glitz_agl_thread_info_destroy (void *p)
+glitz_agl_thread_info_destroy (glitz_agl_thread_info_t *thread_info)
 {
-  glitz_agl_thread_info_fini ((glitz_agl_thread_info_t *) p);
-  free (p);
+  pthread_setspecific (info_tsd, NULL);
+  
+  if (thread_info) {
+    glitz_agl_thread_info_fini (thread_info);
+    free (thread_info);
+  }
+}
+
+static void
+_tsd_destroy (void *p)
+{
+  if (p) {
+    glitz_agl_thread_info_fini ((glitz_agl_thread_info_t *) p);
+    free (p);
+  }
 }
 
 glitz_agl_thread_info_t *
@@ -139,7 +152,7 @@ glitz_agl_thread_info_get (void)
   void *p;
   
   if (!tsd_initialized) {
-    pthread_key_create (&info_tsd, glitz_agl_thread_info_destroy);
+    pthread_key_create (&info_tsd, _tsd_destroy);
     tsd_initialized = 1;
   }
   
@@ -174,6 +187,13 @@ static glitz_agl_thread_info_t _thread_info = {
   0,
   { 0, 0, 0, 0 }
 };
+
+static void
+glitz_agl_thread_info_destroy (glitz_agl_thread_info_t *thread_info)
+{
+  if (thread_info)
+    glitz_agl_thread_info_fini (thread_info);
+}
 
 glitz_agl_thread_info_t *
 glitz_agl_thread_info_get (void)
@@ -277,6 +297,6 @@ glitz_agl_fini (void)
   glitz_agl_thread_info_t *info =
     glitz_agl_thread_info_get ();
 
-  glitz_agl_thread_info_fini (info);
+  glitz_agl_thread_info_destroy (info);
 }
 slim_hidden_def(glitz_agl_fini);

@@ -118,6 +118,7 @@ struct _glitz_glx_screen_info_t {
   
   glitz_glx_context_t root_context;
   GLXDrawable root_drawable;
+  Colormap root_colormap;
 
   long int feature_mask;
   long int glx_feature_mask;

@@ -1,3 +1,37 @@
+2004-07-24  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_agl_info.c:
+	(glitz_agl_fini): Use glitz_agl_thread_info_destroy for thread info
+	destruction.
+	glitz_agl_thread_info_destroy is now used for manual thread info
+	destruction and _tsd_destroy is now destruction call-back function.
+
+	* src/glitz_glx_info.c (glitz_glx_create_root_context): 
+	Store root_colormap in screen_info.
+	(glitz_glx_screen_destroy): Free root colormap.
+	(glitz_glx_fini): Use glitz_glx_thread_info_destroy for thread info
+	destruction.
+	(glitz_glx_thread_info_get): Don't use strdup.
+	glitz_glx_thread_info_destroy is now used for manual thread info
+	destruction and _tsd_destroy is now destruction call-back function.
+
+	* src/glitz_glxint.h: Added Colormap root_colormap to screen_info
+	struct.
+
+	* src/glitz_agl_surface.c (_glitz_agl_surface_destroy): More efficient
+	surface destruction.
+
+	* src/glitz_glx_surface.c (_glitz_glx_surface_destroy): More efficient
+	surface destruction.
+
+	* src/glitz_surface.c (glitz_surface_fini): More safe and
+	efficient texture deallocation.
+
+	* src/glitz_programmatic.c (_glitz_programmatic_surface_create): 
+	Fixed serious memory leak in programmatic surfaces. This caused
+	a texture name allocation at each composite operation with a
+	programmatic surface.
+
 2004-07-22  David Reveman  <c99drn@cs.umu.se>
 
 	* TODO: Added some important stuff to the TODO list.

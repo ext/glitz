@@ -311,27 +311,30 @@ static void
 _glitz_agl_surface_destroy (void *abstract_surface)
 {
   glitz_agl_surface_t *surface = (glitz_agl_surface_t *) abstract_surface;
-  AGLContext context = aglGetCurrentContext ();
-  
-  if (context == surface->context->context) {
-    if (surface->pbuffer) {
-      AGLPbuffer pbuffer;
-      GLuint unused;
-      
-      aglGetPBuffer (context, &pbuffer, &unused, &unused, &unused);
-      
-      if (pbuffer == surface->pbuffer)
-        glitz_agl_context_make_current (surface, 0);
-    } else if (surface->drawable) {
-      if (aglGetDrawable (context) == surface->drawable)
-        glitz_agl_context_make_current (surface, 0);
-    }
-  }
-  
-  if (surface->pbuffer)
-    glitz_agl_pbuffer_destroy (surface->pbuffer);
-  
+
   glitz_surface_fini (&surface->base);
+  
+  if (surface->drawable || surface->pbuffer) {
+    AGLContext context = aglGetCurrentContext ();
+    
+    if (context == surface->context->context) { 
+      if (surface->pbuffer) {
+        AGLPbuffer pbuffer;
+        GLuint unused;
+        
+        aglGetPBuffer (context, &pbuffer, &unused, &unused, &unused);
+        
+        if (pbuffer == surface->pbuffer)
+          glitz_agl_context_make_current (surface, 0);
+      } else {
+        if (aglGetDrawable (context) == surface->drawable)
+          glitz_agl_context_make_current (surface, 0);
+      }
+    }
+    
+    if (surface->pbuffer)
+      glitz_agl_pbuffer_destroy (surface->pbuffer);
+  }
   
   free (surface);
 }

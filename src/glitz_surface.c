@@ -79,8 +79,11 @@ glitz_surface_init (glitz_surface_t *surface,
 void
 glitz_surface_fini (glitz_surface_t *surface)
 {
-  if (surface->gl)
+  if (surface->texture.name) {
+    glitz_surface_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
     glitz_texture_fini (surface->gl, &surface->texture);
+    glitz_surface_pop_current (surface);
+  }
   
   if (surface->transform)
     free (surface->transform);

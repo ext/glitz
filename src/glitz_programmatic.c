@@ -140,6 +140,7 @@ _glitz_programmatic_surface_create (void)
   surface->base.texture.texcoord_height = surface->base.height =
     surface->base.texture.height = MAXSHORT;
   surface->base.texture.repeatable = surface->base.texture.repeat = 1;
+  surface->base.texture.allocated = 1;
   surface->matrix = identity;
   
   return surface;

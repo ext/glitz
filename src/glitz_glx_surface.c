@@ -358,20 +358,17 @@ _glitz_glx_surface_destroy (void *abstract_surface)
 {
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
 
-  glitz_surface_push_current (&surface->base, GLITZ_CN_ANY_CONTEXT_CURRENT);
+  glitz_surface_fini (&surface->base);
+  
+  if (surface->drawable &&
+      (glXGetCurrentDrawable () == surface->drawable)) {
+    surface->drawable = None;
+    glitz_glx_context_make_current (surface, 0);
+  }
 
   if (surface->pbuffer)
     glitz_glx_pbuffer_destroy (surface->screen_info->display_info,
                                surface->pbuffer);
-  
-  glitz_surface_pop_current (&surface->base);
-
-  if (glXGetCurrentDrawable () == surface->drawable) {
-    surface->drawable = None;
-    glitz_glx_context_make_current (surface, 0);
-  }
-  
-  glitz_surface_fini (&surface->base);
   
   free (surface);
 }
