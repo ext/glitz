@@ -59,13 +59,13 @@ typedef struct _glitz_glx_static_proc_address_list_t {
   glitz_glx_get_visual_from_fbconfig_t get_visual_from_fbconfig;
   glitz_glx_create_pbuffer_t create_pbuffer;
   glitz_glx_destroy_pbuffer_t destroy_pbuffer;
-  glitz_bool_t supported;
+  glitz_bool_t need_lookup;
 } glitz_glx_static_proc_address_list_t;
 
 typedef struct _glitz_glx_proc_address_list_t {
   glitz_glx_bind_tex_image_arb_t bind_tex_image_arb;
   glitz_glx_release_tex_image_arb_t release_tex_image_arb;
-  glitz_bool_t supported;
+  glitz_bool_t need_lookup;
 } glitz_glx_proc_address_list_t;
 
 typedef struct _glitz_glx_thread_info_t {
@@ -91,6 +91,7 @@ typedef struct _glitz_glx_context_t {
   glitz_gl_proc_address_list_t gl;
   glitz_glx_proc_address_list_t glx;
   GLXFBConfig fbconfig;
+  glitz_gl_uint_t texture_indirections;
 } glitz_glx_context_t;
 
 struct _glitz_glx_screen_info_t {

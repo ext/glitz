@@ -57,6 +57,7 @@ typedef struct _glitz_agl_context_t {
   AGLContext context;
   AGLPixelFormat pixel_format;
   glitz_bool_t offscreen;
+  glitz_gl_uint_t texture_indirections;
 } glitz_agl_context_t;
 
 typedef struct _glitz_agl_thread_info_t {

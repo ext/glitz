@@ -183,6 +183,23 @@ _glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
   glPixelStorei (GL_UNPACK_ALIGNMENT, 4);
   
   glitz_agl_query_extensions (thread_info);
+
+  if ((thread_info->feature_mask & GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK) &&
+      (thread_info->feature_mask &
+       GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK)) {
+    glitz_gl_uint_t texture_indirections;
+    
+     _glitz_agl_gl_proc_address.get_program_iv_arb
+       (GLITZ_GL_FRAGMENT_PROGRAM_ARB,
+        GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS_ARB,
+        &texture_indirections);
+
+    /* Convolution filter programs require support for at least nine
+       texture indirections. */
+    if (texture_indirections >= 9)
+      thread_info->feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
+  }
+  
   glitz_agl_query_formats (thread_info);
 
   thread_info->context_stack = malloc (sizeof (glitz_agl_context_info_t));

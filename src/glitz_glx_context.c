@@ -178,8 +178,7 @@ glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
           sizeof (glitz_gl_proc_address_list_t));
   memset (&context->glx, 0, sizeof (glitz_glx_proc_address_list_t));
   
-  if (_glitz_glx_proc_address.supported)
-    context->gl.supported = context->glx.supported = 1;
+  context->gl.need_lookup = context->glx.need_lookup = 1;
   
   return context;
 }
@@ -220,8 +219,14 @@ glitz_glx_context_proc_address_lookup (glitz_glx_context_t *context)
     (glitz_gl_get_program_iv_arb_t)
     glitz_glx_get_proc_address ("glGetProgramivARB");
 
-  context->gl.supported = 0;
-  context->glx.supported = 0;
+  if (context->gl.get_program_iv_arb) {
+    context->gl.get_program_iv_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB,
+                                    GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS_ARB,
+                                    &context->texture_indirections);
+  }
+  
+  context->gl.need_lookup = 0;
+  context->glx.need_lookup = 0;
 }
 
 static void
@@ -255,7 +260,7 @@ glitz_glx_context_make_current (glitz_glx_surface_t *surface)
   glXMakeCurrent (surface->screen_info->display_info->display,
                   drawable, context);
 
-  if (surface->drawable && surface->context->gl.supported)
+  if (surface->context->gl.need_lookup)
     glitz_glx_context_proc_address_lookup (surface->context);
 }
 

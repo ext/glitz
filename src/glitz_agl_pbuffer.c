@@ -50,6 +50,9 @@ glitz_agl_pbuffer_bind (AGLPbuffer pbuffer,
                         glitz_texture_t *texture,
                         glitz_format_t *format)
 {
+  _glitz_agl_gl_proc_address.gen_textures (1, &texture->name);
+  texture->allocated = 1;
+  
   glitz_texture_bind (&_glitz_agl_gl_proc_address, texture);
 
   if (format->doublebuffer)

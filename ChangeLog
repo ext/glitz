@@ -1,3 +1,40 @@
+2004-05-06  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Better texture handling.
+
+	* src/glitz_texture.c: Better texture handling.
+
+	* src/glitz_programmatic.c: Better texture handling.
+
+	* src/glitz_surface.c: Better texture handling.
+
+	* src/glitz_glxint.h: Better texture handling.
+
+	* src/glitz_glx_surface.c: Better texture handling.
+
+	* src/glitz_aglint.h: Better texture handling.
+
+	* src/glitz_agl_surface.c: Fixed indentation.
+	Better texture handling.
+
+	* src/glitz_agl_pbuffer.c: Better texture handling.
+
+	* src/glitz.c (_glitz_composite_direct): Fixed dirty region.
+	Better texture handling.
+
+2004-05-04  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_glx_format.c (_glitz_glx_format_compare): Higher
+	priority to multisample formats.
+
+	* src/glitz_agl_surface.c (_glitz_agl_set_features): The feature 
+	mask should not represent the features of the current surface
+	but the features of the graphics hardware.
+
+	* src/glitz_glx_surface.c (_glitz_glx_set_features): The feature 
+	mask should not represent the features of the current surface
+	but the features of the graphics hardware.
+
 2004-05-02  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_glx_format.c (glitz_glx_query_formats): Make sure

@@ -59,7 +59,7 @@ _glitz_programmatic_surface_destroy (void *abstract_surface)
     break;
   }
   
-  glitz_surface_deinit (&surface->base);
+  glitz_surface_fini (&surface->base);
   
   free (surface);
 }
@@ -85,7 +85,7 @@ _glitz_programmatic_surface_get_texture (void *abstract_surface)
   glitz_programmatic_surface_t *surface =
     (glitz_programmatic_surface_t *) abstract_surface;
   
-  return &surface->texture;
+  return &surface->base.texture;
 }
 
 static void
@@ -122,17 +122,18 @@ _glitz_programmatic_surface_create (void)
   if (surface == NULL)
     return NULL;
   
-  glitz_surface_init (&surface->base, &glitz_programmatic_surface_backend);
-  
+  glitz_surface_init (&surface->base,
+                      &glitz_programmatic_surface_backend,
+                      NULL, NULL, 1, 1, NULL, 0);
+
   surface->base.hint_mask |= GLITZ_HINT_PROGRAMMATIC_MASK;
-  surface->base.texture = &surface->texture;
-  surface->texture.name = 0;
-  surface->texture.target = GLITZ_GL_TEXTURE_2D;
-  surface->texture.format = GLITZ_GL_RGBA;
-  surface->texture.filter = surface->base.filter;
-  surface->texture.texcoord_width =
-    surface->texture.texcoord_height = 1.0;
-  surface->texture.repeatable = surface->texture.repeat = 1;
+  
+  surface->base.texture.target = GLITZ_GL_TEXTURE_2D;
+  surface->base.texture.format = GLITZ_GL_RGBA;
+  surface->base.texture.filter = surface->base.filter;
+  surface->base.texture.texcoord_width =
+    surface->base.texture.texcoord_height = 1.0;
+  surface->base.texture.repeatable = surface->base.texture.repeat = 1;
   surface->transform = identity;
   
   return surface;
@@ -146,10 +147,10 @@ glitz_programmatic_surface_setup (glitz_surface_t *abstract_surface,
   glitz_programmatic_surface_t *surface =
     (glitz_programmatic_surface_t *) abstract_surface;
   
-  surface->texture.texcoord_width = surface->base.width =
-    surface->texture.width = width;
-  surface->texture.texcoord_height = surface->base.height =
-    surface->texture.height = height;
+  surface->base.texture.texcoord_width = surface->base.width =
+    surface->base.texture.width = width;
+  surface->base.texture.texcoord_height = surface->base.height =
+    surface->base.texture.height = height;
 }
 
 glitz_surface_t *

@@ -795,7 +795,7 @@ glitz_program_type (glitz_surface_t *dst,
   if (mask && (!SURFACE_PROGRAMMATIC (mask))) {
     if (dst->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
       type = GLITZ_PROGRAM_TYPE_SIMPLE;
-    } else if ((mask->texture->internal_format == GLITZ_GL_LUMINANCE_ALPHA) &&
+    } else if ((mask->texture.internal_format == GLITZ_GL_LUMINANCE_ALPHA) &&
                (dst->feature_mask & GLITZ_FEATURE_ARB_MULTITEXTURE_MASK)) {
       type = GLITZ_PROGRAM_TYPE_SIMPLE;
     } else

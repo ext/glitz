@@ -142,7 +142,7 @@ typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_bind_program_arb_t bind_program_arb;
   glitz_gl_program_local_param_4d_arb_t program_local_param_4d_arb;
   glitz_gl_get_program_iv_arb_t get_program_iv_arb;
-  glitz_bool_t supported;
+  glitz_bool_t need_lookup;
 } glitz_gl_proc_address_list_t;
 
 typedef enum {
@@ -296,7 +296,7 @@ struct _glitz_surface {
   const glitz_surface_backend_t *backend;
 
   glitz_format_t *format;
-  glitz_texture_t *texture;
+  glitz_texture_t texture;
   unsigned long status_mask;
   unsigned long feature_mask;
   glitz_filter_t filter;
@@ -332,7 +332,6 @@ struct _glitz_color_range {
 typedef struct _glitz_programmatic_surface_t {
   glitz_surface_t base;
   
-  glitz_texture_t texture;
   glitz_matrix_t transform;
   
   glitz_programmatic_surface_type_t type;
@@ -440,20 +439,17 @@ glitz_uint_is_power_of_two (unsigned int value);
 extern void __internal_linkage
 glitz_uint_to_power_of_two (unsigned int *value);
 
-glitz_texture_t *
-glitz_texture_generate (glitz_gl_proc_address_list_t *gl,
-                        unsigned int width,
-                        unsigned int height,
-                        unsigned int texture_format,
-                        long int target_mask);
+void
+glitz_texture_init (glitz_gl_proc_address_list_t *gl,
+                    glitz_texture_t *texture,
+                    unsigned int width,
+                    unsigned int height,
+                    unsigned int texture_format,
+                    unsigned long target_mask);
 
 void
-glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
-                        glitz_texture_t *texture);
-
-void
-glitz_texture_destroy (glitz_gl_proc_address_list_t *gl,
-                       glitz_texture_t *texture);
+glitz_texture_fini (glitz_gl_proc_address_list_t *gl,
+                    glitz_texture_t *texture);
 
 extern void __internal_linkage
 glitz_texture_ensure_filter (glitz_gl_proc_address_list_t *gl,
@@ -480,16 +476,22 @@ glitz_texture_copy_surface (glitz_texture_t *texture,
 
 void
 glitz_surface_init (glitz_surface_t *surface,
-                    const glitz_surface_backend_t *backend);
+                    const glitz_surface_backend_t *backend,
+                    glitz_gl_proc_address_list_t *gl,
+                    glitz_format_t *format,
+                    int width,
+                    int height,
+                    glitz_programs_t *programs,
+                    unsigned long texture_mask);
+
+void
+glitz_surface_fini (glitz_surface_t *surface);
 
 extern void __internal_linkage
 glitz_surface_push_transform (glitz_surface_t *surface);
 
 extern void __internal_linkage
 glitz_surface_pop_transform (glitz_surface_t *surface);
-
-void
-glitz_surface_deinit (glitz_surface_t *surface);
 
 extern glitz_texture_t *__internal_linkage
 glitz_surface_get_texture (glitz_surface_t *surface);

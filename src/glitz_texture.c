@@ -32,7 +32,8 @@
 #include "glitzint.h"
 
 static void
-_glitz_texture_find_best_target (unsigned int width, unsigned int height,
+_glitz_texture_find_best_target (unsigned int width,
+                                 unsigned int height,
                                  long int target_mask,
                                  unsigned int *target)
 {
@@ -46,25 +47,21 @@ _glitz_texture_find_best_target (unsigned int width, unsigned int height,
   }
 }
 
-glitz_texture_t *
-glitz_texture_generate (glitz_gl_proc_address_list_t *gl,
-                        unsigned int width,
-                        unsigned int height,
-                        unsigned int texture_format,
-                        long int target_mask)
+void
+glitz_texture_init (glitz_gl_proc_address_list_t *gl,
+                    glitz_texture_t *texture,
+                    unsigned int width,
+                    unsigned int height,
+                    unsigned int texture_format,
+                    unsigned long target_mask)
 {
-  glitz_texture_t *texture;
-
-  texture = (glitz_texture_t *) malloc (sizeof (glitz_texture_t));
-  if (texture == NULL)
-    return NULL;
-
   texture->filter = -1;
   texture->repeat = -1;
   texture->width = width;
   texture->height = height;
   texture->format = texture_format;
   texture->allocated = 0;
+  texture->name = 0;
 
   switch (texture->format) {
   case GLITZ_GL_LUMINANCE_ALPHA:
@@ -86,8 +83,6 @@ glitz_texture_generate (glitz_gl_proc_address_list_t *gl,
   } else
     texture->target = GLITZ_GL_TEXTURE_2D;
   
-  gl->gen_textures (1, &texture->name);
-  
   if (texture->target == GLITZ_GL_TEXTURE_2D &&
       texture->width == width && texture->height == height) {
     texture->repeatable = 1;
@@ -102,16 +97,16 @@ glitz_texture_generate (glitz_gl_proc_address_list_t *gl,
       texture->texcoord_height = texture->height;
     }
   }
-  
-  return texture;
 }
 
-void
-glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
-                        glitz_texture_t *texture)
+static void
+_glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
+                         glitz_texture_t *texture)
 {
-  if (texture->allocated)
-    return;
+  if (!texture->name)
+    gl->gen_textures (1, &texture->name);
+
+  texture->allocated = 1;
 
   glitz_texture_bind (gl, texture);
 
@@ -121,16 +116,14 @@ glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
                     0, texture->format, GLITZ_GL_UNSIGNED_BYTE, NULL);
 
   glitz_texture_unbind (gl, texture);
-
-  texture->allocated = 1;
 }
 
 void 
-glitz_texture_destroy (glitz_gl_proc_address_list_t *gl,
-                       glitz_texture_t *texture)
-{ 
-  gl->delete_textures (1, &texture->name);
-  free (texture);
+glitz_texture_fini (glitz_gl_proc_address_list_t *gl,
+                    glitz_texture_t *texture)
+{
+  if (texture->name)
+    gl->delete_textures (1, &texture->name);
 }
 
 void
@@ -140,6 +133,9 @@ glitz_texture_ensure_filter (glitz_gl_proc_address_list_t *gl,
 {
   if (!texture->target)
     return;
+
+  if (!texture->allocated)
+    _glitz_texture_allocate (gl, texture);
     
   if (texture->filter != filter) {
     switch (filter) {
@@ -170,6 +166,9 @@ glitz_texture_ensure_repeat (glitz_gl_proc_address_list_t *gl,
 {
   if (!texture->target)
     return;
+
+  if (!texture->allocated)
+    _glitz_texture_allocate (gl, texture);
   
   if (texture->repeat != repeat) {
     if (repeat) {
@@ -190,13 +189,15 @@ glitz_texture_ensure_repeat (glitz_gl_proc_address_list_t *gl,
 void
 glitz_texture_bind (glitz_gl_proc_address_list_t *gl,
                     glitz_texture_t *texture)
-{
-  
+{  
   gl->disable (GLITZ_GL_TEXTURE_RECTANGLE_EXT);
   gl->disable (GLITZ_GL_TEXTURE_2D);
 
   if (!texture->target)
     return;
+
+  if (!texture->allocated)
+    _glitz_texture_allocate (gl, texture);
   
   gl->enable (texture->target);
   gl->bind_texture (texture->target, texture->name);
@@ -218,6 +219,9 @@ glitz_texture_copy_surface (glitz_texture_t *texture,
   glitz_surface_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
   
   glitz_texture_bind (surface->gl, texture);
+
+  if (!texture->allocated)
+    _glitz_texture_allocate (surface->gl, texture);
 
   if (region->x1 < 0) region->x1 = 0;
   if (region->y1 < 0) region->y1 = 0;

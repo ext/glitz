@@ -95,7 +95,7 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_bind_program_arb_t) 0,
   (glitz_gl_program_local_param_4d_arb_t) 0,
   (glitz_gl_get_program_iv_arb_t) 0,
-  0
+  1
 };
 
 glitz_glx_static_proc_address_list_t _glitz_glx_proc_address = {
@@ -104,7 +104,7 @@ glitz_glx_static_proc_address_list_t _glitz_glx_proc_address = {
   (glitz_glx_get_visual_from_fbconfig_t) 0,
   (glitz_glx_create_pbuffer_t) 0,
   (glitz_glx_destroy_pbuffer_t) 0,
-  0
+  1
 };
 
 typedef void *(* glitz_glx_get_proc_address_arb_t)(glitz_gl_ubyte_t *);
@@ -134,7 +134,6 @@ glitz_glx_get_proc_address (const char *name)
 static void
 glitz_glx_proc_address_lookup (void)
 {
-  _glitz_glx_proc_address.supported = 1;
   glitz_glx_get_proc_address_arb =
     (glitz_glx_get_proc_address_arb_t)
     glitz_glx_get_proc_address ("glXGetProcAddressARB");
@@ -153,6 +152,7 @@ glitz_glx_proc_address_lookup (void)
   _glitz_glx_proc_address.destroy_pbuffer =
     (glitz_glx_destroy_pbuffer_t)
     glitz_glx_get_proc_address ("glXDestroyPbuffer");
+  _glitz_glx_proc_address.need_lookup = 0;
 }
 
 #ifdef XTHREADS
@@ -172,7 +172,7 @@ glitz_glx_thread_info_get (void)
       malloc (sizeof (glitz_glx_thread_info_t));
     info->displays = NULL;
     info->n_displays = 0;
-    if (!_glitz_glx_proc_address.supported)
+    if (_glitz_glx_proc_address.need_lookup)
       glitz_glx_proc_address_lookup ();
     xthread_key_create (&info_tsd, NULL);
     xthread_set_specific (info_tsd, info);
@@ -297,8 +297,8 @@ glitz_glx_create_root_context (glitz_glx_screen_info_t *screen_info)
   memset (&screen_info->root_context.glx, 0,
           sizeof (glitz_glx_proc_address_list_t));
   
-  screen_info->root_context.gl.supported =
-    screen_info->root_context.glx.supported = 1;
+  screen_info->root_context.gl.need_lookup =
+    screen_info->root_context.glx.need_lookup = 1;
 }
 
 glitz_glx_screen_info_t *

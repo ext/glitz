@@ -64,9 +64,9 @@ _glitz_glx_format_compare (const void *elem1,
       score[i] += 10;
     if (format[i]->drawable.offscreen &&
         format[i]->drawable.onscreen)
-      score[i] += 10;
+      score[i] += 5;
     if (format[i]->multisample.supported) 
-      score[i] += (5 + format[i]->multisample.samples);
+      score[i] += (10 + format[i]->multisample.samples);
   }
   
   return score[1] - score[0];

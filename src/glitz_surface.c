@@ -36,17 +36,38 @@
 
 void
 glitz_surface_init (glitz_surface_t *surface,
-                    const glitz_surface_backend_t *backend)
+                    const glitz_surface_backend_t *backend,
+                    glitz_gl_proc_address_list_t *gl,
+                    glitz_format_t *format,
+                    int width,
+                    int height,
+                    glitz_programs_t *programs,
+                    unsigned long texture_mask)
 {
   surface->backend = backend;
 
   surface->filter = GLITZ_FILTER_NEAREST;
   surface->polyedge = GLITZ_POLYEDGE_SMOOTH;
+
+  surface->programs = programs;
+  surface->format = format;
+  surface->width = width;
+  surface->height = height;
+  surface->gl = gl;
+
+  if (surface->gl)
+    glitz_texture_init (gl, &surface->texture,
+                        width, height,
+                        glitz_get_gl_format_from_bpp (format->bpp),
+                        texture_mask);
 }
 
 void
-glitz_surface_deinit (glitz_surface_t *surface)
+glitz_surface_fini (glitz_surface_t *surface)
 {
+  if (surface->gl)
+    glitz_texture_fini (surface->gl, &surface->texture);
+  
   if (surface->transforms)
     free (surface->transforms);
 
@@ -568,6 +589,12 @@ glitz_surface_read_pixels (glitz_surface_t *surface,
     glitz_texture_t *texture;
 
     texture = glitz_surface_get_texture (surface);
+
+    /* Texture has not been allocated, hence pixel data of this surface
+       is undefined. */
+    if (!texture)
+      return;
+    
     glitz_texture_bind (surface->gl, texture);
 
     if (format == GLITZ_GL_LUMINANCE_ALPHA) {
@@ -699,28 +726,25 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
       surface->gl->pixel_zoom (1.0, -1.0);
       _glitz_set_raster_pos (surface->gl, x, surface->height - y);
     }
-    
+
     surface->gl->draw_pixels (width, height, format, type, pixels);
 
     glitz_surface_dirty (surface, &bounds);
   } else {
-    glitz_texture_t *texture;
-
-    texture = glitz_surface_get_texture (surface);
-    glitz_texture_bind (surface->gl, texture);
+    glitz_texture_bind (surface->gl, &surface->texture);
     
     surface->gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, 0);
     surface->gl->pixel_store_i (GLITZ_GL_PACK_SKIP_ROWS, 0);
     surface->gl->pixel_store_i (GLITZ_GL_PACK_SKIP_PIXELS, 0);
 
-    surface->gl->tex_sub_image_2d (texture->target, 0,
+    surface->gl->tex_sub_image_2d (surface->texture.target, 0,
                                    x, surface->height - y - height,
                                    width, height,
                                    format, type,
                                    pixel_buf);
     surface->gl->flush ();
 
-    glitz_texture_unbind (surface->gl, texture);
+    glitz_texture_unbind (surface->gl, &surface->texture);
   }
 
   glitz_surface_pop_current (surface);

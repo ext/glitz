@@ -101,6 +101,11 @@ _glitz_composite_direct (glitz_operator_t op,
   src_texture = glitz_surface_get_texture (src);
   mask_texture = glitz_surface_get_texture (mask);
 
+  /* Texture has not been allocated, hence source and the result of this
+     operation is undefined. So lets do nothing. */
+  if ((!src_texture) || (!mask_texture))
+    return 1;
+
   if (SURFACE_MANUALREPEAT (src, src_texture) ||
       SURFACE_MANUALREPEAT (mask, mask_texture))
     return 0;
@@ -292,9 +297,9 @@ _glitz_composite_direct (glitz_operator_t op,
   glitz_surface_disable_program (type, dst);
 
   dirty_region.x1 = floor (dst_region.x1);
-  dirty_region.x1 = floor (dst_region.y1);
+  dirty_region.y1 = floor (dst_region.y1);
   dirty_region.x2 = ceil (dst_region.x2);
-  dirty_region.x2 = ceil (dst_region.y2);
+  dirty_region.y2 = ceil (dst_region.y2);
   glitz_surface_dirty (dst, &dirty_region);
     
   glitz_surface_pop_current (dst);
@@ -541,6 +546,11 @@ glitz_composite (glitz_operator_t op,
   }
 
   texture = glitz_surface_get_texture (src);
+  
+  /* Texture has not been allocated, hence source and the result of this
+     operation is undefined. So lets do nothing. */
+  if (!texture)
+    return;
 
   if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
     glitz_surface_pop_current (dst);

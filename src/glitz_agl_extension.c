@@ -106,9 +106,5 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
     if (thread_info->agl_feature_mask &
         GLITZ_AGL_FEATURE_ARB_FRAGMENT_PROGRAM_MASK)
       thread_info->feature_mask |= GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
-
-    if ((thread_info->feature_mask & GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK) &&
-        (thread_info->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK))
-      thread_info->feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
   }
 }
