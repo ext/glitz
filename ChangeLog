@@ -1,5 +1,9 @@
 2004-06-21  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.1.5.
+
+	* configure.in: Bump version to 0.1.5.
+
 	* src/glitzint.h: Added new pixel interface and support for none
 	24bit visuals.
 	Added byte order and bit order defines.
