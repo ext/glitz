@@ -78,6 +78,7 @@ _glitz_buffer_init (glitz_buffer_t *buffer,
       surface->backend->gl.bind_buffer (buffer->target, buffer->name);
       surface->backend->gl.buffer_data (buffer->target, buffer->size,
                                         data, usage);
+      surface->backend->gl.bind_buffer (buffer->target, 0);
     }
   } else
     buffer->surface = NULL;
@@ -141,8 +142,18 @@ glitz_pixel_buffer_create (glitz_surface_t *surface,
   
   buffer->size = size;
   buffer->name = 0;
-  buffer->target = GLITZ_GL_PIXEL_UNPACK_BUFFER;
-
+  
+  switch (hint) {
+  case GLITZ_BUFFER_HINT_STREAM_READ:
+  case GLITZ_BUFFER_HINT_STATIC_READ:
+  case GLITZ_BUFFER_HINT_DYNAMIC_READ:
+    buffer->target = GLITZ_GL_PIXEL_PACK_BUFFER;
+    break;
+  default:
+    buffer->target = GLITZ_GL_PIXEL_UNPACK_BUFFER;
+    break;
+  }
+  
   if (surface->backend->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
     status = _glitz_buffer_init (buffer, surface, data, hint);
   else

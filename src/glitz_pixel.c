@@ -273,7 +273,7 @@ _store_32 (glitz_pixel_transform_op_t *op)
 
 #define GLITZ_TRANSFORM_PIXELS_MASK         (1L << 0)
 #define GLITZ_TRANSFORM_SCANLINE_ORDER_MASK (1L << 1)
-#define GLITZ_TRANSFORM_COPY_REGION_MASK    (1L << 2)
+#define GLITZ_TRANSFORM_COPY_BOX_MASK       (1L << 2)
 
 typedef struct _glitz_image {
   char *data;
@@ -421,7 +421,7 @@ glitz_set_pixels (glitz_surface_t *dst,
   char *pixels, *data = NULL;
   glitz_gl_pixel_format_t *gl_format = NULL;
   unsigned long transform = 0;
-  int xoffset, bytes_per_line;
+  int xoffset, bytes_per_line, bpp;
 
   if (x_dst < 0 || x_dst > (dst->width - width) ||
       y_dst < 0 || y_dst > (dst->height - height)) {
@@ -457,6 +457,8 @@ glitz_set_pixels (glitz_surface_t *dst,
     glitz_surface_pop_current (dst);
     return;
   }
+
+  glitz_texture_bind (gl, texture);
   
   if (transform) {
     glitz_image_t src_image, dst_image;
@@ -466,6 +468,7 @@ glitz_set_pixels (glitz_surface_t *dst,
     
     data = malloc (stride * height);
     if (!data) {
+      glitz_texture_unbind (gl, texture);
       glitz_surface_pop_current (dst);
       glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
       return;
@@ -494,18 +497,14 @@ glitz_set_pixels (glitz_surface_t *dst,
     pixels = data;
     xoffset = 0;
     bytes_per_line = stride;
+    bpp = dst_image.format->masks.bpp;
   } else {
     xoffset = format->xoffset;
     bytes_per_line = format->bytes_per_line;
+    bpp = format->masks.bpp;
     pixels = glitz_buffer_bind (buffer, GLITZ_GL_PIXEL_UNPACK_BUFFER);
     pixels += format->skip_lines * bytes_per_line;
   }
-  
-  glitz_texture_bind (gl, texture);
-
-  gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, 0);
-  gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_ROWS, 0);
-  gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_PIXELS, xoffset);
 
   if (bytes_per_line) {
     if ((bytes_per_line % 4) == 0)
@@ -516,8 +515,15 @@ glitz_set_pixels (glitz_surface_t *dst,
       gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 2);
     else
       gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 2);
-  } else
+
+    gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, bytes_per_line / (bpp / 8));
+  } else {
     gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 1);
+    gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, 0);
+  }
+
+  gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_ROWS, 0);
+  gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_PIXELS, xoffset);
 
   gl->tex_sub_image_2d (texture->target, 0,
                         texture->box.x1 + x_dst,
@@ -525,6 +531,9 @@ glitz_set_pixels (glitz_surface_t *dst,
                         width, height,
                         gl_format->format, gl_format->type,
                         pixels);
+
+  if (transform == 0)
+    glitz_buffer_unbind (buffer);
 
   if (to_drawable) {
     glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, 0); 
@@ -556,12 +565,9 @@ glitz_set_pixels (glitz_surface_t *dst,
   glitz_texture_unbind (gl, texture);
 
   dst->flags |= GLITZ_SURFACE_FLAG_SOLID_DIRTY_MASK;
-
-  if (transform == 0)
-    glitz_buffer_unbind (buffer);
   
   glitz_surface_pop_current (dst);
-
+  
   if (data)
     free (data);
 }
@@ -582,7 +588,7 @@ glitz_get_pixels (glitz_surface_t *src,
   glitz_gl_pixel_format_t *gl_format = NULL;
   unsigned long transform = 0;
   int src_x = 0, src_y = 0, src_w = width, src_h = height;
-  int xoffset, bytes_per_line;
+  int xoffset, bytes_per_line, bpp;
   
   if (x_src < 0 || x_src > (src->width - width) ||
       y_src < 0 || y_src > (src->height - height)) {
@@ -603,7 +609,7 @@ glitz_get_pixels (glitz_surface_t *src,
       return;
     }
 
-    transform |= GLITZ_TRANSFORM_COPY_REGION_MASK;
+    transform |= GLITZ_TRANSFORM_COPY_BOX_MASK;
   }
   
   if (format->scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN)
@@ -619,7 +625,7 @@ glitz_get_pixels (glitz_surface_t *src,
   if (transform) {
     int stride;
     
-    if (transform & GLITZ_TRANSFORM_COPY_REGION_MASK) {
+    if (transform & GLITZ_TRANSFORM_COPY_BOX_MASK) {
       src_w = texture->width;
       src_h = texture->height;
       src_x = x_src + texture->box.x1;
@@ -636,28 +642,33 @@ glitz_get_pixels (glitz_surface_t *src,
     pixels = data;
     xoffset = 0;
     bytes_per_line = stride;
+    bpp = gl_format->pixel.masks.bpp;
   } else {
     xoffset = format->xoffset;
     bytes_per_line = format->bytes_per_line;
+    bpp = format->masks.bpp;
     pixels = glitz_buffer_bind (buffer, GLITZ_GL_PIXEL_PACK_BUFFER);
     pixels += format->skip_lines * bytes_per_line;
   }
   
-  gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, 0);
   gl->pixel_store_i (GLITZ_GL_PACK_SKIP_ROWS, 0);
   gl->pixel_store_i (GLITZ_GL_PACK_SKIP_PIXELS, xoffset);
-
+  
   if (bytes_per_line) {
     if ((bytes_per_line % 4) == 0)
-      gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 4);
+      gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 4);
     else if ((bytes_per_line % 3) == 0)
-      gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 3);
+      gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 3);
     else if ((bytes_per_line % 2) == 0)
-      gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 2);
+      gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 2);
     else
-      gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 2);
-  } else
-    gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 1);
+      gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 2);
+    
+    gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, bytes_per_line / (bpp / 8));
+  } else {
+    gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 1);
+    gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, 0);
+  }
 
   if (from_drawable) {
     gl->read_pixels (x_src, src->height - y_src - height,

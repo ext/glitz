@@ -1,3 +1,15 @@
+2004-09-17  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_pixel.c: GLITZ_TRANSFORM_COPY_BOX_MASK is more correct name
+	than GLITZ_TRANSFORM_COPY_REGION_MASK.
+	(glitz_set_pixels): Set GLITZ_GL_UNPACK_ROW_LENGTH.
+	(glitz_get_pixels): Set GLITZ_GL_PACK_ROW_LENGTH.
+	GLITZ_GL_UNPACK_ALIGNMENT should be GLITZ_GL_PACK_ALIGNMENT.
+
+	* src/glitz_buffer.c (_glitz_buffer_init): Unbind buffer after
+	creation.
+	(glitz_pixel_buffer_create): Use buffer hint for choosing target.
+
 2004-09-16  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.c (glitz_composite): Don't set texture wrap mode to
