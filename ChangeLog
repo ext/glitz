@@ -1,3 +1,9 @@
+2004-10-06  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz.c (glitz_copy_area): Fixed source drawable offset.
+
+	* src/glitz_pixel.c (glitz_set_pixels): Fixed drawable offset.
+
 2004-10-04  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.2.3.

@@ -543,7 +543,7 @@ glitz_set_pixels (glitz_surface_t *dst,
     box.x2 = box.x1 + width;
     box.y2 = box.y1 + height;
     
-    glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, 0); 
+    glitz_texture_set_tex_gen (gl, texture, 0, 0, 0); 
 
     gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                    GLITZ_GL_REPLACE);
