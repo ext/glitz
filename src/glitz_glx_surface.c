@@ -66,7 +66,10 @@ _glitz_glx_surface_push_current (void *abstract_surface,
     return 1;
   }
 
-  return 0;
+  if (constraint == GLITZ_CN_SURFACE_DRAWABLE_CURRENT)
+    return 0;
+  else
+    return 1;
 }
 
 static void

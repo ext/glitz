@@ -263,28 +263,26 @@ char *_glitz_fragment_program_programmatic[] = {
    * Texture unit 2 is color range.
    *
    * program.local[0].x = start offset
-   * program.local[0].y = stop offset
-   * program.local[0].z = 1 / length
-   * program.local[1].x = sin (angle)
-   * program.local[1].y = cos (angle)
+   * program.local[0].y = 1 / length
+   * program.local[0].z = sin (angle)
+   * program.local[0].w = cos (angle)
    *
    * Author: David Reveman <c99drn@cs.umu.se>
    */
 
   "!!ARBfp1.0\n"
   "PARAM gradient = program.local[0];\n"
-  "PARAM angle = program.local[1];\n"
   "ATTRIB pos = fragment.texcoord[%d];\n"
   "TEMP color, distance, position;\n"
   
   /* temporary */
   "%s"
   
-  "MUL position.x, angle.x, pos.x;\n"
-  "MAD position.x, angle.y, pos.y, position.x;\n"
+  "MUL position.x, gradient.z, pos.x;\n"
+  "MAD position.x, gradient.w, pos.y, position.x;\n"
   
   "SUB distance.x, position.x, gradient.x;\n"
-  "MUL distance.x, distance.x, gradient.z;\n"
+  "MUL distance.x, distance.x, gradient.y;\n"
   
   "TEX color, distance, texture[2], 1D;\n"
   

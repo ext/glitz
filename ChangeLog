@@ -1,3 +1,14 @@
+2004-04-25  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_programmatic.c (glitz_programmatic_surface_bind):
+	* src/glitz_program.c: Removed unnecessary parameter from linear
+	gradient program.
+
+	* src/glitz_glx_surface.c (_glitz_glx_surface_push_current):
+	* src/glitz_agl_surface.c (_glitz_agl_surface_push_current):
+	Context procedure address lookup can no longer accidentally
+	raise "not supported" flag during surface initialization.
+
 2004-04-15  David Reveman  <c99drn@cs.umu.se>
 
 	* src/Makefile.am (libglitz_agl_la_SOURCES): glitz_aglext.h not

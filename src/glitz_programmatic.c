@@ -213,7 +213,7 @@ glitz_programmatic_surface_bind (glitz_gl_proc_address_list_t *gl,
   } break;
   case GLITZ_PROGRAMMATIC_SURFACE_LINEAR_TYPE: {
     glitz_point_t p1, p2;
-    double length, angle, start, stop;
+    double length, angle, start;
     
     p1.x = FIXED_TO_DOUBLE (surface->u.linear.start.x);
     p1.y = surface->base.height -
@@ -231,18 +231,11 @@ glitz_programmatic_surface_bind (glitz_gl_proc_address_list_t *gl,
     start = cos (angle) * p1.x;
     start += -sin (angle) * p1.y;
 
-    stop = cos (angle) * p2.x;
-    stop += -sin (angle) * p2.y;
-
     gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 0,
                                     start,
-                                    stop,
                                     (length)? 1.0 / length: INT_MAX,
-                                    0.0);
-    gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 1,
                                     cos (angle),
-                                    -sin (angle),
-                                    0.0, 0.0);
+                                    -sin (angle));
 
     gl->active_texture_arb (GLITZ_GL_TEXTURE2_ARB);
     glitz_color_range_bind (gl, surface->u.linear.color_range, feature_mask);
