@@ -1,5 +1,9 @@
 2004-10-04  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.2.3.
+
+	* configure.in: Bump version to 0.2.3.
+
 	* src/glitz_texture.c: Added glitz_texture_size_check.
 
 	* src/glitz_rect.c (glitz_set_rectangles): Made the software fall-back
