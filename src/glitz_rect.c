@@ -72,7 +72,7 @@ glitz_int_fill_rectangles (glitz_operator_t op,
       bounds.x2 < 0 || bounds.y2 < 0)
     return;
 
-  if (op == GLITZ_OPERATOR_SRC) {
+  if (op == GLITZ_OPERATOR_SRC && (!dst->clip_mask)) {
     clear_mask = GLITZ_GL_COLOR_BUFFER_BIT;
     dst->gl->clear_color (color->red / (glitz_gl_clampf_t) 0xffff,
                           color->green / (glitz_gl_clampf_t) 0xffff,

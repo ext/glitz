@@ -1,3 +1,8 @@
+2004-05-26  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_rect.c (glitz_int_fill_rectangles): Don't use glClear
+	if clipping is set.
+
 2004-05-24  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: Added support for read-only surfaces.
