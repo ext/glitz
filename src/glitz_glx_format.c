@@ -185,21 +185,6 @@ glitz_glx_query_formats_glx12 (glitz_glx_screen_info_t *screen_info)
 
   qsort (screen_info->formats, screen_info->n_formats,
          sizeof (glitz_format_t), _glitz_glx_format_compare);
-
-  /* Adding fake offscreen formats as no real offscreen formats exists.
-     Surfaces created with this format can only be used with draw/read
-     pixel functions and as source in composite functions. */
-  memset (&format, 0, sizeof (glitz_format_t));
-  format.drawable.offscreen = 1;
-  format.alpha_size = format.red_size = format.green_size =
-    format.blue_size = 8;
-  format.id = 0;
-  _glitz_add_format (screen_info, &format);
-  format.alpha_size = 0;
-  _glitz_add_format (screen_info, &format);
-  format.alpha_size  = 8;
-  format.red_size = format.green_size = format.blue_size = 0;
-  _glitz_add_format (screen_info, &format);
   
   if (visuals)
     XFree (visuals);
@@ -212,7 +197,6 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
   glitz_format_t format;
   GLXFBConfig *fbconfigs;
   int i, num_configs;
-  glitz_bool_t offscreen_argb32_format = 0;
   
   display = screen_info->display_info->display;
 
@@ -273,13 +257,13 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
     format.stencil_size = (unsigned short) value;
     _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
                                                  GLX_DOUBLEBUFFER, &value);
-    format.doublebuffer = (value) ? 1: 0;
+    format.doublebuffer = (value)? 1: 0;
     
     if (screen_info->feature_mask & GLITZ_FEATURE_MULTISAMPLE_MASK) {
       _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
                                                    GLX_SAMPLE_BUFFERS_ARB,
                                                    &value);
-      format.multisample.supported = (value) ? 1: 0;
+      format.multisample.supported = (value)? 1: 0;
       _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
                                                    GLX_SAMPLES_ARB, &value);
       format.multisample.samples = (unsigned short) value;
@@ -288,11 +272,6 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
       format.multisample.samples = 0;
     }
 
-    if (format.drawable.offscreen &&
-        format.alpha_size &&
-        format.red_size && format.green_size && format.blue_size)
-      offscreen_argb32_format = 1;
-    
     _glitz_add_format (screen_info, &format);
 
     if (format.alpha_size &&
@@ -310,29 +289,33 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
 
   qsort (screen_info->formats, screen_info->n_formats,
          sizeof (glitz_format_t), _glitz_glx_format_compare);
-
-  /* Adding fake offscreen formats if no real argb32 offscreen formats exist.
-     Surfaces created with these format can only be used with draw/read
-     pixel functions and as source in composite functions. */
-  if (!offscreen_argb32_format) {
-    screen_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
-    memset (&format, 0, sizeof (glitz_format_t));
-    format.drawable.offscreen = 1;
-    format.alpha_size = format.red_size = format.green_size =
-      format.blue_size = 8;
-    format.id = 0;
-    _glitz_add_format (screen_info, &format);
-    format.alpha_size = 0;
-    _glitz_add_format (screen_info, &format);
-    format.alpha_size  = 8;
-    format.red_size = format.green_size = format.blue_size = 0;
-    _glitz_add_format (screen_info, &format);
-  }
   
   if (fbconfigs)
     XFree (fbconfigs);
 
   return 0;
+}
+
+static void
+glitz_glx_use_fake_offscreen_formats (glitz_glx_screen_info_t *screen_info)
+{
+  glitz_format_t format;
+  
+  screen_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
+  
+  /* Adding fake offscreen formats. Surfaces created with these format can
+     only be used with draw/read pixel functions and as source in composite
+     functions. */
+  memset (&format, 0, sizeof (glitz_format_t));
+  format.drawable.offscreen = 1;
+  format.alpha_size = format.red_size = format.green_size =
+    format.blue_size = 8;
+  _glitz_add_format (screen_info, &format);
+  format.alpha_size = 0;
+  _glitz_add_format (screen_info, &format);
+  format.alpha_size = 8;
+  format.red_size = format.green_size = format.blue_size = 0;
+  _glitz_add_format (screen_info, &format);
 }
 
 void
@@ -345,6 +328,12 @@ glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info)
 
   if (status)
     glitz_glx_query_formats_glx12 (screen_info);
+  
+  if (!glitz_format_find_standard (screen_info->formats,
+                                   screen_info->n_formats,
+                                   GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
+                                   GLITZ_STANDARD_ARGB32))
+    glitz_glx_use_fake_offscreen_formats (screen_info);
   
   _glitz_move_out_ids (screen_info);
 }

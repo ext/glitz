@@ -78,15 +78,10 @@ _glitz_glx_extension_query_gl (void)
 void
 glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
 {
-  screen_info->glx_feature_mask = 0;
-
   screen_info->glx_feature_mask |=
     _glitz_glx_extension_query_client_glx (screen_info->display_info->display);
   
   screen_info->glx_feature_mask |= _glitz_glx_extension_query_gl ();
-
-  screen_info->feature_mask = 0;
-  screen_info->texture_mask = GLITZ_TEXTURE_TARGET_2D_MASK;
 
   if (_glitz_glx_proc_address.get_fbconfigs &&
       _glitz_glx_proc_address.get_fbconfig_attrib &&
@@ -101,10 +96,16 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
       screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK) {
     screen_info->feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;
+    char *renderer = (char *) glGetString (GL_RENDERER);
+    if (renderer) {
 
-    /* All geforce cards seems to support multisample with pbuffers */
-    if (!strncmp ("GeForce", (char *) glGetString (GL_RENDERER), 7))
-      screen_info->feature_mask |= GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK;
+      /* All geforce and quadro cards seems to support multisample with
+         pbuffers */
+      if (!strncmp ("GeForce", renderer, 7))
+        screen_info->feature_mask |= GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK;
+      else if (!strncmp ("Quadro", renderer, 6))
+        screen_info->feature_mask |= GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK;
+    }
   }
 
   if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_TEXTURE_NPOT_MASK) {

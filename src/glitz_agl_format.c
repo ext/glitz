@@ -259,7 +259,6 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
   glitz_format_t format;
   AGLPixelFormat pixel_format;
   int i = 0;
-  glitz_bool_t offscreen_argb32_format = 0;
 
   for (i = 0; *(pixel_format_attrib_map[i].attrib); i++) {
     GLint value;
@@ -275,7 +274,7 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
     }
 
     aglDescribePixelFormat (pixel_format, AGL_DOUBLEBUFFER, &value);
-    format.doublebuffer = (value) ? 1: 0;
+    format.doublebuffer = (value)? 1: 0;
 
     /* We don't support single buffering in MacOS X */
     if (!format.doublebuffer) {
@@ -306,7 +305,7 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
     
     if (thread_info->feature_mask & GLITZ_FEATURE_MULTISAMPLE_MASK) {
       aglDescribePixelFormat (pixel_format, AGL_SAMPLE_BUFFERS_ARB, &value);
-      format.multisample.supported = (value) ? 1: 0;
+      format.multisample.supported = (value)? 1: 0;
       aglDescribePixelFormat (pixel_format, AGL_SAMPLES_ARB, &value);
       format.multisample.samples = (unsigned short) value;
 
@@ -320,11 +319,6 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
       format.multisample.samples = 0;
     }
 
-    if (format.drawable.offscreen &&
-        format.alpha_size &&
-        format.red_size && format.green_size && format.blue_size) 
-      offscreen_argb32_format = 1;
-    
     _glitz_add_format (thread_info, &format);
 
     if (format.alpha_size &&
@@ -342,20 +336,25 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
 
   qsort (thread_info->formats, thread_info->n_formats,
          sizeof (glitz_format_t), _glitz_agl_format_compare);
-  
-  /* Adding fake offscreen formats if no real argb32 offscreen formats exist.
-     Surfaces created with these formats can only be used with draw/read
-     pixel functions and as source in composite functions. */
-  if (!offscreen_argb32_format) {
+
+  if (!glitz_format_find_standard (thread_info->formats,
+                                   thread_info->n_formats,
+                                   GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
+                                   GLITZ_STANDARD_ARGB32)) {
+    
+    thread_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
+    
+    /* Adding fake offscreen formats. Surfaces created with these format can
+       only be used with draw/read pixel functions and as source in composite
+       functions. */
     memset (&format, 0, sizeof (glitz_format_t));
     format.drawable.offscreen = 1;
     format.alpha_size = format.red_size = format.green_size =
       format.blue_size = 8;
-    format.id = 0;
     _glitz_add_format (thread_info, &format);
     format.alpha_size = 0;
     _glitz_add_format (thread_info, &format);
-    format.alpha_size  = 8;
+    format.alpha_size = 8;
     format.red_size = format.green_size = format.blue_size = 0;
     _glitz_add_format (thread_info, &format);
   }

@@ -35,10 +35,10 @@
 
 glitz_format_t *
 glitz_format_find (glitz_format_t *formats,
-                 int n_formats,
-                 unsigned long mask,
-                 const glitz_format_t *templ,
-                 int count)
+                   int n_formats,
+                   unsigned long mask,
+                   const glitz_format_t *templ,
+                   int count)
 {
   for (; n_formats; n_formats--, formats++) {
     if (mask & GLITZ_FORMAT_ID_MASK)
@@ -119,8 +119,8 @@ glitz_format_find (glitz_format_t *formats,
 
 static void
 _glitz_format_add_options (unsigned long options,
-                         glitz_format_t *format,
-                         unsigned long *mask)
+                           glitz_format_t *format,
+                           unsigned long *mask)
 {
   if (options & GLITZ_FORMAT_OPTION_DOUBLEBUFFER_MASK) {
     format->doublebuffer = 1;
@@ -155,9 +155,9 @@ _glitz_format_add_options (unsigned long options,
 
 glitz_format_t *
 glitz_format_find_standard (glitz_format_t *formats,
-                          int n_formats,
-                          unsigned long options,
-                          glitz_format_name_t format_name)
+                            int n_formats,
+                            unsigned long options,
+                            glitz_format_name_t format_name)
 {
   glitz_format_t templ;
   unsigned long mask = GLITZ_FORMAT_RED_SIZE_MASK |

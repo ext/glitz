@@ -1,3 +1,21 @@
+2004-05-01  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_agl_format.c (glitz_agl_query_formats): Cleaned up 
+	creation of fake offscreen formats.
+
+	* src/glitz_glx_info.c (glitz_glx_thread_info_get): Do
+	proc address lookup.
+	(glitz_glx_screen_info_get): Handle errors better.
+	(glitz_glx_create_root_context): Better root context creation.
+
+	* src/glitz_glx_format.c: Cleaned up creation of fake offscreen
+	formats.
+
+	* src/glitz_glx_extension.c (glitz_glx_query_extensions): Pbuffer
+	multi-sampling supported on Quadro cards.
+
+	* src/glitz_format.c: Fixed indentation.
+
 2004-04-30  David Reveman  <c99drn@cs.umu.se>
 
 	* configure.in: Bump version to 0.1.1.

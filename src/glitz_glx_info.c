@@ -172,7 +172,8 @@ glitz_glx_thread_info_get (void)
       malloc (sizeof (glitz_glx_thread_info_t));
     info->displays = NULL;
     info->n_displays = 0;
-    glitz_glx_proc_address_lookup ();
+    if (!_glitz_glx_proc_address.supported)
+      glitz_glx_proc_address_lookup ();
     xthread_key_create (&info_tsd, NULL);
     xthread_set_specific (info_tsd, info);
     tsd_initialized = 1;
@@ -196,6 +197,9 @@ static glitz_glx_thread_info_t thread_info = {
 glitz_glx_thread_info_t *
 glitz_glx_thread_info_get (void)
 {
+  if (!_glitz_glx_proc_address.supported)
+    glitz_glx_proc_address_lookup ();
+  
   return &thread_info;
 }
 
@@ -235,33 +239,57 @@ glitz_glx_create_root_context (glitz_glx_screen_info_t *screen_info)
 {
   XVisualInfo *vinfo;
   XSetWindowAttributes win_attrib;
-  int attrib[] = {
-    GLX_RGBA,
-    0
+  int attrib_single[] = {
+      GLX_RGBA,
+      GLX_RED_SIZE, 1,
+      GLX_GREEN_SIZE, 1,
+      GLX_BLUE_SIZE, 1,
+      None
   };
+   int attrib_double[] = {
+      GLX_RGBA,
+      GLX_RED_SIZE, 1,
+      GLX_GREEN_SIZE, 1,
+      GLX_BLUE_SIZE, 1,
+      GLX_DOUBLEBUFFER,
+      None
+   };
   int screen = screen_info->screen;
   Display *display = screen_info->display_info->display;
-  
-  vinfo = glXChooseVisual (display, screen, attrib);
-  if (!vinfo)
-    return;
-  
-  win_attrib.colormap =
-    XCreateColormap (display,
-                     RootWindow (display, screen),
-                     vinfo->visual, AllocNone);
-  screen_info->root_drawable =
-    XCreateWindow (display,
-                   RootWindow (display, screen),
-                   -2, -2, 1, 1, 0, vinfo->depth, CopyFromParent,
-                   vinfo->visual, CWColormap, &win_attrib);
 
-  screen_info->root_context.context =
-    glXCreateContext (display, vinfo, NULL, 1);
+  vinfo = glXChooseVisual (display, screen, attrib_single);
+  if (!vinfo)
+    vinfo = glXChooseVisual (display, screen, attrib_double);
+  
+  if (vinfo) {
+    win_attrib.background_pixel = 0;
+    win_attrib.border_pixel = 0;
+    win_attrib.event_mask = StructureNotifyMask | ExposureMask;
+    win_attrib.colormap = XCreateColormap (display,
+                                           RootWindow (display, screen),
+                                           vinfo->visual, AllocNone);
+  
+    screen_info->root_drawable =
+      XCreateWindow (display, RootWindow (display, screen),
+                     0, 0, 100, 100, 0, vinfo->depth, InputOutput,
+                     vinfo->visual,
+                     CWBackPixel | CWBorderPixel | CWColormap | CWEventMask,
+                     &win_attrib);
+    
+    screen_info->root_context.context =
+      glXCreateContext (display, vinfo, NULL, 1);
+    
+    screen_info->root_context.id = vinfo->visualid;
+    
+    XFree (vinfo);
+  } else {
+    screen_info->root_drawable = None;
+    screen_info->root_context.context = NULL;
+    screen_info->root_context.id = 0;
+  }
 
   screen_info->root_context.fbconfig = (XID) 0;  
-  screen_info->root_context.id = vinfo->visualid;
-
+    
   memcpy (&screen_info->root_context.gl,
           &_glitz_gl_proc_address,
           sizeof (glitz_gl_proc_address_list_t));
@@ -269,12 +297,8 @@ glitz_glx_create_root_context (glitz_glx_screen_info_t *screen_info)
   memset (&screen_info->root_context.glx, 0,
           sizeof (glitz_glx_proc_address_list_t));
   
-  if (_glitz_glx_proc_address.supported) {
-    screen_info->root_context.gl.supported =
-      screen_info->root_context.glx.supported = 1;
-  }
-  
-  XFree (vinfo);
+  screen_info->root_context.gl.supported =
+    screen_info->root_context.glx.supported = 1;
 }
 
 glitz_glx_screen_info_t *
@@ -313,22 +337,28 @@ glitz_glx_screen_info_get (Display *display,
 
   glitz_glx_create_root_context (screen_info);
 
-  glXMakeCurrent (screen_info->display_info->display,
-                  screen_info->root_drawable,
-                  screen_info->root_context.context);
-  glPixelStorei (GL_PACK_ALIGNMENT, 4);
-  glPixelStorei (GL_UNPACK_ALIGNMENT, 4);
+  screen_info->glx_feature_mask = 0;
+  screen_info->feature_mask = 0;
+  screen_info->texture_mask = GLITZ_TEXTURE_TARGET_2D_MASK;
 
-  glitz_glx_query_extensions (screen_info);
-  glitz_glx_query_formats (screen_info);
+  if (screen_info->root_context.context &&
+      glXMakeCurrent (screen_info->display_info->display,
+                      screen_info->root_drawable,
+                      screen_info->root_context.context)) {
+    
+    glPixelStorei (GL_PACK_ALIGNMENT, 4);
+    glPixelStorei (GL_UNPACK_ALIGNMENT, 4);
 
-  if (screen_info->root_context.gl.supported)
     glitz_glx_context_proc_address_lookup (&screen_info->root_context);
+
+    glitz_glx_query_extensions (screen_info);
+    glitz_glx_query_formats (screen_info);
+  }
   
   screen_info->context_stack = malloc (sizeof (glitz_glx_context_info_t));
   screen_info->context_stack_size = 1;
   screen_info->context_stack->surface = NULL;
   screen_info->context_stack->constraint = GLITZ_CN_NONE;
-
+  
   return screen_info;
 }
