@@ -491,9 +491,12 @@ glitz_texture_unbind (glitz_gl_proc_address_list_t *gl,
 void
 glitz_texture_copy_surface (glitz_texture_t *texture,
                             glitz_surface_t *surface,
-                            glitz_bounding_box_t *box,
-                            int x_src,
-                            int y_src);
+                            int x_surface,
+                            int y_surface,
+                            int width,
+                            int height,
+                            int x_texture,
+                            int y_texture);
 
 void
 glitz_surface_init (glitz_surface_t *surface,

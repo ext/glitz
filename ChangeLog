@@ -1,5 +1,19 @@
 2004-05-30  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz.c (glitz_copy_area): Use new glitz_texture_copy_surface
+	function.
+
+	* src/glitz_agl_surface.c (_glitz_agl_surface_get_texture): Use
+	new glitz_texture_copy_surface function.
+
+	* src/glitz_glx_surface.c (_glitz_glx_surface_get_texture): Use
+	new glitz_texture_copy_surface function.
+
+	* src/glitzint.h: New parameters to glitz_texture_copy_surface.
+
+	* src/glitz_texture.c (glitz_texture_copy_surface): Made it more
+	flexible, this was required to make glitz_copy_area work correctly.
+
 	* src/glitz.c (glitz_copy_area): And another one.
 
 2004-05-29  David Reveman  <c99drn@cs.umu.se>

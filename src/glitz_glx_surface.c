@@ -143,10 +143,20 @@ _glitz_glx_surface_get_texture (void *abstract_surface)
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
   
   if (surface->base.hint_mask & GLITZ_INT_HINT_DIRTY_MASK) {
+    glitz_bounding_box_t copy_box;
+
+    copy_box.x1 = copy_box.y1 = 0;
+    copy_box.x2 = surface->base.width;
+    copy_box.y2 = surface->base.height;
+    glitz_intersect_bounding_box (&surface->base.dirty_box,
+                                  &copy_box, &copy_box);
     glitz_texture_copy_surface (&surface->base.texture, &surface->base,
-                                &surface->base.dirty_box,
-                                surface->base.dirty_box.x1,
-                                surface->base.dirty_box.y1);
+                                copy_box.x1,
+                                copy_box.y1,
+                                copy_box.x2 - copy_box.x1,
+                                copy_box.y2 - copy_box.y1,
+                                copy_box.x1,
+                                copy_box.y1);
     surface->base.hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
   }
   

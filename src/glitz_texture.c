@@ -213,11 +213,14 @@ glitz_texture_unbind (glitz_gl_proc_address_list_t *gl,
 void
 glitz_texture_copy_surface (glitz_texture_t *texture,
                             glitz_surface_t *surface,
-                            glitz_bounding_box_t *box,
-                            int x_src,
-                            int y_src)
+                            int x_surface,
+                            int y_surface,
+                            int width,
+                            int height,
+                            int x_texture,
+                            int y_texture)
 {
-  int x_dst, y_dst, width, height;
+  int tex_height;
   
   glitz_surface_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
   
@@ -226,22 +229,19 @@ glitz_texture_copy_surface (glitz_texture_t *texture,
   if (!texture->allocated)
     _glitz_texture_allocate (surface->gl, texture);
 
-  if (x_src < 0) x_src = 0;
-  if (y_src < 0) y_src = 0;
-  
-  x_dst = (box->x1 > 0)? box->x1: 0;
-  y_dst = (box->y1 > 0)? box->y1: 0;
-  width = (box->x2 < (int) texture->width)?
-    box->x2 - x_dst: (int) texture->width - x_dst;
-  height = (box->x2 < (int) texture->height)?
-    box->y2 - y_dst: (int) texture->height - y_dst;
-
   if (surface->format->doublebuffer)
     surface->gl->read_buffer (surface->read_buffer);
+
+  if (texture->target == GLITZ_GL_TEXTURE_2D)
+    tex_height = (int) ((double) texture->height * texture->texcoord_height);
+  else
+    tex_height = (int) texture->texcoord_height;
   
   surface->gl->copy_tex_sub_image_2d (texture->target, 0,
-                                      x_dst, y_dst,
-                                      x_src, y_src,
+                                      x_texture,
+                                      tex_height - y_texture - height,
+                                      x_surface,
+                                      surface->height - y_surface - height,
                                       width, height);
 
   glitz_texture_unbind (surface->gl, texture);

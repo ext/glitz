@@ -841,7 +841,6 @@ glitz_copy_area (glitz_surface_t *src,
                  int y_dst)
 {
   glitz_gl_proc_address_list_t *gl;
-  glitz_bounding_box_t box;
   int status;
   
   if (SURFACE_PROGRAMMATIC (dst) || SURFACE_PROGRAMMATIC (src))
@@ -880,16 +879,13 @@ glitz_copy_area (glitz_surface_t *src,
   if (width <= 0 || height <= 0)
     return;
 
-  box.x1 = x_dst;
-  box.y1 = y_dst;
-  box.x2 = box.x1 + width;
-  box.y2 = box.y1 + height;
-
   gl = dst->gl;
 
   status = 0;
   if (glitz_surface_try_push_current (dst,
                                       GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    glitz_bounding_box_t box;
+    
     if (src != dst)
       status = glitz_surface_make_current_read (src);
     else
@@ -953,6 +949,11 @@ glitz_copy_area (glitz_surface_t *src,
       }
     }
 
+    box.x1 = x_dst;
+    box.y1 = y_dst;
+    box.x2 = box.x1 + width;
+    box.y2 = box.y1 + height;
+    
     glitz_surface_dirty (dst, &box);
     glitz_surface_pop_current (dst);
 
@@ -962,7 +963,8 @@ glitz_copy_area (glitz_surface_t *src,
   if (!status) {
     if (glitz_surface_try_push_current (src,
                                         GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
-      glitz_texture_copy_surface (&dst->texture, src, &box, x_src, y_src);
+      glitz_texture_copy_surface (&dst->texture, src,
+                                  x_src, y_src, width, height, x_dst, y_dst);
       status = 1;
     }
     glitz_surface_pop_current (src);
