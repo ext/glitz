@@ -108,7 +108,7 @@ glitz_get_gl_format_from_bpp (unsigned short bpp)
 {
   switch (bpp) {
   case 8:
-    return GLITZ_GL_ALPHA;
+    return GLITZ_GL_LUMINANCE_ALPHA;
     break;
   case 24:
     if (big_endian ())

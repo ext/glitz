@@ -130,6 +130,16 @@ glitz_surface_push_current (glitz_surface_t *surface,
   return 1;
 }
 
+static glitz_bool_t
+_glitz_surface_try_push_current (glitz_surface_t *surface,
+                                 glitz_constraint_t constraint)
+{
+  if (!surface->backend->push_current (surface, constraint))
+    return 0;
+
+  return 1;
+}
+
 void
 glitz_surface_pop_current (glitz_surface_t *surface)
 {
@@ -517,9 +527,8 @@ glitz_surface_read_pixels (glitz_surface_t *surface,
                            unsigned int height,
                            char *pixels)
 {
-  unsigned char *pixel_buf;
+  unsigned char *pixel_buf = NULL;
   int rowstride, area_rowstride, bytes_per_pixel;
-  unsigned int i;
   glitz_gl_enum_t format, type;
 
   if (SURFACE_PROGRAMMATIC (surface))
@@ -538,13 +547,16 @@ glitz_surface_read_pixels (glitz_surface_t *surface,
   /* We currently read the whole image to a temporary buffer and then
      copy the part we want, not very efficient. We only want to read the
      area requested. I think it can be fixed with glPixelStore parameters. */
+  if (_glitz_surface_try_push_current (surface,
+                                       GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
 
-  if (glitz_surface_push_current (surface,
-                                  GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
-    rowstride = surface->width * bytes_per_pixel;
-    rowstride += (rowstride % 4)? (4 - (rowstride % 4)): 0;
-    pixel_buf = (unsigned char *) malloc (surface->height * rowstride);
-  
+    if (format == GLITZ_GL_LUMINANCE_ALPHA)
+      rowstride = surface->width * 2;
+    else
+      rowstride = surface->width * bytes_per_pixel;
+    
+    rowstride = (rowstride + 3) & -4;
+    pixel_buf = malloc (surface->height * rowstride);
     surface->gl->read_pixels (0, 0, surface->width, surface->height,
                               format, type, pixel_buf);
   } else {
@@ -553,9 +565,13 @@ glitz_surface_read_pixels (glitz_surface_t *surface,
     texture = glitz_surface_get_texture (surface);
     glitz_texture_bind (surface->gl, texture);
 
-    rowstride = texture->width * bytes_per_pixel;
-    rowstride += (rowstride % 4)? (4 - (rowstride % 4)): 0;
-    pixel_buf = (unsigned char *) malloc (texture->height * rowstride);
+    if (format == GLITZ_GL_LUMINANCE_ALPHA) {
+      rowstride = texture->width * 2;
+    } else
+      rowstride = texture->width * bytes_per_pixel;
+
+    rowstride = (rowstride + 3) & -4;
+    pixel_buf = malloc (texture->height * rowstride);
 
     surface->gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, 0);
     surface->gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_ROWS, 0);
@@ -571,16 +587,31 @@ glitz_surface_read_pixels (glitz_surface_t *surface,
 
   glitz_surface_pop_current (surface);
 
-  area_rowstride = width * bytes_per_pixel;
-  area_rowstride += (area_rowstride % 4)? (4 - (area_rowstride % 4)): 0;
+  area_rowstride = (width * bytes_per_pixel + 3) & -4;
 
-  for (i = 0; i < height; i++) {
-    memcpy (&pixels[(height - i - 1) * area_rowstride],
-            &pixel_buf[(surface->height - y - height + i) * rowstride + x],
-            area_rowstride);
+  if (format == GLITZ_GL_LUMINANCE_ALPHA) {
+    int i, j, k;
+    
+    /* Unpad and flip A8 image data. */
+    for (i = 0; i < (int) height; i++) {
+      for (j = 0, k = 1; j < (int) width; j++, k += 2) {
+        pixels[(height - i - 1) * area_rowstride + j] =
+          pixel_buf[(surface->height - y - height + i) * rowstride + x + k];
+      }
+    }
+  } else {
+    int i;
+    
+    /* Flip image data. */
+    for (i = 0; i < (int) height; i++) {
+      memcpy (&pixels[(height - i - 1) * area_rowstride],
+              &pixel_buf[(surface->height - y - height + i) * rowstride + x],
+              area_rowstride);
+    }
   }
-  
-  free (pixel_buf);
+
+  if (pixel_buf)
+    free (pixel_buf);
 }
 slim_hidden_def(glitz_surface_read_pixels);
 
@@ -592,9 +623,10 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
                            unsigned int height,
                            char *pixels)
 {
-  unsigned char *pixel_buf;
+  unsigned char *pixel_buf = NULL;
   glitz_gl_enum_t format, type;
   int bytes_per_pixel;
+  glitz_bool_t drawable = 0;
 
   if (SURFACE_PROGRAMMATIC (surface))
     return;
@@ -609,8 +641,41 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
   format = glitz_get_gl_format_from_bpp (surface->format->bpp);
   type = glitz_get_gl_data_type_from_bpp (surface->format->bpp);
 
-  if (glitz_surface_push_current (surface,
-                                  GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+  drawable =
+    _glitz_surface_try_push_current (surface,
+                                     GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
+  
+  if (format == GLITZ_GL_LUMINANCE_ALPHA) {
+    int i, j, k, src_rowstride, dst_rowstride;
+
+    src_rowstride = (width + 3) & -4;
+    dst_rowstride = (width * 2 + 3) & -4;
+    pixel_buf = malloc (dst_rowstride * height);
+
+    /* Pad and flip A8 image data. */
+    for (i = 0; i < (int) height; i++) {
+      for (j = 0, k = 0; j < (int) width; j++, k += 2) {
+        pixel_buf[i * dst_rowstride + k] =
+          pixel_buf[i * dst_rowstride + k + 1] =
+          pixels[(height - i - 1) * src_rowstride + j];
+      }
+    }
+    pixels = pixel_buf;
+  } else if (!drawable) {
+    int i, rowstride;
+
+    rowstride = (width * bytes_per_pixel + 3) & -4;
+    pixel_buf = malloc (rowstride * height);
+    
+    /* Flip image data. */
+    for (i = 0; i < (int) height; i++)
+      memcpy (&pixel_buf[i * rowstride],
+              &pixels[(height - i - 1) * rowstride], rowstride);
+
+    pixels = pixel_buf;
+  }
+
+  if (drawable) {
     glitz_region_box_t bounds;
 
     bounds.x1 = x;
@@ -621,27 +686,20 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
     surface->gl->disable (GLITZ_GL_SCISSOR_TEST);
     surface->gl->disable (GLITZ_GL_DITHER);
     glitz_set_operator (surface->gl, GLITZ_OPERATOR_SRC);
+
+    if (format == GLITZ_GL_LUMINANCE_ALPHA) {
+      surface->gl->pixel_zoom (1.0, 1.0);
+      _glitz_set_raster_pos (surface->gl, x, surface->height - y - height);
+    } else {
+      surface->gl->pixel_zoom (1.0, -1.0);
+      _glitz_set_raster_pos (surface->gl, x, surface->height - y);
+    }
     
-    surface->gl->pixel_zoom (1.0, -1.0);
-    
-    _glitz_set_raster_pos (surface->gl, x, surface->height - y);
     surface->gl->draw_pixels (width, height, format, type, pixels);
 
     glitz_surface_dirty (surface, &bounds);
   } else {
-    int i, rowstride;
     glitz_texture_t *texture;
-    
-    rowstride = width * bytes_per_pixel;
-    rowstride += (rowstride % 4)? (4 - (rowstride % 4)): 0;
-    pixel_buf = (unsigned char *) malloc (rowstride * height);
-    
-    /* TODO: This is very ugly and I like to remove it as soon as possible.
-       Needs some changes to texture handling, as images will become upside
-       down without it. */
-    for (i = 0; i < (int) height; i++)
-      memcpy (&pixel_buf[i * rowstride],
-              &pixels[(height - i - 1) * rowstride], rowstride);
 
     texture = glitz_surface_get_texture (surface);
     glitz_texture_bind (surface->gl, texture);
@@ -649,7 +707,7 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
     surface->gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, 0);
     surface->gl->pixel_store_i (GLITZ_GL_PACK_SKIP_ROWS, 0);
     surface->gl->pixel_store_i (GLITZ_GL_PACK_SKIP_PIXELS, 0);
-    
+
     surface->gl->tex_sub_image_2d (texture->target, 0,
                                    x, surface->height - y - height,
                                    width, height,
@@ -658,11 +716,12 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
     surface->gl->flush ();
 
     glitz_texture_unbind (surface->gl, texture);
-    
-    free (pixel_buf);
   }
 
   glitz_surface_pop_current (surface);
+
+  if (pixel_buf)
+    free (pixel_buf);
 }
 slim_hidden_def(glitz_surface_draw_pixels);
 
@@ -708,8 +767,7 @@ slim_hidden_def(glitz_surface_get_gl_texture);
 void
 glitz_surface_gl_begin (glitz_surface_t *surface)
 {
-  if (!glitz_surface_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT))
-    glitz_surface_status_add (surface, GLITZ_STATUS_NOT_SUPPORTED_MASK);
+  glitz_surface_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
 }
 slim_hidden_def(glitz_surface_gl_begin);
 

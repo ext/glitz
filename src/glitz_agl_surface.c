@@ -57,10 +57,13 @@ _glitz_agl_surface_push_current (void *abstract_surface,
                                glitz_constraint_t constraint)
 {
   glitz_agl_surface_t *surface = (glitz_agl_surface_t *) abstract_surface;
+  glitz_bool_t success = 1;
   
   if (constraint == GLITZ_CN_SURFACE_DRAWABLE_CURRENT &&
-      ((!surface->pbuffer) && (!surface->drawable)))
+      ((!surface->pbuffer) && (!surface->drawable))) {
     constraint = GLITZ_CN_ANY_CONTEXT_CURRENT;
+    success = 0;
+  }
   
   surface = glitz_agl_context_push_current (surface, constraint);
 
@@ -69,10 +72,7 @@ _glitz_agl_surface_push_current (void *abstract_surface,
     return 1;
   }
 
-  if (constraint == GLITZ_CN_SURFACE_DRAWABLE_CURRENT)
-    return 0;
-  else
-    return 1;
+  return success;
 }
 
 static void
@@ -307,14 +307,10 @@ _glitz_agl_surface_create_similar (void *abstract_templ,
        GLITZ_AGL_FEATURE_PBUFFER_MASK)) {
     glitz_format_t *format;
 
-    format = glitz_format_find_sufficient_standard
-      (templ->base.format, 1, GLITZ_FORMAT_OPTION_OFFSCREEN_MASK, format_name);
-    
-    if (!format)
-      format = glitz_format_find_standard (templ->thread_info->formats,
-                                           templ->thread_info->n_formats,
-                                           GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
-                                           format_name);
+    format = glitz_format_find_standard (templ->thread_info->formats,
+                                         templ->thread_info->n_formats,
+                                         GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
+                                         format_name);
     
     if (format)
       return _glitz_agl_surface_create (templ->thread_info, format,

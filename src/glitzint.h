@@ -222,8 +222,9 @@ typedef struct _glitz_matrix_t {
 
 typedef struct _glitz_texture {
   glitz_gl_uint_t name;
-  unsigned int target;
-  unsigned int format;
+  glitz_gl_enum_t target;
+  glitz_gl_enum_t format;
+  glitz_gl_enum_t internal_format;
   glitz_bool_t allocated;
   
   glitz_filter_t filter;
@@ -273,6 +274,11 @@ typedef struct glitz_surface_backend {
 
 #define SURFACE_PROGRAMMATIC(surface) \
   (surface->hint_mask & GLITZ_HINT_PROGRAMMATIC_MASK)
+
+#define SURFACE_SOLID(surface) \
+  ((surface->hint_mask & GLITZ_HINT_PROGRAMMATIC_MASK) && \
+   ((glitz_programmatic_surface_t *) surface)->type == \
+   GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE)
 
 #define SURFACE_REPEAT(surface) \
   (surface->hint_mask & GLITZ_INT_HINT_REPEAT_MASK)
@@ -566,12 +572,6 @@ glitz_format_find_standard (glitz_format_t *formats,
                             int n_formats,
                             unsigned long options,
                             glitz_format_name_t format_name);
-
-glitz_format_t *
-glitz_format_find_sufficient_standard (glitz_format_t *formats,
-                                       int n_formats,
-                                       unsigned long options,
-                                       glitz_format_name_t format_name);
 
 void
 glitz_format_calculate_pixel_transfer_info (glitz_format_t *format);

@@ -160,8 +160,9 @@ glitz_format_find_standard (glitz_format_t *formats,
                           glitz_format_name_t format_name)
 {
   glitz_format_t templ;
-  unsigned long mask = GLITZ_FORMAT_RED_SIZE_MASK | GLITZ_FORMAT_GREEN_SIZE_MASK |
-    GLITZ_FORMAT_BLUE_SIZE_MASK | GLITZ_FORMAT_ALPHA_SIZE_MASK;
+  unsigned long mask = GLITZ_FORMAT_RED_SIZE_MASK |
+    GLITZ_FORMAT_GREEN_SIZE_MASK | GLITZ_FORMAT_BLUE_SIZE_MASK |
+    GLITZ_FORMAT_ALPHA_SIZE_MASK;
 
   switch (format_name) {
   case GLITZ_STANDARD_ARGB32:
@@ -186,46 +187,6 @@ glitz_format_find_standard (glitz_format_t *formats,
     templ.red_size = 0;
     templ.green_size = 0;
     templ.blue_size = 0;
-    templ.alpha_size = 1;
-    break;
-  }
-
-  _glitz_format_add_options (options, &templ, &mask);
-
-  return glitz_format_find (formats, n_formats, mask, &templ, 0);
-}
-
-glitz_format_t *
-glitz_format_find_sufficient_standard (glitz_format_t *formats,
-                                     int n_formats,
-                                     unsigned long options,
-                                     glitz_format_name_t format_name)
-{
-  glitz_format_t templ;
-  unsigned long mask;
-
-  switch (format_name) {
-  case GLITZ_STANDARD_ARGB32:
-    mask = GLITZ_FORMAT_RED_SIZE_MASK | GLITZ_FORMAT_GREEN_SIZE_MASK |
-      GLITZ_FORMAT_BLUE_SIZE_MASK | GLITZ_FORMAT_ALPHA_SIZE_MASK;
-    templ.red_size = 8;
-    templ.green_size = 8;
-    templ.blue_size = 8;
-    templ.alpha_size = 8;
-    break;
-  case GLITZ_STANDARD_RGB24:
-    mask = GLITZ_FORMAT_RED_SIZE_MASK | GLITZ_FORMAT_GREEN_SIZE_MASK |
-      GLITZ_FORMAT_BLUE_SIZE_MASK;
-    templ.red_size = 8;
-    templ.green_size = 8;
-    templ.blue_size = 8;
-    break;
-  case GLITZ_STANDARD_A8:
-    mask = GLITZ_FORMAT_ALPHA_SIZE_MASK;
-    templ.alpha_size = 8;
-    break;
-  case GLITZ_STANDARD_A1:
-    mask = GLITZ_FORMAT_ALPHA_SIZE_MASK;
     templ.alpha_size = 1;
     break;
   }

@@ -138,7 +138,7 @@ _glitz_composite_direct (glitz_operator_t op,
 
   gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
                  GLITZ_GL_TEXTURE_ENV_MODE,
-                 GLITZ_GL_REPLACE);
+                 GLITZ_GL_MODULATE);
   
   if (mask->transform)
     glitz_texture_ensure_filter (gl, mask_texture, mask->filter);
@@ -404,6 +404,7 @@ glitz_composite (glitz_operator_t op,
   glitz_point_t tl, bl, br, tr;
   glitz_region_box_t clip;
   glitz_program_type_t type = 0;
+  glitz_bool_t simple_modulate = 0;
 
   gl = dst->gl;
   
@@ -412,17 +413,26 @@ glitz_composite (glitz_operator_t op,
                                       width + abs (x_src),
                                       height + abs (y_src));
 
-  if (mask && SURFACE_PROGRAMMATIC (mask))
-    glitz_programmatic_surface_setup (mask,
-                                      width + abs (x_mask),
-                                      height + abs (y_mask));
-
   if (mask) {
+    if (SURFACE_PROGRAMMATIC (mask))
+      glitz_programmatic_surface_setup (mask,
+                                        width + abs (x_mask),
+                                        height + abs (y_mask));
+
+    if (SURFACE_SOLID (mask) && (!SURFACE_PROGRAMMATIC (src))) {
+      simple_modulate = 1;
+      if ((dst->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK) &&
+          src->convolution)
+        simple_modulate = 0;
+    }
+  }
+
+  if (mask && (!simple_modulate)) {
     glitz_region_box_t mask_bounds;
     static glitz_color_t clear_color = { 0x0000, 0x0000, 0x0000, 0x0000 };
     glitz_bool_t intermediate_translate;
 
-    if ((dst->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) &&
+    if ((dst->feature_mask & GLITZ_FEATURE_ARB_MULTITEXTURE_MASK) &&
         _glitz_composite_direct (op,
                                  src, mask, dst,
                                  x_src, y_src,
@@ -532,10 +542,26 @@ glitz_composite (glitz_operator_t op,
   }
 
   glitz_texture_bind (gl, texture);
-
+  
   gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
                  GLITZ_GL_TEXTURE_ENV_MODE,
-                 GLITZ_GL_REPLACE);
+                 (simple_modulate)? GLITZ_GL_MODULATE: GLITZ_GL_REPLACE);
+  
+  if (simple_modulate) {
+    glitz_programmatic_surface_t *m = (glitz_programmatic_surface_t *) mask;
+
+    gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
+                   GLITZ_GL_TEXTURE_ENV_MODE,
+                   GLITZ_GL_MODULATE);
+    gl->color_4us (m->u.solid.color.alpha,
+                   m->u.solid.color.alpha,
+                   m->u.solid.color.alpha,
+                   m->u.solid.color.alpha);
+  } else {
+    gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
+                   GLITZ_GL_TEXTURE_ENV_MODE,
+                   GLITZ_GL_REPLACE);
+  }
 
   clip.x1 = x_dst;
   clip.y1 = y_dst;

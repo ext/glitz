@@ -517,7 +517,13 @@ glitz_program_enable_simple (glitz_gl_proc_address_list_t *gl,
                              glitz_texture_t *src_texture,
                              glitz_texture_t *mask_texture)
 {
-  int offset = _glitz_program_offset (src_texture, mask_texture);
+  int offset;
+
+  /* This is done without fragment program */
+  if (mask_texture->internal_format == GLITZ_GL_LUMINANCE_ALPHA)
+    return;
+
+  offset = _glitz_program_offset (src_texture, mask_texture);
   
   if (!programs->fragment_simple[offset])
     programs->fragment_simple[offset] =
@@ -642,6 +648,16 @@ glitz_program_enable_programmatic (glitz_surface_t *dst,
     return;
   }
 
+  /* no fragment proram needed for solid programmatic surface and
+     mask in lumniance alpha texture format */
+  if (dst->feature_mask & GLITZ_FEATURE_ARB_MULTITEXTURE_MASK) {
+    if ((surface->type == GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE) &&
+        (mask_texture->internal_format == GLITZ_GL_LUMINANCE_ALPHA)) {
+      glitz_programmatic_surface_bind (dst->gl, surface, dst->feature_mask);
+      return;
+    }
+  }
+
   if (dst->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
     if (!programs->fragment_programmatic[type_offset])
       programs->fragment_programmatic[type_offset] =
@@ -662,12 +678,11 @@ glitz_program_type (glitz_surface_t *dst,
                     glitz_surface_t *src,
                     glitz_surface_t *mask)
 {
-  glitz_program_type_t type = GLITZ_PROGRAM_TYPE_NONE;
+  glitz_program_type_t type = GLITZ_PROGRAM_TYPE_NOT_SUPPORTED;
   
   if (dst->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
 
-    if (dst->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK)
-    
+    if (dst->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK) {
       if (src->convolution) {
         if (mask && SURFACE_PROGRAMMATIC (mask) &&
             ((glitz_programmatic_surface_t *) mask)->type ==
@@ -684,20 +699,21 @@ glitz_program_type (glitz_surface_t *dst,
         goto OK1;
       }
     
-    if (mask && mask->convolution) {
-      if (SURFACE_PROGRAMMATIC (src) &&
-          ((glitz_programmatic_surface_t *) src)->type ==
-          GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE) {
-        if (dst->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK) {
-          type = GLITZ_PROGRAM_TYPE_MASK_CONVOLUTION_AND_SOLID_SRC;
-          goto OK2;
-        } else {
-          type = GLITZ_PROGRAM_TYPE_SRC_PROGRAMMATIC;
-          goto OK1;
+      if (mask && mask->convolution) {
+        if (SURFACE_PROGRAMMATIC (src) &&
+            ((glitz_programmatic_surface_t *) src)->type ==
+            GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE) {
+          if (dst->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK) {
+            type = GLITZ_PROGRAM_TYPE_MASK_CONVOLUTION_AND_SOLID_SRC;
+            goto OK2;
+          } else {
+            type = GLITZ_PROGRAM_TYPE_SRC_PROGRAMMATIC;
+            goto OK1;
+          }
         }
+        type = GLITZ_PROGRAM_TYPE_MASK_CONVOLUTION;
+        goto OK1;
       }
-      type = GLITZ_PROGRAM_TYPE_MASK_CONVOLUTION;
-      goto OK1;
     }
 
     if (SURFACE_PROGRAMMATIC (src)) {
@@ -708,25 +724,28 @@ glitz_program_type (glitz_surface_t *dst,
     if (mask && SURFACE_PROGRAMMATIC (mask)) {
       type = GLITZ_PROGRAM_TYPE_MASK_PROGRAMMATIC;
       goto OK1;
-    }      
+    }
   }
-  
-  if (SURFACE_PROGRAMMATIC (src) &&
-      ((glitz_programmatic_surface_t *) src)->type ==
-      GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE) {
+
+  if (SURFACE_SOLID (src)) {
     type = GLITZ_PROGRAM_TYPE_SRC_PROGRAMMATIC;
     goto OK1;
   }
-  
-  if (mask && SURFACE_PROGRAMMATIC (mask) &&
-      ((glitz_programmatic_surface_t *) mask)->type ==
-      GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE) {
+
+  if (mask && SURFACE_SOLID (mask)) {
     type = GLITZ_PROGRAM_TYPE_MASK_PROGRAMMATIC;
     goto OK1;
   }
   
-  if (mask && (!SURFACE_PROGRAMMATIC (mask)))
-    type = GLITZ_PROGRAM_TYPE_SIMPLE;
+  if (mask && (!SURFACE_PROGRAMMATIC (mask))) {
+    if (dst->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
+      type = GLITZ_PROGRAM_TYPE_SIMPLE;
+    } else if ((mask->texture->internal_format == GLITZ_GL_LUMINANCE_ALPHA) &&
+               (dst->feature_mask & GLITZ_FEATURE_ARB_MULTITEXTURE_MASK)) {
+      type = GLITZ_PROGRAM_TYPE_SIMPLE;
+    } else
+      type = GLITZ_PROGRAM_TYPE_NOT_SUPPORTED;
+  } 
 
  OK1:
   if ((SURFACE_PROGRAMMATIC (src) || src->convolution) &&
@@ -767,7 +786,8 @@ glitz_program_enable (glitz_program_type_t type,
                                       GLITZ_PROGRAM_MASK_OPERATION_OFFSET, 2);
     break;
   case GLITZ_PROGRAM_TYPE_SRC_PROGRAMMATIC:
-    glitz_program_enable_programmatic (dst, (glitz_programmatic_surface_t *) src,
+    glitz_program_enable_programmatic (dst,
+                                       (glitz_programmatic_surface_t *) src,
                                        src_texture, mask_texture,
                                        GLITZ_PROGRAM_SRC_OPERATION_OFFSET);
     break;

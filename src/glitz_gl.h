@@ -72,6 +72,7 @@ typedef unsigned char glitz_gl_ubyte_t;
 #define GLITZ_GL_TEXTURE_WRAP_T     0x2803
 #define GLITZ_GL_TEXTURE_MAG_FILTER 0x2800
 #define GLITZ_GL_TEXTURE_MIN_FILTER 0x2801
+#define GLITZ_GL_MODULATE           0x2100
 #define GLITZ_GL_NEAREST            0x2600
 #define GLITZ_GL_LINEAR             0x2601
 #define GLITZ_GL_REPEAT             0x2901
@@ -92,13 +93,14 @@ typedef unsigned char glitz_gl_ubyte_t;
 #define GLITZ_GL_TRANSFORM_BIT      0x00001000
 #define GLITZ_GL_COLOR_BUFFER_BIT   0x00004000
 
-#define GLITZ_GL_ALPHA  0x1906
-#define GLITZ_GL_RGB    0x1907
-#define GLITZ_GL_COLOR  0x1800
-#define GLITZ_GL_DITHER 0x0BD0
-#define GLITZ_GL_RGBA   0x1908
-#define GLITZ_GL_BGR    0x80E0
-#define GLITZ_GL_BGRA   0x80E1
+#define GLITZ_GL_ALPHA           0x1906
+#define GLITZ_GL_RGB             0x1907
+#define GLITZ_GL_LUMINANCE_ALPHA 0x190A
+#define GLITZ_GL_COLOR           0x1800
+#define GLITZ_GL_DITHER          0x0BD0
+#define GLITZ_GL_RGBA            0x1908
+#define GLITZ_GL_BGR             0x80E0
+#define GLITZ_GL_BGRA            0x80E1
 
 #define GLITZ_GL_FRONT_AND_BACK 0x0408
 #define GLITZ_GL_FLAT           0x1D00

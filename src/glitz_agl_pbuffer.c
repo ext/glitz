@@ -39,7 +39,7 @@ glitz_agl_pbuffer_create (glitz_texture_t *texture)
   AGLPbuffer pbuffer;
 
   aglCreatePBuffer (texture->width, texture->height,
-                    texture->target, GL_RGBA, 0, &pbuffer);
+                    texture->target, texture->internal_format, 0, &pbuffer);
 
   return pbuffer;
 }

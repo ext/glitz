@@ -1,3 +1,54 @@
+2004-04-28  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Added internal_format to glitz_texture_t. Added
+	SURFACE_SOLID macro. Removed glitz_format_find_sufficient_standard.
+
+	* src/glitz_util.c (glitz_get_gl_format_from_bpp): 
+	Use GLITZ_GL_LUMINANCE_ALPHA instead of GLITZ_GL_ALPHA for
+	A8 surfaces.
+
+	* src/glitz_texture.c: Added support for direct compositing with mask
+	surface only using multi-texturing.
+
+	* src/glitz_surface.c: Added _glitz_surface_try_push_current.
+	Added support for direct compositing with mask surface only using
+	multi-texturing.
+	(glitz_surface_gl_begin): Removed unnecessary set of surface status.
+
+	* src/glitz_program.c: Added support for direct compositing with
+	mask surface only using multi-texturing.
+
+	* src/glitz_gl.h: Added GLITZ_GL_MODULATE and GLITZ_GL_LUMINANCE_ALPHA.
+
+	* src/glitz_format.c: Removed glitz_format_find_sufficient_standard.
+
+	* src/glitz_glxint.h: Added GLITZ_AGL_FEATURE_ARB_MULTITEXTURE_MASK.
+	
+	* src/glitz_aglint.h: Added GLITZ_AGL_FEATURE_ARB_MULTITEXTURE_MASK.
+
+	* src/glitz_glx_surface.c (_glitz_glx_surface_create_similar): 
+	Always use glitz_format_find_standard for similar surface formats.
+	(_glitz_glx_surface_push_current): Fixed invalid set of surface status.
+	
+	* src/glitz_agl_surface.c (_glitz_agl_surface_create_similar): 
+	Always use glitz_format_find_standard for similar surface formats.
+	(_glitz_agl_surface_push_current): Fixed invalid set of surface status.
+
+	* src/glitz_agl_pbuffer.c (glitz_agl_pbuffer_create): Use internal
+	format for pbuffer.
+
+	* src/glitz_glx_extension.c: Detect GL_ARB_multitexture extension.
+	
+	* src/glitz_agl_extension.c: Detect GL_ARB_multitexture extension.
+
+	* src/glitz.h (GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK): Added
+	GLITZ_FEATURE_ARB_MULTITEXTURE_MASK.
+
+	* src/glitz.c (_glitz_composite_direct): Added support for
+	direct compositing with mask surface only using multi-texturing.
+	(glitz_composite): Solid mask surfaces are now supported by all
+	hardware.
+
 2004-04-25  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_programmatic.c (glitz_programmatic_surface_bind):

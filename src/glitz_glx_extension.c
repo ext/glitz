@@ -48,6 +48,7 @@ static glitz_extension_map client_glx_extensions[] = {
   { "GL_ARB_multisample", GLITZ_GLX_FEATURE_MULTISAMPLE_MASK },
   { "GL_NV_multisample_filter_hint",
     GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_MASK },
+  { "GL_ARB_multitexture", GLITZ_GLX_FEATURE_ARB_MULTITEXTURE_MASK },
   { "GL_ARB_vertex_program", GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK },
   { "GL_ARB_fragment_program", GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK },
   { NULL, 0 }
@@ -126,19 +127,19 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
     screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK;
 
   if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK) {
-    screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK;
-    screen_info->feature_mask |= GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK;    
-  }
+      GLITZ_GLX_FEATURE_ARB_MULTITEXTURE_MASK) {
+    screen_info->feature_mask |= GLITZ_FEATURE_ARB_MULTITEXTURE_MASK;
 
-  if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
-    screen_info->glx_feature_mask |=
-      GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
-    screen_info->feature_mask |= GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
-  }
+    if (screen_info->glx_feature_mask &
+        GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK)
+      screen_info->feature_mask |= GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK;
 
-  if ((screen_info->feature_mask & GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK) &&
-      (screen_info->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK))
-    screen_info->feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
+    if (screen_info->glx_feature_mask &
+        GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK)
+      screen_info->feature_mask |= GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
+
+    if ((screen_info->feature_mask & GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK) &&
+        (screen_info->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK))
+      screen_info->feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
+  }
 }
