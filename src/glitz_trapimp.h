@@ -139,15 +139,16 @@
   accurately and consistently with a set of one-dimensional texture
   coordinates in a fixed size texture. By using linear texture
   filtering this allows us to render perfectly anti-aliased
-  geometry on a wide range of hardware. It could also be a Nx1 surface
-  containing a pre-computed gamma curve with resolution N for gamma
-  corrected anti-aliasing.
+  geometry on a wide range of hardware.
 
   Each trapezoid needs to be slit up into a set of rectangles along
   with appropriate horizontal texture coordinates for the specified
   mask surface. In general the mask is a 2x1 surface with pixel
-  0,0 "clear black" and pixel 1,0 "solid white". This function
-  generates geometry data in the following format:
+  0,0 "clear black" and pixel 1,0 "solid white". It could also be a
+  Nx1 surface containing a pre-computed gamma curve with resolution
+  N for gamma corrected anti-aliasing.
+
+  This function generates geometry data in the following format:
 
   primitive   : QUADS
   type        : SHORT|INT|FLOAT|DOUBLE
