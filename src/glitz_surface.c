@@ -77,6 +77,9 @@ glitz_surface_fini (glitz_surface_t *surface)
   if (surface->transforms)
     free (surface->transforms);
 
+  if (surface->inverse_transform)
+    free (surface->inverse_transform);
+
   if (surface->convolution)
     free (surface->convolution);
 }
@@ -213,6 +216,15 @@ glitz_surface_push_transform (glitz_surface_t *surface)
 
   if (!surface->transforms)
     return;
+
+  if (!surface->inverse_transform)
+    surface->inverse_transform = malloc (sizeof (glitz_matrix_t));
+  
+  if (!surface->inverse_transform) {
+    free (surface->transforms);
+    surface->transforms = surface->transform = NULL;
+    return;
+  }
   
   if (surface->n_transforms > 1) {
     surface->transforms[surface->n_transforms - 1] =
@@ -285,8 +297,10 @@ glitz_surface_set_transform (glitz_surface_t *surface,
   if (transform) {
     if (!surface->transform) {
       glitz_surface_push_transform (surface);
-      if (!surface->transform)
+      if (!surface->transform) {
+        glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
         return;
+      }
     }
 
     surface->transform->m[0][0] = FIXED_TO_DOUBLE (transform->matrix[0][0]);
@@ -296,6 +310,8 @@ glitz_surface_set_transform (glitz_surface_t *surface,
     surface->transform->m[0][1] = FIXED_TO_DOUBLE (transform->matrix[1][0]);
     surface->transform->m[1][1] = FIXED_TO_DOUBLE (transform->matrix[1][1]);
     surface->transform->m[2][1] = FIXED_TO_DOUBLE (transform->matrix[1][2]);
+
+    *surface->inverse_transform = *surface->transform;
 
     if (glitz_matrix_invert (surface->transform)) {
       glitz_surface_pop_transform (surface);

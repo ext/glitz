@@ -1,3 +1,16 @@
+2004-05-20  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_surface.c (glitz_surface_fini): Free inverse_transform
+	if allocated.
+	(glitz_surface_push_transform): Allocate inverse_transform.
+	(glitz_surface_set_transform): Set inverse_transform.
+
+	* src/glitzint.h: Added inverse_transform matrix.
+
+	* src/glitz.c (_glitz_composite_direct): Better direct compositing
+	support.
+	(glitz_composite): Fixed source offset handling.
+
 2004-05-17  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: flush -> flush and swap_buffers. Added new

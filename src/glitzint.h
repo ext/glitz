@@ -311,6 +311,7 @@ struct _glitz_surface {
   glitz_filter_t filter;
   glitz_polyedge_t polyedge;
   glitz_matrix_t *transform;
+  glitz_matrix_t *inverse_transform;
   glitz_matrix_t *transforms;
   unsigned int n_transforms;
   int width, height;

@@ -33,9 +33,6 @@
 
 #include <math.h>
 
-#define SURFACE_INFINITE_DATA(surface) \
-  (SURFACE_REPEAT (surface) || SURFACE_PROGRAMMATIC (surface))
-
 #define SURFACE_GLREPEAT(surface, texture) \
   (SURFACE_REPEAT (surface) && texture->repeatable)
 
@@ -47,12 +44,9 @@
    ((surface->transform->m[0][1] != 0.0) || \
    (surface->transform->m[1][0] != 0.0)))
 
-/* This version of composite uses fragment programs for direct
+/* This version of composite uses multi-texturing for direct
    Porter-Duff compositing. It cannot handle rotating transformations
-   and only one of source and mask can be a transformed the other
-   surface must be repeating. Function will fall back to regular composite
-   function if this isn't the case.
-*/
+   and will fall back to regular composite function if this is the case. */
 static glitz_bool_t
 _glitz_composite_direct (glitz_operator_t op,
                          glitz_surface_t *src,
@@ -72,9 +66,7 @@ _glitz_composite_direct (glitz_operator_t op,
   glitz_texture_t *mask_texture;
   glitz_bounding_box_double_t src_box, mask_box, dst_box;
   glitz_bounding_box_t dirty_box;
-  glitz_point_t src_tl, src_br, mask_tl, mask_br, translate_src,
-    translate_mask;
-  double src_width, src_height, mask_width, mask_height;
+  glitz_point_t src_tl, src_br, mask_tl, mask_br;
   glitz_program_type_t type;
 
   gl = dst->gl;
@@ -84,19 +76,9 @@ _glitz_composite_direct (glitz_operator_t op,
   if (type == GLITZ_PROGRAM_TYPE_NOT_SUPPORTED)
     return 0;
   
-  /* We cannot continue if we have a rotating transformation or
-     if both surfaces have transformations or the surface not being
-     transformed isn't repeating. */
-  if (src->transform || mask->transform) {
-    if (SURFACE_ROTATE (src) || SURFACE_ROTATE (mask))
-      return 0;
-    
-    if ((src->transform &&
-         (mask->transform || (!SURFACE_INFINITE_DATA (mask)))) ||
-        (mask->transform &&
-         (src->transform || (!SURFACE_INFINITE_DATA (src)))))
-      return 0;
-  }
+  /* We cannot continue if we have a rotating transformation. */
+  if (SURFACE_ROTATE (src) || SURFACE_ROTATE (mask))
+    return 0;
 
   src_texture = glitz_surface_get_texture (src);
   mask_texture = glitz_surface_get_texture (mask);
@@ -150,126 +132,118 @@ _glitz_composite_direct (glitz_operator_t op,
   else
     glitz_texture_ensure_filter (gl, mask_texture, GLITZ_FILTER_NEAREST);
 
-  
-  /* calculate source area */
-  src_box.x1 = src_box.y1 = 0.0;
-  src_box.x2 = src->width;
-  src_box.y2 = src->height;
-  
-  if (src->transform) {
-    glitz_matrix_transform_point (src->transform, &src_box.x1, &src_box.y1);
-    glitz_matrix_transform_point (src->transform, &src_box.x2, &src_box.y2);
-  }
-
-  src_width = src_box.x2 - src_box.x1;
-  src_height = src_box.y2 - src_box.y1;
-
-  translate_src.x = (src_box.x1 < 0.0)? src_box.x1: 0.0;
-  translate_src.y = (src_box.y1 < 0.0)? src_box.y1: 0.0;
-
-  src_box.x1 += x_dst;
-  src_box.y1 += y_dst;
-  src_box.x2 += (x_dst - x_src);
-  src_box.y2 += (y_dst - y_src);
-  
-
-  /* calculate mask area */
-  mask_box.x1 = mask_box.y1 = 0.0;
-  mask_box.x2 = mask->width;
-  mask_box.y2 = mask->height;
-
-  if (mask->transform) {
-    glitz_matrix_transform_point (src->transform, &mask_box.x1, &mask_box.y1);
-    glitz_matrix_transform_point (src->transform, &mask_box.x2, &mask_box.y2);
-  }
-
-  mask_width = mask_box.x2 - mask_box.x1;
-  mask_height = mask_box.y2 - mask_box.y1;
-
-  translate_mask.x = (mask_box.x1 < 0.0)? mask_box.x1: 0.0;
-  translate_mask.y = (mask_box.y1 < 0.0)? mask_box.y1: 0.0;
-  mask_box.x1 += x_dst;
-  mask_box.y1 += y_dst;
-  mask_box.x2 += (x_dst - x_mask);
-  mask_box.y2 += (y_dst - y_mask);
-
-
-  /* calculate destination area */
   dst_box.x1 = x_dst;
   dst_box.y1 = y_dst;
   dst_box.x2 = dst_box.x1 + width;
   dst_box.y2 = dst_box.y1 + height;
   
-  if (!SURFACE_REPEAT (src))
-    glitz_intersect_bounding_box_double (&dst_box, &src_box, &dst_box);
-
-  if (!SURFACE_REPEAT (mask))
-    glitz_intersect_bounding_box_double (&dst_box, &mask_box, &dst_box);
+  if (!SURFACE_REPEAT (src)) {
+    src_box.x1 = src_box.y1 = 0.0;
+    src_box.x2 = src->width;
+    src_box.y2 = src->height;
   
+    if (src->transform)
+      glitz_matrix_transform_bounding_box (src->transform,
+                                           &src_box.x1, &src_box.y1,
+                                           &src_box.x2, &src_box.y2);
+    
+    src_box.x1 += x_dst - x_src;
+    src_box.x2 += x_dst - x_src;
+    src_box.y2 += y_dst - y_src;
+    src_box.y2 += y_dst - y_src;
 
-  /* re-calculate source area */
+    if (!SURFACE_PROGRAMMATIC (src))
+      glitz_intersect_bounding_box_double (&dst_box, &src_box, &dst_box);
+  }
+
+  if (!SURFACE_REPEAT (mask)) {
+    mask_box.x1 = mask_box.y1 = 0.0;
+    mask_box.x2 = mask->width;
+    mask_box.y2 = mask->height;
+    
+    if (mask->transform)
+      glitz_matrix_transform_bounding_box (mask->transform,
+                                           &mask_box.x1, &mask_box.y1,
+                                           &mask_box.x2, &mask_box.y2);
+  
+    mask_box.x1 += x_dst - x_mask;
+    mask_box.x2 += x_dst - x_mask;
+    mask_box.y2 += y_dst - y_mask;
+    mask_box.y2 += y_dst - y_mask;
+
+    if (!SURFACE_PROGRAMMATIC (mask))
+      glitz_intersect_bounding_box_double (&dst_box, &mask_box, &dst_box);
+  }
+
+  if ((dst_box.x2 - dst_box.x1) <= 0 || (dst_box.y2 - dst_box.y1) <= 0)
+    return 1;
+
   if (SURFACE_REPEAT (src)) {
-    src_box.y2 = src->height -
+    src_br.y = src->height -
       (((y_src % src->height) + (int) (dst_box.y2 - dst_box.y1)) %
        src->height);
-    src_box.y1 = (dst_box.y2 - dst_box.y1) + src_box.y2;    
-    src_box.x1 = x_src % src->width;
-    src_box.x2 = (dst_box.x2 - dst_box.x1) + src_box.x1;
+    src_tl.y = (dst_box.y2 - dst_box.y1) + src_br.y;
+    src_tl.x = x_src % src->width;
+    src_br.x = (dst_box.x2 - dst_box.x1) + src_tl.x;
   } else {
     glitz_intersect_bounding_box_double (&src_box, &dst_box, &src_box);
 
-    if (x_src < 0) x_src = 0;
-    if (y_src < 0) y_src = 0;
+    src_tl.x = src_box.x1 - x_dst + x_src;
+    src_br.x = src_box.x2 - x_dst + x_src;
+    src_tl.y = src_box.y1 - y_dst + y_src;
+    src_br.y = src_box.y2 - y_dst + y_src;
 
-    src_box.x2 = x_src + (src_box.x2 - src_box.x1) - translate_src.x;
-    src_box.y2 = y_src + (src_box.y2 - src_box.y1) - translate_src.y;
-    src_box.x1 = x_src - translate_src.x;
-    src_box.y1 = y_src - translate_src.y;
+    if (src->transform) {
+      glitz_matrix_transform_point (src->inverse_transform,
+                                    &src_tl.x, &src_tl.y);
+      glitz_matrix_transform_point (src->inverse_transform,
+                                    &src_br.x, &src_br.y);
+    }
   }
 
-  /* re-calculate mask area */
-  if (SURFACE_REPEAT (mask)) {
-    mask_box.y2 = mask->height -
-      (((y_mask % mask->height) + (int) (dst_box.y2 - dst_box.y1)) %
-       mask->height);
-    mask_box.y1 = (dst_box.y2 - dst_box.y1) + mask_box.y2;    
-    mask_box.x1 = x_mask % mask->width;
-    mask_box.x2 = (dst_box.x2 - dst_box.x1) + mask_box.x1;
-  } else {
-    glitz_intersect_bounding_box_double (&mask_box, &dst_box, &mask_box);
+  src_tl.x = (src_tl.x / src->width) * src_texture->texcoord_width;
+  src_tl.y = (src_tl.y / src->height) * src_texture->texcoord_height;
+  src_br.x = (src_br.x / src->width) * src_texture->texcoord_width;
+  src_br.y = (src_br.y / src->height) * src_texture->texcoord_height;
 
-    if (x_mask < 0) x_mask = 0;
-    if (y_mask < 0) y_mask = 0;
-    
-    mask_box.x2 = x_mask + (mask_box.x2 - mask_box.x1) - translate_mask.x;
-    mask_box.y2 = y_mask + (mask_box.y2 - mask_box.y1) - translate_mask.y;
-    mask_box.x1 = x_mask - translate_mask.x;
-    mask_box.y1 = y_mask - translate_mask.y;
-  }
-
-  /* normalize texture coordinates */
-  src_tl.x = (src_box.x1 / src_width) * src_texture->texcoord_width;
-  src_tl.y = (src_box.y1 / src_height) * src_texture->texcoord_height;
-
-  src_br.x = (src_box.x2 / src_width) * src_texture->texcoord_width;
-  src_br.y = (src_box.y2 / src_height) * src_texture->texcoord_height;
-
-  mask_tl.x = (mask_box.x1 / mask_width) * mask_texture->texcoord_width;
-  mask_tl.y = (mask_box.y1 / mask_height) * mask_texture->texcoord_height;
-
-  mask_br.x = (mask_box.x2 / mask_width) * mask_texture->texcoord_width;
-  mask_br.y = (mask_box.y2 / mask_height) * mask_texture->texcoord_height;
-
-  if (!SURFACE_REPEAT(src)) {
+  if (!SURFACE_REPEAT (src)) {
     src_tl.y = src_texture->texcoord_height - src_tl.y;
     src_br.y = src_texture->texcoord_height - src_br.y;
   }
-    
-  if (!SURFACE_REPEAT(mask)) {
+
+  if (SURFACE_REPEAT (mask)) {
+    mask_br.y = mask->height -
+      (((y_mask % mask->height) + (int) (dst_box.y2 - dst_box.y1)) %
+       mask->height);
+    mask_tl.y = (dst_box.y2 - dst_box.y1) + mask_br.y;
+    mask_tl.x = x_mask % mask->width;
+    mask_br.x = (dst_box.x2 - dst_box.x1) + mask_tl.x;    
+  } else {
+    glitz_intersect_bounding_box_double (&mask_box, &dst_box, &mask_box);
+
+    mask_tl.x = mask_box.x1 - x_dst + x_mask;
+    mask_br.x = mask_box.x2 - x_dst + x_mask;
+    mask_tl.y = mask_box.y1 - y_dst + y_mask;
+    mask_br.y = mask_box.y2 - y_dst + y_mask;
+
+    if (mask->transform) {
+      glitz_matrix_transform_point (mask->inverse_transform,
+                                    &mask_tl.x, &mask_tl.y);
+      glitz_matrix_transform_point (mask->inverse_transform,
+                                    &mask_br.x, &mask_br.y);
+    }
+  }
+
+  mask_tl.x = (mask_tl.x / mask->width) * mask_texture->texcoord_width;
+  mask_tl.y = (mask_tl.y / mask->height) * mask_texture->texcoord_height;
+  mask_br.x = (mask_br.x / mask->width) * mask_texture->texcoord_width;
+  mask_br.y = (mask_br.y / mask->height) * mask_texture->texcoord_height;
+
+  if (!SURFACE_REPEAT (mask)) {
     mask_tl.y = mask_texture->texcoord_height - mask_tl.y;
     mask_br.y = mask_texture->texcoord_height - mask_br.y;
   }
-  
+
   gl->begin (GLITZ_GL_QUADS);
 
   gl->multi_tex_coord_2d_arb (GLITZ_GL_TEXTURE0_ARB, src_tl.x, src_tl.y);
@@ -693,40 +667,16 @@ glitz_composite (glitz_operator_t op,
             glitz_matrix_transform_point (src->transform, &br.x, &br.y);
           }
     
-          /* Shift all coordinates with destination offset */
-          if (x_dst) {
-            tl.x += x_dst;
-            bl.x += x_dst;
-            tr.x += x_dst;
-            br.x += x_dst;
-          }
-          if (y_dst) {
-            tl.y += y_dst;
-            bl.y += y_dst;
-            tr.y += y_dst;
-            br.y += y_dst;
-          }
-
-          /* Shift all coordinates with source offset */
-          if (x_src) {
-            x_src = abs (x_src);
-            if (SURFACE_REPEAT (src))
-              x_src = (x_src % src->width);
-            tl.x -= x_src;
-            bl.x -= x_src;
-            tr.x -= x_src;
-            br.x -= x_src;
-          }
-          if (y_src) {
-            y_src = abs (y_src);
-            if (SURFACE_REPEAT (src))
-              y_src = (y_src % src->height);
-            tl.y -= y_src;
-            bl.y -= y_src;
-            tr.y -= y_src;
-            br.y -= y_src;
-          }
-
+          tl.x += x_dst - x_src;
+          bl.x += x_dst - x_src;
+          tr.x += x_dst - x_src;
+          br.x += x_dst - x_src;
+          
+          tl.y += y_dst - y_src;
+          bl.y += y_dst - y_src;
+          tr.y += y_dst - y_src;
+          br.y += y_dst - y_src;
+          
           if ((tl.x > (x_dst + width) && bl.x > (x_dst + width)) ||
               (tr.x < x_dst && br.x < x_dst))
             x_is_ok = 0;
