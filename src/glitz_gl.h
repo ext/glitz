@@ -43,6 +43,7 @@ typedef unsigned int glitz_gl_bitfield_t;
 typedef double glitz_gl_clampd_t;
 typedef float glitz_gl_clampf_t;
 typedef unsigned char glitz_gl_ubyte_t;
+typedef ptrdiff_t glitz_gl_intptr_t;
 typedef ptrdiff_t glitz_gl_sizeiptr_t;
 
 
@@ -66,10 +67,19 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_MODELVIEW  0x1700
 #define GLITZ_GL_PROJECTION 0x1701
 
+#define GLITZ_GL_SHORT  0x1402
+#define GLITZ_GL_INT    0x1404
+#define GLITZ_GL_FLOAT  0x1406
+#define GLITZ_GL_DOUBLE 0x140A
+
 #define GLITZ_GL_TRIANGLES      0x0004
 #define GLITZ_GL_TRIANGLE_STRIP 0x0005
 #define GLITZ_GL_TRIANGLE_FAN   0x0006
 #define GLITZ_GL_QUADS          0x0007
+#define GLITZ_GL_QUAD_STRIP     0x0008
+#define GLITZ_GL_POLYGON        0x0009
+
+#define GLITZ_GL_VERTEX_ARRAY   0x8074
 
 #define GLITZ_GL_FILL           0x1B02
 #define GLITZ_GL_FRONT          0x0404
@@ -89,6 +99,14 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_TEXTURE_MAG_FILTER     0x2800
 #define GLITZ_GL_TEXTURE_MIN_FILTER     0x2801
 #define GLITZ_GL_TEXTURE_ENV_COLOR      0x2201
+#define GLITZ_GL_TEXTURE_GEN_S          0x0C60
+#define GLITZ_GL_TEXTURE_GEN_T          0x0C61
+#define GLITZ_GL_TEXTURE_GEN_MODE       0x2500
+#define GLITZ_GL_EYE_LINEAR             0x2400
+#define GLITZ_GL_EYE_PLANE              0x2502
+#define GLITZ_GL_S                      0x2000
+#define GLITZ_GL_T                      0x2001
+
 #define GLITZ_GL_MODULATE               0x2100
 #define GLITZ_GL_NEAREST                0x2600
 #define GLITZ_GL_LINEAR                 0x2601
@@ -215,7 +233,6 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 
 #define GLITZ_GL_MULTISAMPLE_FILTER_HINT 0x8534
 
-#define GLITZ_GL_VERTEX_PROGRAM              0x8620
 #define GLITZ_GL_FRAGMENT_PROGRAM            0x8804
 #define GLITZ_GL_PROGRAM_STRING              0x8628
 #define GLITZ_GL_PROGRAM_FORMAT_ASCII        0x8875
@@ -223,6 +240,7 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_PROGRAM_UNDER_NATIVE_LIMITS 0x88B6
 #define GLITZ_GL_PROGRAM_NATIVE_INSTRUCTIONS 0x88A2
 
+#define GLITZ_GL_ARRAY_BUFFER        0x8892
 #define GLITZ_GL_PIXEL_PACK_BUFFER   0x88EB
 #define GLITZ_GL_PIXEL_UNPACK_BUFFER 0x88EC
 
@@ -245,30 +263,34 @@ typedef glitz_gl_void_t (* glitz_gl_enable_t)
      (glitz_gl_enum_t cap);
 typedef glitz_gl_void_t (* glitz_gl_disable_t)
      (glitz_gl_enum_t cap);
-typedef glitz_gl_void_t (* glitz_gl_begin_t)
-     (glitz_gl_enum_t mode);
-typedef glitz_gl_void_t (* glitz_gl_end_t)
-     (glitz_gl_void_t);
-typedef glitz_gl_void_t (* glitz_gl_vertex_2i_t)
-     (glitz_gl_int_t x, glitz_gl_int_t y);
-typedef glitz_gl_void_t (* glitz_gl_vertex_2d_t)
-     (glitz_gl_double_t x, glitz_gl_double_t y);
+typedef glitz_gl_void_t (* glitz_gl_enable_client_state_t)
+     (glitz_gl_enum_t cap);
+typedef glitz_gl_void_t (* glitz_gl_disable_client_state_t)
+     (glitz_gl_enum_t cap);
+typedef glitz_gl_void_t (* glitz_gl_vertex_pointer_t)
+     (glitz_gl_int_t size, glitz_gl_enum_t type, glitz_gl_sizei_t stride,
+      const glitz_gl_void_t *ptr);
+typedef glitz_gl_void_t (* glitz_gl_draw_arrays_t)
+     (glitz_gl_enum_t mode, glitz_gl_int_t first, glitz_gl_sizei_t count);
 typedef glitz_gl_void_t (* glitz_gl_tex_env_f_t)
      (glitz_gl_enum_t target, glitz_gl_enum_t pname, glitz_gl_float_t param);
 typedef glitz_gl_void_t (* glitz_gl_tex_env_fv_t)
      (glitz_gl_enum_t target, glitz_gl_enum_t pname,
       const glitz_gl_float_t *params);
-typedef glitz_gl_void_t (* glitz_gl_tex_coord_2d_t)
-     (glitz_gl_double_t s, glitz_gl_double_t t);
+typedef glitz_gl_void_t (* glitz_gl_tex_gen_i_t)
+     (glitz_gl_enum_t coord, glitz_gl_enum_t pname, glitz_gl_int_t param);
+typedef glitz_gl_void_t (* glitz_gl_tex_gen_fv_t)
+     (glitz_gl_enum_t coord, glitz_gl_enum_t pname,
+      const glitz_gl_float_t *params);
 typedef glitz_gl_void_t (* glitz_gl_scissor_t)
      (glitz_gl_int_t x, glitz_gl_int_t y,
       glitz_gl_sizei_t width, glitz_gl_sizei_t height);
 typedef glitz_gl_void_t (* glitz_gl_color_4us_t)
      (glitz_gl_ushort_t red, glitz_gl_ushort_t green, glitz_gl_ushort_t blue,
       glitz_gl_ushort_t alpha);
-typedef glitz_gl_void_t (* glitz_gl_color_4d_t)
-     (glitz_gl_double_t red, glitz_gl_double_t green, glitz_gl_double_t blue,
-      glitz_gl_double_t alpha);
+typedef glitz_gl_void_t (* glitz_gl_color_4f_t)
+     (glitz_gl_float_t red, glitz_gl_float_t green, glitz_gl_float_t blue,
+      glitz_gl_float_t alpha);
 typedef glitz_gl_void_t (* glitz_gl_blend_func_t)
      (glitz_gl_enum_t sfactor, glitz_gl_enum_t dfactor);
 typedef glitz_gl_void_t (* glitz_gl_clear_t)
@@ -294,17 +316,15 @@ typedef glitz_gl_void_t (* glitz_gl_pop_matrix_t)
      (glitz_gl_void_t);
 typedef glitz_gl_void_t (* glitz_gl_load_identity_t)
      (glitz_gl_void_t);
-typedef glitz_gl_void_t (* glitz_gl_load_matrix_d_t)
-     (const glitz_gl_double_t *m);
-typedef glitz_gl_void_t (* glitz_gl_mult_matrix_d_t)
-     (const glitz_gl_double_t *m);
+typedef glitz_gl_void_t (* glitz_gl_load_matrix_f_t)
+     (const glitz_gl_float_t *m);
 typedef glitz_gl_void_t (* glitz_gl_depth_range_t)
      (glitz_gl_clampd_t near_val, glitz_gl_clampd_t far_val);
 typedef glitz_gl_void_t (* glitz_gl_viewport_t)
      (glitz_gl_int_t x, glitz_gl_int_t y,
       glitz_gl_sizei_t width, glitz_gl_sizei_t height);
-typedef glitz_gl_void_t (* glitz_gl_raster_pos_2d_t)
-     (glitz_gl_double_t x, glitz_gl_double_t y);
+typedef glitz_gl_void_t (* glitz_gl_raster_pos_2f_t)
+     (glitz_gl_float_t x, glitz_gl_float_t y);
 typedef glitz_gl_void_t (* glitz_gl_bitmap_t)
      (glitz_gl_sizei_t width, glitz_gl_sizei_t height,
       glitz_gl_float_t xorig, glitz_gl_float_t yorig,
@@ -328,10 +348,10 @@ typedef glitz_gl_void_t (* glitz_gl_ortho_t)
      (glitz_gl_double_t left, glitz_gl_double_t right,
       glitz_gl_double_t bottom, glitz_gl_double_t top,
       glitz_gl_double_t near_val, glitz_gl_double_t far_val);
-typedef glitz_gl_void_t (* glitz_gl_scale_d_t)
-     (glitz_gl_double_t x, glitz_gl_double_t y, glitz_gl_double_t z);
-typedef glitz_gl_void_t (* glitz_gl_translate_d_t)
-     (glitz_gl_double_t x, glitz_gl_double_t y, glitz_gl_double_t z);
+typedef glitz_gl_void_t (* glitz_gl_scale_f_t)
+     (glitz_gl_float_t x, glitz_gl_float_t y, glitz_gl_float_t z);
+typedef glitz_gl_void_t (* glitz_gl_translate_f_t)
+     (glitz_gl_float_t x, glitz_gl_float_t y, glitz_gl_float_t z);
 typedef glitz_gl_void_t (* glitz_gl_hint_t)
      (glitz_gl_enum_t target, glitz_gl_enum_t mode);
 typedef glitz_gl_void_t (* glitz_gl_depth_mask_t)
@@ -366,12 +386,6 @@ typedef glitz_gl_void_t (* glitz_gl_delete_textures_t)
      (glitz_gl_sizei_t n, const glitz_gl_uint_t *textures);
 typedef glitz_gl_void_t (* glitz_gl_bind_texture_t)
      (glitz_gl_enum_t target, glitz_gl_uint_t texture);
-typedef glitz_gl_void_t (* glitz_gl_tex_image_1d_t)
-     (glitz_gl_enum_t target, glitz_gl_int_t level,
-      glitz_gl_int_t internal_format,
-      glitz_gl_sizei_t width, glitz_gl_int_t border,
-      glitz_gl_enum_t format, glitz_gl_enum_t type,
-      const glitz_gl_void_t *pixels);
 typedef glitz_gl_void_t (* glitz_gl_tex_image_2d_t)
      (glitz_gl_enum_t target, glitz_gl_int_t level,
       glitz_gl_int_t internal_format,
@@ -394,8 +408,6 @@ typedef glitz_gl_void_t (* glitz_gl_get_pointer_v_t)
      (glitz_gl_enum_t pname, glitz_gl_void_t **params);
 typedef glitz_gl_void_t (* glitz_gl_active_texture_t)
      (glitz_gl_enum_t);
-typedef glitz_gl_void_t (* glitz_gl_multi_tex_coord_2d_t)
-     (glitz_gl_enum_t, glitz_gl_double_t, glitz_gl_double_t);
 typedef glitz_gl_void_t (* glitz_gl_gen_programs_t)
      (glitz_gl_sizei_t, glitz_gl_uint_t *);
 typedef glitz_gl_void_t (* glitz_gl_delete_programs_t)
@@ -405,10 +417,8 @@ typedef glitz_gl_void_t (* glitz_gl_program_string_t)
       const glitz_gl_void_t *);
 typedef glitz_gl_void_t (* glitz_gl_bind_program_t)
      (glitz_gl_enum_t, glitz_gl_uint_t);
-typedef glitz_gl_void_t (* glitz_gl_program_local_param_4d_t)
-     (glitz_gl_enum_t, glitz_gl_uint_t,
-      glitz_gl_double_t, glitz_gl_double_t,
-      glitz_gl_double_t, glitz_gl_double_t);
+typedef glitz_gl_void_t (* glitz_gl_program_local_param_4fv_t)
+     (glitz_gl_enum_t, glitz_gl_uint_t, const glitz_gl_float_t *);
 typedef glitz_gl_void_t (* glitz_gl_get_program_iv_t)
      (glitz_gl_enum_t, glitz_gl_enum_t, glitz_gl_uint_t *);
 typedef glitz_gl_void_t (* glitz_gl_gen_buffers_t)
@@ -420,6 +430,12 @@ typedef glitz_gl_void_t (* glitz_gl_bind_buffer_t)
 typedef glitz_gl_void_t (* glitz_gl_buffer_data_t)
      (glitz_gl_enum_t, glitz_gl_sizeiptr_t, const glitz_gl_void_t *,
       glitz_gl_enum_t);
+typedef glitz_gl_void_t *(* glitz_gl_buffer_sub_data_t)
+     (glitz_gl_enum_t, glitz_gl_intptr_t, glitz_gl_sizeiptr_t,
+      const glitz_gl_void_t *);
+typedef glitz_gl_void_t *(* glitz_gl_get_buffer_sub_data_t)
+     (glitz_gl_enum_t, glitz_gl_intptr_t, glitz_gl_sizeiptr_t,
+      glitz_gl_void_t *);
 typedef glitz_gl_void_t *(* glitz_gl_map_buffer_t)
      (glitz_gl_enum_t, glitz_gl_enum_t);
 typedef glitz_gl_boolean_t (* glitz_gl_unmap_buffer_t)

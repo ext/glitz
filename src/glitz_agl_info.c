@@ -36,15 +36,16 @@
 glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_enable_t) glEnable,
   (glitz_gl_disable_t) glDisable,
-  (glitz_gl_begin_t) glBegin,
-  (glitz_gl_end_t) glEnd,
-  (glitz_gl_vertex_2i_t) glVertex2i,
-  (glitz_gl_vertex_2d_t) glVertex2d,
+  (glitz_gl_enable_client_state_t) glEnableClientState,
+  (glitz_gl_disable_client_state_t) glDisableClientState,
+  (glitz_gl_vertex_pointer_t) glVertexPointer,
+  (glitz_gl_draw_arrays_t) glDrawArrays,
   (glitz_gl_tex_env_f_t) glTexEnvf,
   (glitz_gl_tex_env_fv_t) glTexEnvfv,
-  (glitz_gl_tex_coord_2d_t) glTexCoord2d,
+  (glitz_gl_tex_gen_i_t) glTexGeni,
+  (glitz_gl_tex_gen_fv_t) glTexGenfv,
   (glitz_gl_color_4us_t) glColor4us,
-  (glitz_gl_color_4d_t) glColor4d,
+  (glitz_gl_color_4f_t) glColor4f,
   (glitz_gl_scissor_t) glScissor,
   (glitz_gl_blend_func_t) glBlendFunc,
   (glitz_gl_clear_t) glClear,
@@ -58,11 +59,10 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_push_matrix_t) glPushMatrix,
   (glitz_gl_pop_matrix_t) glPopMatrix,
   (glitz_gl_load_identity_t) glLoadIdentity,
-  (glitz_gl_load_matrix_d_t) glLoadMatrixd,
-  (glitz_gl_mult_matrix_d_t) glMultMatrixd,
+  (glitz_gl_load_matrix_f_t) glLoadMatrixf,
   (glitz_gl_depth_range_t) glDepthRange,
   (glitz_gl_viewport_t) glViewport,
-  (glitz_gl_raster_pos_2d_t) glRasterPos2d,
+  (glitz_gl_raster_pos_2f_t) glRasterPos2f,
   (glitz_gl_bitmap_t) glBitmap,
   (glitz_gl_read_buffer_t) glReadBuffer,
   (glitz_gl_draw_buffer_t) glDrawBuffer,
@@ -71,8 +71,8 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_finish_t) glFinish,
   (glitz_gl_pixel_store_i_t) glPixelStorei,
   (glitz_gl_ortho_t) glOrtho,
-  (glitz_gl_scale_d_t) glScaled,
-  (glitz_gl_translate_d_t) glTranslated,
+  (glitz_gl_scale_f_t) glScalef,
+  (glitz_gl_translate_f_t) glTranslatef,
   (glitz_gl_hint_t) glHint,
   (glitz_gl_depth_mask_t) glDepthMask,
   (glitz_gl_polygon_mode_t) glPolygonMode,
@@ -84,7 +84,6 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_gen_textures_t) glGenTextures,
   (glitz_gl_delete_textures_t) glDeleteTextures,
   (glitz_gl_bind_texture_t) glBindTexture,
-  (glitz_gl_tex_image_1d_t) glTexImage1D,
   (glitz_gl_tex_image_2d_t) glTexImage2D,
   (glitz_gl_tex_parameter_i_t) glTexParameteri,
   (glitz_gl_get_tex_level_parameter_iv_t) glGetTexLevelParameteriv,
@@ -92,19 +91,23 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_get_integer_v_t) glGetIntegerv,
   
   (glitz_gl_active_texture_t) glActiveTextureARB,
-  (glitz_gl_multi_tex_coord_2d_t) glMultiTexCoord2dARB,
   (glitz_gl_gen_programs_t) glGenProgramsARB,
   (glitz_gl_delete_programs_t) glDeleteProgramsARB,
   (glitz_gl_program_string_t) glProgramStringARB,
   (glitz_gl_bind_program_t) glBindProgramARB,
-  (glitz_gl_program_local_param_4d_t) glProgramLocalParameter4dARB,
+  (glitz_gl_program_local_param_4fv_t) glProgramLocalParameter4fvARB,
   (glitz_gl_get_program_iv_t) glGetProgramivARB,
+
+  /* TODO: lookup all symbols not part of OpenGL 1.1 */
   (glitz_gl_gen_buffers_t) 0,
   (glitz_gl_delete_buffers_t) 0,
   (glitz_gl_bind_buffer_t) 0,
   (glitz_gl_buffer_data_t) 0,
+  (glitz_gl_buffer_sub_data_t) 0,
+  (glitz_gl_get_buffer_sub_data_t) 0,
   (glitz_gl_map_buffer_t) 0,
   (glitz_gl_unmap_buffer_t) 0,
+  
   0
 };
 
@@ -234,6 +237,19 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
       glitz_agl_query_formats (thread_info);
     }
   }
+
+  glitz_agl_surface_backend_init (&thread_info->root_context.backend);
+
+  memcpy (&thread_info->root_context.backend.gl,
+          &_glitz_agl_gl_proc_address,
+          sizeof (glitz_gl_proc_address_list_t));
+  
+  thread_info->root_context.backend.formats = thread_info->formats;
+  thread_info->root_context.backend.n_formats = thread_info->n_formats;
+  thread_info->root_context.backend.program_map = &thread_info->program_map;
+  thread_info->root_context.backend.feature_mask = thread_info->feature_mask;
+
+  thread_info->root_context.backend.gl.need_lookup = 0;
 
   thread_info->context_stack_size = 1;
   thread_info->context_stack->surface = NULL;

@@ -100,10 +100,7 @@ static struct _glitz_gl_pixel_format {
 #define GLITZ_GL_FORMAT_ARGB 2
 
 typedef struct _glitz_pixel_color {
-  double a;
-  double r;
-  double g;
-  double b;
+  uint32_t r, g, b, a;
 } glitz_pixel_color_t;
 
 typedef struct _glitz_pixel_transform_op {
@@ -114,9 +111,12 @@ typedef struct _glitz_pixel_transform_op {
 } glitz_pixel_transform_op_t;
 
 #define FETCH(p, mask) ((mask)? \
-  (((double) (((uint32_t) (p)) & (mask))) / ((double) mask)): 0.0)
+  ((uint32_t) ((((uint64_t) (((uint32_t) (p)) & (mask))) * 0xffffffff) / \
+  ((uint64_t) (mask)))): 0x0)
+
 #define FETCH_A(p, mask) ((mask)? \
-  (((double) (((uint32_t) (p)) & (mask))) / ((double) mask)): 1.0)
+  ((uint32_t) ((((uint64_t) (((uint32_t) (p)) & (mask))) * 0xffffffff) / \
+  ((uint64_t) (mask)))): 0xffffffff)
 
 typedef void (*glitz_pixel_fetch_function_t) (glitz_pixel_transform_op_t *op);
 
@@ -191,7 +191,7 @@ _fetch_32 (glitz_pixel_transform_op_t *op)
 typedef void (*glitz_pixel_store_function_t) (glitz_pixel_transform_op_t *op);
 
 #define STORE(v, mask) \
-  (((uint32_t) (v * (double) mask)) & mask)
+  (((uint32_t) (((v) * (uint64_t) (mask)) / 0xffffffff)) & (mask))
 
 static void
 _store_1 (glitz_pixel_transform_op_t *op)
@@ -406,257 +406,20 @@ _glitz_best_gl_pixel_format (glitz_format_t *format)
     return &_gl_format_map[GLITZ_GL_FORMAT_A];
 }
 
-struct _glitz_pixel_buffer {
-  glitz_gl_sizei_t size;
-  glitz_gl_uint_t name;
-  glitz_gl_enum_t target;
-  char *data;
-  int owns_data;
-  glitz_surface_t *surface;
-  glitz_pixel_format_t format;
-};
-
-glitz_pixel_buffer_t *
-glitz_pixel_buffer_create (glitz_surface_t *surface,
-                           char *data,
-                           unsigned int size,
-                           glitz_buffer_hint_t hint)
-{
-  glitz_pixel_buffer_t *buffer;
-  glitz_gl_enum_t usage;
-
-  buffer = malloc (sizeof (glitz_pixel_buffer_t));
-  if (buffer == NULL)
-    return NULL;
-
-  buffer->size = size;
-  buffer->name = 0;
-  
-  switch (hint) {
-  case GLITZ_PIXEL_BUFFER_HINT_STREAM_DRAW:
-    usage = GLITZ_GL_STREAM_DRAW;
-    buffer->target = GLITZ_GL_PIXEL_UNPACK_BUFFER;
-    break;
-  case GLITZ_PIXEL_BUFFER_HINT_STREAM_READ:
-    usage = GLITZ_GL_STREAM_READ;
-    buffer->target = GLITZ_GL_PIXEL_PACK_BUFFER;
-    break;
-  case GLITZ_PIXEL_BUFFER_HINT_STREAM_COPY:
-    usage = GLITZ_GL_STREAM_COPY;
-    buffer->target = GLITZ_GL_PIXEL_UNPACK_BUFFER;
-    break;
-  case GLITZ_PIXEL_BUFFER_HINT_STATIC_DRAW:
-    usage = GLITZ_GL_STATIC_DRAW;
-    buffer->target = GLITZ_GL_PIXEL_UNPACK_BUFFER;
-    break;
-  case GLITZ_PIXEL_BUFFER_HINT_STATIC_READ:
-    usage = GLITZ_GL_STATIC_READ;
-    buffer->target = GLITZ_GL_PIXEL_PACK_BUFFER;
-    break;
-  case GLITZ_PIXEL_BUFFER_HINT_STATIC_COPY:
-    usage = GLITZ_GL_STATIC_COPY;
-    buffer->target = GLITZ_GL_PIXEL_UNPACK_BUFFER;
-    break;
-  case GLITZ_PIXEL_BUFFER_HINT_DYNAMIC_DRAW:
-    usage = GLITZ_GL_DYNAMIC_DRAW;
-    buffer->target = GLITZ_GL_PIXEL_UNPACK_BUFFER;
-    break;
-  case GLITZ_PIXEL_BUFFER_HINT_DYNAMIC_READ:
-    usage = GLITZ_GL_DYNAMIC_READ;
-    buffer->target = GLITZ_GL_PIXEL_PACK_BUFFER;
-    break;
-  default:
-    usage = GLITZ_GL_DYNAMIC_COPY;
-    buffer->target = GLITZ_GL_PIXEL_UNPACK_BUFFER;
-    break;
-  }
-
-  if (surface->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK) {
-    buffer->surface = surface;
-    glitz_surface_reference (surface);
-    
-    glitz_surface_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
-    
-    surface->gl->gen_buffers (1, &buffer->name);
-    if (buffer->name) {
-      surface->gl->bind_buffer (buffer->target, buffer->name);
-      surface->gl->buffer_data (buffer->target, size, data, usage);
-    }
-    
-    glitz_surface_pop_current (surface); 
-  } else
-    buffer->surface = NULL;
-  
-  if (buffer->name == 0) {
-    buffer->data = malloc (size);
-    if (buffer->data == NULL) {
-      free (buffer);
-      return NULL;
-    }
-
-    if (data)
-      memcpy (buffer->data, data, size);
-    
-    buffer->owns_data = 1;
-  }
-  
-  buffer->format = _glitz_best_gl_pixel_format (surface->format)->pixel;
-  
-  return buffer;
-}
-
-glitz_pixel_buffer_t *
-glitz_pixel_buffer_create_for_data (char *data,
-                                    glitz_pixel_format_t *format)
-{
-  glitz_pixel_buffer_t *buffer;
-
-  buffer = malloc (sizeof (glitz_pixel_buffer_t));
-  if (buffer == NULL)
-    return NULL;
-
-  buffer->name = 0;
-  buffer->size = 0;
-  buffer->data = data;
-  buffer->owns_data = 0;
-  buffer->surface = NULL;
-  buffer->target = 0;
-  buffer->format = *format;
-
-  return buffer;
-}
-
 void
-glitz_pixel_buffer_destroy (glitz_pixel_buffer_t *buffer)
-{
-  glitz_surface_t *surface = buffer->surface;
-  
-  if (surface &&
-      surface->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK) {
-    glitz_surface_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
-    
-    surface->gl->delete_buffers (1, &buffer->name);
-    
-    glitz_surface_pop_current (surface);
-    
-    glitz_surface_destroy (surface);
-  } else if (buffer->owns_data)
-    free (buffer->data);
-  
-  free (buffer);
-}
-
-void
-glitz_pixel_buffer_set_format (glitz_pixel_buffer_t *buffer,
-                               glitz_pixel_format_t *format)
-{
-  buffer->format = *format;
-}
-
-void
-glitz_pixel_buffer_get_format (glitz_pixel_buffer_t *buffer,
-                               glitz_pixel_format_t *format)
-{
-  *format = buffer->format;
-}
-
-char *
-glitz_pixel_buffer_get_data (glitz_pixel_buffer_t *buffer,
-                             glitz_pixel_buffer_access_t access)
-{
-  char *pointer = NULL;
-  glitz_surface_t *surface = buffer->surface;
-  
-  if (surface &&
-      surface->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK) {
-    glitz_gl_enum_t buffer_access;
-    
-    glitz_surface_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
-
-    switch (access) {
-    case GLITZ_PIXEL_BUFFER_ACCESS_READ_ONLY:
-      buffer_access = GLITZ_GL_READ_ONLY;
-      break;
-    case GLITZ_PIXEL_BUFFER_ACCESS_WRITE_ONLY:
-      buffer_access = GLITZ_GL_WRITE_ONLY;
-      break;
-    default:
-      buffer_access = GLITZ_GL_READ_WRITE;
-      break;
-    }
-
-    surface->gl->bind_buffer (buffer->target, buffer->name);
-    pointer = (char *) surface->gl->map_buffer (buffer->target,
-                                                buffer_access);
-    
-    glitz_surface_pop_current (surface);
-  }
-  
-  if (pointer == NULL)
-    pointer = buffer->data;
-  
-  return pointer;
-}
-
-void
-glitz_pixel_buffer_put_back_data (glitz_pixel_buffer_t *buffer)
-{
-  glitz_surface_t *surface = buffer->surface;
-  
-  if (surface &&
-      surface->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK) {
-    glitz_surface_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
-    
-    if (surface->gl->unmap_buffer (buffer->target)) {
-      /* don't know what to do here, maybe glitz_pixel_buffer_put_back_data
-         should return a status value */
-    }
-    surface->gl->bind_buffer (buffer->target, 0);
-    
-    glitz_surface_pop_current (surface);
-  }
-}
-
-char *
-glitz_pixel_buffer_bind (glitz_pixel_buffer_t *buffer,
-                          glitz_gl_enum_t target)
-{
-  glitz_surface_t *surface = buffer->surface;
-  
-  if (surface &&
-      surface->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK) {
-    surface->gl->bind_buffer (target, buffer->name);
-    buffer->target = target;
-    
-    return NULL;
-  }
-  
-  return buffer->data;
-}
-
-void
-glitz_pixel_buffer_unbind (glitz_pixel_buffer_t *buffer)
-{
-  glitz_surface_t *surface = buffer->surface;
-  
-  if (surface &&
-      surface->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
-    surface->gl->bind_buffer (buffer->target, 0);
-}
-
-void
-glitz_put_pixels (glitz_surface_t *dst,
+glitz_set_pixels (glitz_surface_t *dst,
                   int x_dst,
                   int y_dst,
                   int width,
                   int height,
-                  glitz_pixel_buffer_t *buffer)
+                  glitz_pixel_format_t *format,
+                  glitz_buffer_t *buffer)
 {
   glitz_gl_proc_address_list_t *gl;
   glitz_bool_t to_drawable;
   glitz_texture_t *texture;
   char *pixels, *data = NULL;
-  glitz_gl_pixel_format_t *format = NULL;
+  glitz_gl_pixel_format_t *gl_format = NULL;
   unsigned long transform = 0;
   int xoffset, bytes_per_line;
 
@@ -666,16 +429,16 @@ glitz_put_pixels (glitz_surface_t *dst,
     return;
   }
 
-  gl = dst->gl;
+  gl = &dst->backend->gl;
 
-  if (buffer->format.scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN)
+  if (format->scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN)
     transform |= GLITZ_TRANSFORM_SCANLINE_ORDER_MASK;
 
   /* find direct format */
-  format = _glitz_find_gl_pixel_format (&buffer->format);
-  if (format == NULL) {
+  gl_format = _glitz_find_gl_pixel_format (format);
+  if (gl_format == NULL) {
     transform |= GLITZ_TRANSFORM_PIXELS_MASK;
-    format = _glitz_best_gl_pixel_format (dst->format);
+    gl_format = _glitz_best_gl_pixel_format (dst->format);
   }
 
   if (SURFACE_DRAWABLE (dst))
@@ -693,7 +456,7 @@ glitz_put_pixels (glitz_surface_t *dst,
     glitz_image_t src_image, dst_image;
     int stride;
     
-    stride = (((width * format->pixel.masks.bpp) / 8) + 3) & -4;
+    stride = (((width * gl_format->pixel.masks.bpp) / 8) + 3) & -4;
     
     data = malloc (stride * height);
     if (!data) {
@@ -703,36 +466,33 @@ glitz_put_pixels (glitz_surface_t *dst,
     }
 
     dst_image.data = data;
-    dst_image.format = &format->pixel;
+    dst_image.format = &gl_format->pixel;
     dst_image.width = width;
     dst_image.height = height;
 
-    src_image.data =
-      glitz_pixel_buffer_get_data (buffer,
-                                   GLITZ_PIXEL_BUFFER_ACCESS_READ_ONLY);
-    src_image.data += buffer->format.skip_lines *
-      buffer->format.bytes_per_line;
-    src_image.format = &buffer->format;
+    src_image.data = glitz_buffer_map (buffer, GLITZ_BUFFER_ACCESS_READ_ONLY);
+    src_image.data += format->skip_lines * format->bytes_per_line;
+    src_image.format = format;
     src_image.width = width;
     src_image.height = height;
 
     _glitz_pixel_transform (transform,
                             &src_image,
                             &dst_image,
-                            buffer->format.xoffset,
+                            format->xoffset,
                             0,
                             width, height);
 
-    glitz_pixel_buffer_put_back_data (buffer);
+    glitz_buffer_unmap (buffer);
                                  
     pixels = data;
     xoffset = 0;
     bytes_per_line = stride;
   } else {
-    xoffset = buffer->format.xoffset;
-    bytes_per_line = buffer->format.bytes_per_line;
-    pixels = glitz_pixel_buffer_bind (buffer, GLITZ_GL_PIXEL_UNPACK_BUFFER);
-    pixels += buffer->format.skip_lines * bytes_per_line;
+    xoffset = format->xoffset;
+    bytes_per_line = format->bytes_per_line;
+    pixels = glitz_buffer_bind (buffer, GLITZ_GL_PIXEL_UNPACK_BUFFER);
+    pixels += format->skip_lines * bytes_per_line;
   }
 
   texture = glitz_surface_get_texture (dst, 1);
@@ -762,53 +522,42 @@ glitz_put_pixels (glitz_surface_t *dst,
   gl->tex_sub_image_2d (texture->target, 0,
                         x_dst, dst->height - y_dst - height,
                         width, height,
-                        format->format, format->type,
+                        gl_format->format, gl_format->type,
                         pixels);
 
   if (to_drawable) {
-    glitz_point_t tl, br;
+    glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, height, ~0); 
 
-    gl->matrix_mode (GLITZ_GL_TEXTURE);
-    gl->load_identity ();
-    
     gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                    GLITZ_GL_REPLACE);
     gl->color_4us (0x0, 0x0, 0x0, 0xffff);
     
-    glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
-    
     glitz_texture_ensure_wrap (gl, texture, GLITZ_GL_CLAMP_TO_EDGE);
     glitz_texture_ensure_filter (gl, texture, GLITZ_GL_NEAREST);
 
-    glitz_texture_tex_coord (texture, x_dst, y_dst, &tl.x, &tl.y);
-    glitz_texture_tex_coord (texture,
-                             x_dst + width, y_dst + height, &br.x, &br.y);
+    glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
 
-    tl.y = texture->texcoord_height - tl.y;
-    br.y = texture->texcoord_height - br.y;
-    
-    gl->begin (GLITZ_GL_QUADS);
-    gl->tex_coord_2d (tl.x, tl.y);
-    gl->vertex_2d (x_dst, y_dst);
-    gl->tex_coord_2d (br.x, tl.y);
-    gl->vertex_2d (x_dst + width, y_dst);
-    gl->tex_coord_2d (br.x, br.y);
-    gl->vertex_2d (x_dst + width, y_dst + height);
-    gl->tex_coord_2d (tl.x, br.y);
-    gl->vertex_2d (x_dst, y_dst + height);
-    gl->end ();
+    gl->scissor (x_dst,
+                 dst->height - (y_dst + height),
+                 width, height);
+
+    glitz_geometry_enable_default (gl, dst);
+
+    gl->draw_arrays (GLITZ_GL_QUADS, 0, 4);
+
+    glitz_geometry_disable (gl, dst);
 
     if (x_dst == 0 && y_dst == 0 &&
         width == dst->width && height == dst->height)
-      dst->hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
+      dst->flags &= ~GLITZ_FLAG_DIRTY_MASK;
   }
   
   glitz_texture_unbind (gl, texture);
 
-  dst->hint_mask |= GLITZ_INT_HINT_SOLID_DIRTY_MASK;
+  dst->flags |= GLITZ_FLAG_SOLID_DIRTY_MASK;
 
   if (transform == 0)
-    glitz_pixel_buffer_unbind (buffer);
+    glitz_buffer_unbind (buffer);
   
   glitz_surface_pop_current (dst);
 
@@ -822,13 +571,14 @@ glitz_get_pixels (glitz_surface_t *src,
                   int y_src,
                   int width,
                   int height,
-                  glitz_pixel_buffer_t *buffer)
+                  glitz_pixel_format_t *format,
+                  glitz_buffer_t *buffer)
 {
   glitz_gl_proc_address_list_t *gl;
   glitz_bool_t from_drawable;
   glitz_texture_t *texture = NULL;
   char *pixels, *data = NULL;
-  glitz_gl_pixel_format_t *format = NULL;
+  glitz_gl_pixel_format_t *gl_format = NULL;
   unsigned long transform = 0;
   int src_x = 0, src_y = 0, src_w = width, src_h = height;
   int xoffset, bytes_per_line;
@@ -839,7 +589,7 @@ glitz_get_pixels (glitz_surface_t *src,
     return;
   }
 
-  gl = src->gl;
+  gl = &src->backend->gl;
 
   if (glitz_surface_push_current (src, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
     from_drawable = 1;
@@ -855,14 +605,14 @@ glitz_get_pixels (glitz_surface_t *src,
     transform |= GLITZ_TRANSFORM_COPY_REGION_MASK;
   }
   
-  if (buffer->format.scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN)
+  if (format->scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN)
     transform |= GLITZ_TRANSFORM_SCANLINE_ORDER_MASK;
   
   /* find direct format */
-  format = _glitz_find_gl_pixel_format (&buffer->format);
-  if (format == NULL) {
+  gl_format = _glitz_find_gl_pixel_format (format);
+  if (gl_format == NULL) {
     transform |= GLITZ_TRANSFORM_PIXELS_MASK;
-    format = _glitz_best_gl_pixel_format (src->format);
+    gl_format = _glitz_best_gl_pixel_format (src->format);
   }
   
   if (transform) {
@@ -875,7 +625,7 @@ glitz_get_pixels (glitz_surface_t *src,
       src_y = y_src;
     }
 
-    stride = (((src_w * format->pixel.masks.bpp) / 8) + 3) & -4;
+    stride = (((src_w * gl_format->pixel.masks.bpp) / 8) + 3) & -4;
 
     data = malloc (stride * src_h);
     if (!data) {
@@ -886,10 +636,10 @@ glitz_get_pixels (glitz_surface_t *src,
     xoffset = 0;
     bytes_per_line = stride;
   } else {
-    xoffset = buffer->format.xoffset;
-    bytes_per_line = buffer->format.bytes_per_line;
-    pixels = glitz_pixel_buffer_bind (buffer, GLITZ_GL_PIXEL_PACK_BUFFER);
-    pixels += buffer->format.skip_lines * bytes_per_line;
+    xoffset = format->xoffset;
+    bytes_per_line = format->bytes_per_line;
+    pixels = glitz_buffer_bind (buffer, GLITZ_GL_PIXEL_PACK_BUFFER);
+    pixels += format->skip_lines * bytes_per_line;
   }
   
   gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, 0);
@@ -911,12 +661,12 @@ glitz_get_pixels (glitz_surface_t *src,
   if (from_drawable) {
     gl->read_pixels (x_src, src->height - y_src - height,
                      width, height,
-                     format->format, format->type,
+                     gl_format->format, gl_format->type,
                      pixels);
   } else {
     glitz_texture_bind (gl, texture);
     gl->get_tex_image (texture->target, 0,
-                       format->format, format->type,
+                       gl_format->format, gl_format->type,
                        pixels);
     glitz_texture_unbind (gl, texture);
   }
@@ -924,17 +674,14 @@ glitz_get_pixels (glitz_surface_t *src,
   if (transform) {
     glitz_image_t src_image, dst_image;
 
-    src_image.data = data + src_y * format->pixel.bytes_per_line;
-    src_image.format = &format->pixel;
+    src_image.data = data + src_y * gl_format->pixel.bytes_per_line;
+    src_image.format = &gl_format->pixel;
     src_image.width = src_w;
     src_image.height = src_h;
 
-    dst_image.data =
-      glitz_pixel_buffer_get_data (buffer,
-                                   GLITZ_PIXEL_BUFFER_ACCESS_WRITE_ONLY);
-    dst_image.data += buffer->format.skip_lines *
-      buffer->format.bytes_per_line;
-    dst_image.format = &buffer->format;
+    dst_image.data = glitz_buffer_map (buffer, GLITZ_BUFFER_ACCESS_WRITE_ONLY);
+    dst_image.data += format->skip_lines * format->bytes_per_line;
+    dst_image.format = format;
     dst_image.width = width;
     dst_image.height = height;
 
@@ -942,12 +689,12 @@ glitz_get_pixels (glitz_surface_t *src,
                             &src_image,
                             &dst_image,
                             src_x,
-                            buffer->format.xoffset,
+                            format->xoffset,
                             width, height);
 
-    glitz_pixel_buffer_put_back_data (buffer);
+    glitz_buffer_unmap (buffer);
   } else
-    glitz_pixel_buffer_unbind (buffer);
+    glitz_buffer_unbind (buffer);
 
   glitz_surface_pop_current (src);
 

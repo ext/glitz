@@ -295,7 +295,7 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
     format.id = (unsigned long int) pixel_format;
 
     format.read.onscreen = format.draw.onscreen = 1;
-    if (thread_info->feature_mask & GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK)
+    if (thread_info->agl_feature_mask & GLITZ_AGL_FEATURE_PBUFFER_MASK)
       format.read.offscreen = format.draw.offscreen = 1;
     else
       format.read.offscreen = format.draw.offscreen = 0;

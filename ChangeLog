@@ -1,3 +1,67 @@
+2004-09-03  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Switched to geometry buffers.
+
+	* src/glitz_texture.c: Added texcoord_width_unit and
+	texcoord_height_unit.
+	Always use glTexGen for texture coordinates.
+
+	* src/glitz_surface.c: Cleaned up public API.
+	Switched to geometry buffers.
+	glitz_buffer_t -> glitz_color_buffer_t.
+
+	* src/glitz_status.c: Removed unused status values. Added
+	CONTENT_DESTROYED.
+
+	* src/glitz_rect.c: fill -> set and set always use SRC operator.
+	glitz_set_rectangles works for all surfaces, drawable or not.
+
+	* src/glitz_program.c: Transformations are no longer done in
+	fragment programs. Vertex programs are no longer needed.
+
+	* src/glitz_pixel.c: Use fixed point pixel conversion.
+	pixel_buffer -> buffer and moved to glitz_buffer.c.
+	glitz_put_pixels -> glitz_set_pixels.
+
+	* src/glitz_operator.c: Stencil operators no longer needed.
+
+	* src/glitz_gl.h: VertexArray, TexGen tokens and prototypes.
+	More buffer object prototypes.
+
+	* src/glitz_filter.c: Use float instead of double everywhere.
+	Do all calculations at "filter set" time and nothing at
+	"filter use" time.
+	Vertex programs are no longer needed.
+
+	* src/glitz_compose.c: Use float instead of double everywhere.
+	Vertex programs are no longer needed.
+
+	* src/glitz_glx_surface.c: New context specific backend objects.
+	Removed update_size backend function.
+
+	* src/glitz_agl_surface.c: New context specific backend objects.
+	Removed update_size backend function.
+
+	* src/glitz_glx_context.c: New context specific backend objects.
+
+	* src/glitz_agl_context.c: New context specific backend objects.
+
+	* src/glitz.h: Added new geometry system. Cleaned up public API.
+
+	* src/glitz.c: Switched using vertex arrays and vertex buffer
+	objects for everything.
+
+	* src/Makefile.am (libglitz_la_SOURCES): Removed glitz_trap.c,
+	glitz_tri.c and glitz_stencil.c. Added glitz_buffer.c and
+	glitz_geometry.c.
+
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.2.0.
+
+	* configure.in: Bump version to 0.2.0.
+
+	* TODO: Switched to geometry buffers.
+	Transformations are no longer done in fragment programs.
+
 2004-08-18  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: New filter system should now be working.

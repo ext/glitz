@@ -31,16 +31,15 @@ libglitz_la_SOURCES = \
 	glitz_surface.c \
 	glitz_texture.c \
 	glitz_rect.c \
-	glitz_trap.c \
-	glitz_tri.c \
 	glitz_status.c \
 	glitz_util.c \
 	glitz_format.c \
 	glitz_program.c \
 	glitz_compose.c \
-	glitz_stencil.c \
-	glitz_pixel.c \
 	glitz_filter.c \
+	glitz_buffer.c \
+	glitz_geometry.c \
+	glitz_pixel.c \
 	glitz_gl.h \
 	glitzint.h
 

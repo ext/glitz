@@ -125,11 +125,11 @@ _glitz_combine_argb_argbc (glitz_composite_op_t *op)
   }
     
   if (op->alpha_mask.red) {
-    op->gl->color_4d (1.0, 0.5, 0.5, 0.5);
+    op->gl->color_4f (1.0f, 0.5f, 0.5f, 0.5f);
   } else if (op->alpha_mask.green) {
-    op->gl->color_4d (0.5, 1.0, 0.5, 0.5);
+    op->gl->color_4f (0.5f, 1.0f, 0.5f, 0.5f);
   } else if (op->alpha_mask.blue) {
-    op->gl->color_4d (0.5, 0.5, 1.0, 0.5);
+    op->gl->color_4f (0.5f, 0.5f, 1.0f, 0.5f);
   } else {
     op->gl->active_texture (GLITZ_GL_TEXTURE0);
     op->gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
@@ -305,23 +305,23 @@ _glitz_combine_solid_argbc (glitz_composite_op_t *op)
     op->gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_OPERAND1_ALPHA,
                        GLITZ_GL_SRC_ALPHA);
 
-    color[0] = (double) op->solid->red / 65536.0;
-    color[1] = (double) op->solid->green / 65536.0;
-    color[2] = (double) op->solid->blue / 65536.0;
-    color[3] = (double) op->solid->alpha / 65536.0;
+    color[0] = op->solid->red / 65536.0f;
+    color[1] = op->solid->green / 65536.0f;
+    color[2] = op->solid->blue / 65536.0f;
+    color[3] = op->solid->alpha / 65536.0f;
     
     op->gl->tex_env_fv (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_COLOR,
                         color);
   }
     
   if (op->alpha_mask.red) {
-    op->gl->color_4d (1.0, 0.5, 0.5, 0.5);
+    op->gl->color_4f (1.0f, 0.5f, 0.5f, 0.5f);
   } else if (op->alpha_mask.green) {
-    op->gl->color_4d (0.5, 1.0, 0.5, 0.5);
+    op->gl->color_4f (0.5f, 1.0f, 0.5f, 0.5f);
   } else if (op->alpha_mask.blue) {
-    op->gl->color_4d (0.5, 0.5, 1.0, 0.5);
+    op->gl->color_4f (0.5f, 0.5f, 1.0f, 0.5f);
   } else {
-    static glitz_gl_float_t color[] = { 0.0, 0.0, 0.0, 0.0 };
+    static glitz_gl_float_t color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
     
     op->gl->active_texture (GLITZ_GL_TEXTURE0);
     op->gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
@@ -417,13 +417,11 @@ _glitz_combine_map[GLITZ_SURFACE_TYPES][GLITZ_SURFACE_TYPES] = {
      ) \
     ) \
    : \
-   (SURFACE_CLIP (surface) || \
-    (SURFACE_PAD (surface)? \
-     ((surface)->texture.repeatable || \
-      (surface)->texture.target != GLITZ_GL_TEXTURE_2D) \
-     : \
-     ((feature_mask) & GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK) \
-     ) \
+   (SURFACE_PAD (surface)? \
+    ((surface)->texture.repeatable || \
+     (surface)->texture.target != GLITZ_GL_TEXTURE_2D) \
+    : \
+    ((feature_mask) & GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK) \
     ) \
    )
 
@@ -477,27 +475,29 @@ glitz_composite_op_init (glitz_composite_op_t *op,
   op->type = GLITZ_COMBINE_TYPE_NA;
   op->combine = NULL;
   op->alpha_mask = _default_alpha_mask;
-  op->gl = dst->gl;
+  op->gl = &dst->backend->gl;
   op->src = src;
   op->mask = mask;
   op->dst = dst;
   op->count = 0;
   op->solid = NULL;
   op->component_alpha = GLITZ_COMPONENT_ALPHA_NONE;
-  op->vp = op->fp = 0;
+  op->fp = 0;
+
+  if (dst->indirect && (dst->format->stencil_size < 1))
+    return;
   
-  src_type = _glitz_get_surface_type (src, dst->feature_mask);
+  src_type = _glitz_get_surface_type (src, dst->backend->feature_mask);
   if (src_type < 1)
     return;
 
-  mask_type = _glitz_get_surface_type (mask, dst->feature_mask);
+  mask_type = _glitz_get_surface_type (mask, dst->backend->feature_mask);
   if (mask_type < 0)
     return;
 
   combine = &_glitz_combine_map[src_type][mask_type];
   if (combine->type == GLITZ_COMBINE_TYPE_NA) {
-    if (dst->feature_mask & GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK)
-      op->type = GLITZ_COMBINE_TYPE_INTERMEDIATE;
+    op->type = GLITZ_COMBINE_TYPE_INTERMEDIATE;
     
     return;
   }
@@ -522,7 +522,7 @@ glitz_composite_op_init (glitz_composite_op_t *op,
         op->component_alpha = GLITZ_COMPONENT_ALPHA_RGB;
     }
   } else if (mask_type != GLITZ_SURFACE_TYPE_NULL) {
-    if (dst->feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK) {
+    if (dst->backend->feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK) {
       if (mask_type == GLITZ_SURFACE_TYPE_ARGBC) {
         if (mask->format->alpha_size)
           op->component_alpha = GLITZ_COMPONENT_ALPHA_ARGB;
@@ -531,28 +531,21 @@ glitz_composite_op_init (glitz_composite_op_t *op,
       }
       
       if (op->src) {
-        if (dst->feature_mask & GLITZ_FEATURE_MULTITEXTURE_MASK) {
+        if (dst->backend->feature_mask & GLITZ_FEATURE_MULTITEXTURE_MASK) {
           op->combine = combine;
-        } else if ((dst->feature_mask &
-                    GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK) &&
-                   (!op->component_alpha))
+        } else if (!op->component_alpha)
           op->type = GLITZ_COMBINE_TYPE_INTERMEDIATE; 
       } else
         op->combine = combine;
     }
-  } else {
-    if (SURFACE_POLYGON_OP (dst))
-      op->alpha_mask.alpha = dst->polyopacity;
-      
+  } else
     op->combine = combine;
-  }
   
   if (op->combine == combine) {
     op->type = combine->type;
     if (combine->fragment_processing) {
-      op->vp = glitz_filter_get_vertex_program (src, op);
       op->fp = glitz_filter_get_fragment_program (src, op);
-      if (op->vp == 0 || op->fp == 0)
+      if (op->fp == 0)
         op->type = GLITZ_COMBINE_TYPE_NA;
     }
   }
@@ -568,12 +561,8 @@ glitz_composite_enable (glitz_composite_op_t *op)
 void
 glitz_composite_disable (glitz_composite_op_t *op)
 {
-  if (op->vp) {
+  if (op->fp) {
     op->gl->bind_program (GLITZ_GL_FRAGMENT_PROGRAM, 0);
     op->gl->disable (GLITZ_GL_FRAGMENT_PROGRAM);
-  }
-  if (op->fp) {
-    op->gl->bind_program (GLITZ_GL_VERTEX_PROGRAM, 0);
-    op->gl->disable (GLITZ_GL_VERTEX_PROGRAM);
   }
 }

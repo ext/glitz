@@ -34,18 +34,19 @@
 #include <string.h>
 #include <dlfcn.h>
 
-glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
+glitz_gl_proc_address_list_t _glitz_glx_gl_proc_address = {
   (glitz_gl_enable_t) glEnable,
   (glitz_gl_disable_t) glDisable,
-  (glitz_gl_begin_t) glBegin,
-  (glitz_gl_end_t) glEnd,
-  (glitz_gl_vertex_2i_t) glVertex2i,
-  (glitz_gl_vertex_2d_t) glVertex2d,
+  (glitz_gl_enable_client_state_t) glEnableClientState,
+  (glitz_gl_disable_client_state_t) glDisableClientState,
+  (glitz_gl_vertex_pointer_t) glVertexPointer,
+  (glitz_gl_draw_arrays_t) glDrawArrays,
   (glitz_gl_tex_env_f_t) glTexEnvf,
   (glitz_gl_tex_env_fv_t) glTexEnvfv,
-  (glitz_gl_tex_coord_2d_t) glTexCoord2d,
+  (glitz_gl_tex_gen_i_t) glTexGeni,
+  (glitz_gl_tex_gen_fv_t) glTexGenfv,
   (glitz_gl_color_4us_t) glColor4us,
-  (glitz_gl_color_4d_t) glColor4d,
+  (glitz_gl_color_4f_t) glColor4f,
   (glitz_gl_scissor_t) glScissor,
   (glitz_gl_blend_func_t) glBlendFunc,
   (glitz_gl_clear_t) glClear,
@@ -59,11 +60,10 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_push_matrix_t) glPushMatrix,
   (glitz_gl_pop_matrix_t) glPopMatrix,
   (glitz_gl_load_identity_t) glLoadIdentity,
-  (glitz_gl_load_matrix_d_t) glLoadMatrixd,
-  (glitz_gl_mult_matrix_d_t) glMultMatrixd,
+  (glitz_gl_load_matrix_f_t) glLoadMatrixf,
   (glitz_gl_depth_range_t) glDepthRange,
   (glitz_gl_viewport_t) glViewport,
-  (glitz_gl_raster_pos_2d_t) glRasterPos2d,
+  (glitz_gl_raster_pos_2f_t) glRasterPos2f,
   (glitz_gl_bitmap_t) glBitmap,
   (glitz_gl_read_buffer_t) glReadBuffer,
   (glitz_gl_draw_buffer_t) glDrawBuffer,
@@ -72,8 +72,8 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_finish_t) glFinish,
   (glitz_gl_pixel_store_i_t) glPixelStorei,
   (glitz_gl_ortho_t) glOrtho,
-  (glitz_gl_scale_d_t) glScaled,
-  (glitz_gl_translate_d_t) glTranslated,
+  (glitz_gl_scale_f_t) glScalef,
+  (glitz_gl_translate_f_t) glTranslatef,
   (glitz_gl_hint_t) glHint,
   (glitz_gl_depth_mask_t) glDepthMask,
   (glitz_gl_polygon_mode_t) glPolygonMode,
@@ -85,7 +85,6 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_gen_textures_t) glGenTextures,
   (glitz_gl_delete_textures_t) glDeleteTextures,
   (glitz_gl_bind_texture_t) glBindTexture,
-  (glitz_gl_tex_image_1d_t) glTexImage1D,
   (glitz_gl_tex_image_2d_t) glTexImage2D,
   (glitz_gl_tex_parameter_i_t) glTexParameteri,
   (glitz_gl_get_tex_level_parameter_iv_t) glGetTexLevelParameteriv,
@@ -93,19 +92,21 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_get_integer_v_t) glGetIntegerv,
 
   (glitz_gl_active_texture_t) 0,
-  (glitz_gl_multi_tex_coord_2d_t) 0,
   (glitz_gl_gen_programs_t) 0,
   (glitz_gl_delete_programs_t) 0,
   (glitz_gl_program_string_t) 0,
   (glitz_gl_bind_program_t) 0,
-  (glitz_gl_program_local_param_4d_t) 0,
+  (glitz_gl_program_local_param_4fv_t) 0,
   (glitz_gl_get_program_iv_t) 0,
   (glitz_gl_gen_buffers_t) 0,
   (glitz_gl_delete_buffers_t) 0,
   (glitz_gl_bind_buffer_t) 0,
   (glitz_gl_buffer_data_t) 0,
+  (glitz_gl_buffer_sub_data_t) 0,
+  (glitz_gl_get_buffer_sub_data_t) 0,
   (glitz_gl_map_buffer_t) 0,
   (glitz_gl_unmap_buffer_t) 0,
+  
   1
 };
 
@@ -400,12 +401,19 @@ glitz_glx_create_root_context (glitz_glx_screen_info_t *screen_info)
   }
 
   screen_info->root_context.fbconfig = (XID) 0;
-    
-  memcpy (&screen_info->root_context.gl,
-          &_glitz_gl_proc_address,
-          sizeof (glitz_gl_proc_address_list_t));
+
+  glitz_glx_surface_backend_init (&screen_info->root_context.backend);
   
-  screen_info->root_context.gl.need_lookup = 1;
+  memcpy (&screen_info->root_context.backend.gl,
+          &_glitz_glx_gl_proc_address,
+          sizeof (glitz_gl_proc_address_list_t));
+
+  screen_info->root_context.backend.formats = NULL;
+  screen_info->root_context.backend.n_formats = 0;
+  screen_info->root_context.backend.program_map = &screen_info->program_map;
+  screen_info->root_context.backend.feature_mask = 0;
+  
+  screen_info->root_context.backend.gl.need_lookup = 1;
 }
 
 glitz_glx_screen_info_t *
@@ -457,6 +465,9 @@ glitz_glx_screen_info_get (Display *display,
                                            &screen_info->root_context);
     glitz_glx_query_formats (screen_info);
   }
+
+  screen_info->root_context.backend.formats = screen_info->formats;
+  screen_info->root_context.backend.n_formats = screen_info->n_formats;
   
   screen_info->context_stack_size = 1;
   screen_info->context_stack->surface = NULL;
@@ -475,7 +486,7 @@ glitz_glx_screen_destroy (glitz_glx_screen_info_t *screen_info)
       glXMakeCurrent (screen_info->display_info->display,
                       screen_info->root_drawable,
                       screen_info->root_context.context)) {
-    glitz_program_map_fini (&screen_info->root_context.gl,
+    glitz_program_map_fini (&screen_info->root_context.backend.gl,
                             &screen_info->program_map);
     glXMakeCurrent (display, None, NULL);
   }

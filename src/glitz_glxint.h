@@ -47,9 +47,9 @@
 #define GLITZ_GLX_FEATURE_MULTITEXTURE_MASK             (1L <<  7)
 #define GLITZ_GLX_FEATURE_TEXTURE_ENV_COMBINE_MASK      (1L <<  8)
 #define GLITZ_GLX_FEATURE_TEXTURE_ENV_DOT3_MASK         (1L <<  9)
-#define GLITZ_GLX_FEATURE_VERTEX_PROGRAM_MASK           (1L << 10)
-#define GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 11)
-#define GLITZ_GLX_FEATURE_GLX13_MASK                    (1L << 12)
+#define GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 10)
+#define GLITZ_GLX_FEATURE_GLX13_MASK                    (1L << 11)
+#define GLITZ_GLX_FEATURE_VERTEX_BUFFER_OBJECT_MASK     (1L << 12)
 #define GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 13)
 
 typedef struct _glitz_glx_surface glitz_glx_surface_t;
@@ -90,8 +90,8 @@ typedef struct _glitz_glx_context_info_t {
 typedef struct _glitz_glx_context_t {
   GLXContext context;
   XID id;
-  glitz_gl_proc_address_list_t gl;
   GLXFBConfig fbconfig;
+  glitz_surface_backend_t backend;
 } glitz_glx_context_t;
 
 struct _glitz_glx_screen_info_t {
@@ -112,9 +112,9 @@ struct _glitz_glx_screen_info_t {
   GLXDrawable root_drawable;
   Colormap root_colormap;
 
-  long int feature_mask;
-  long int glx_feature_mask;
-  long int texture_mask;
+  unsigned long feature_mask;
+  unsigned long glx_feature_mask;
+  unsigned long texture_mask;
 
   glitz_program_map_t program_map;
 };
@@ -179,6 +179,9 @@ glitz_glx_pbuffer_create (glitz_glx_display_info_t *display_info,
 extern void __internal_linkage
 glitz_glx_pbuffer_destroy (glitz_glx_display_info_t *display_info,
                            GLXPbuffer pbuffer);
+
+extern void __internal_linkage
+glitz_glx_surface_backend_init (glitz_surface_backend_t *backend);
 
 /* Avoid unnecessary PLT entries.  */
 

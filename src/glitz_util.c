@@ -127,7 +127,7 @@ glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
   gl->depth_range (0, 1);
   gl->viewport (-1, -1, 2, 2);
   
-  gl->raster_pos_2d (0, 0);
+  gl->raster_pos_2f (0, 0);
   gl->bitmap (0, 0, 1, 1, x, y, NULL);
   
   gl->pop_matrix ();
@@ -137,11 +137,11 @@ glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
 }
 
 void
-glitz_clamp_value (double *value, double min, double max)
+glitz_clamp_value (glitz_float_t *value,
+                   glitz_float_t min, glitz_float_t max)
 {
   if (*value < min)
     *value = min;
   else if (*value > max)
     *value = max;
 }
-

@@ -1,28 +1,26 @@
 /*
- * Copyright © 2004 David Reveman, Peter Nilsson
- *
+ * Copyright © 2004 David Reveman
+ * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
  * appear in supporting documentation, and that the names of
- * David Reveman and Peter Nilsson not be used in advertising or
- * publicity pertaining to distribution of the software without
- * specific, written prior permission. David Reveman and Peter Nilsson
- * makes no representations about the suitability of this software for
- * any purpose. It is provided "as is" without express or implied warranty.
+ * David Reveman not be used in advertising or publicity pertaining to
+ * distribution of the software without specific, written prior permission.
+ * David Reveman makes no representations about the suitability of this
+ * software for any purpose. It is provided "as is" without express or
+ * implied warranty.
  *
- * DAVID REVEMAN AND PETER NILSSON DISCLAIMS ALL WARRANTIES WITH
- * REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL DAVID REVEMAN AND
- * PETER NILSSON BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA
- * OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * DAVID REVEMAN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, 
+ * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
+ * NO EVENT SHALL DAVID REVEMAN BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+ * OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, 
+ * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
+ * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Authors: David Reveman <c99drn@cs.umu.se>
- *          Peter Nilsson <c99pnn@cs.umu.se>
+ * Author: David Reveman <c99drn@cs.umu.se>
  */
 
 #ifndef GLITZ_H_INCLUDED
@@ -40,36 +38,24 @@
 
 /* NOTE: Must be manually synchronized with GLITZ_VERSION in configure.in */
 #define GLITZ_MAJOR 0
-#define GLITZ_MINOR 1
-#define GLITZ_REVISION 5
+#define GLITZ_MINOR 2
+#define GLITZ_REVISION 0
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
 
 typedef int glitz_bool_t;
+typedef short glitz_short_t;
+typedef int glitz_int_t;
+typedef float glitz_float_t;
+typedef double glitz_double_t;
 typedef int glitz_fixed16_16_t;
-
-typedef struct _glitz_point_fixed_t {
-  glitz_fixed16_16_t x, y;
-} glitz_point_fixed_t;
 
 typedef struct _glitz_rectangle_t {
   short x, y;
   unsigned short width, height;
 } glitz_rectangle_t;
-
-typedef struct _glitz_triangle_t {
-  glitz_point_fixed_t p1, p2, p3;
-} glitz_triangle_t;
-
-typedef struct _glitz_span_fixed_t {
-  glitz_fixed16_16_t left, right, y;
-} glitz_span_fixed_t;
-  
-typedef struct _glitz_trapezoid_t {
-  glitz_span_fixed_t top, bottom;
-} glitz_trapezoid_t;
 
 typedef struct _glitz_transform_t {
   glitz_fixed16_16_t matrix[3][3];
@@ -82,25 +68,6 @@ typedef struct {
   unsigned short alpha;
 } glitz_color_t;
   
-typedef struct _glitz_colorspan_t {
-  glitz_fixed16_16_t left, right, y;
-  glitz_color_t left_color;
-  glitz_color_t right_color;
-} glitz_colorspan_t;
-
-typedef struct _glitz_colorpoint_t {
-  glitz_point_fixed_t point;
-  glitz_color_t color;
-} glitz_colorpoint_t;
-
-typedef struct _glitz_color_trapezoid_t {
-  glitz_colorspan_t top, bottom;
-} glitz_color_trapezoid_t;
-
-typedef struct _glitz_color_triangle_t {
-  glitz_colorpoint_t p1, p2, p3;
-} glitz_color_triangle_t;
-
 typedef enum {
   GLITZ_FILTER_NEAREST,
   GLITZ_FILTER_BILINEAR,
@@ -109,11 +76,6 @@ typedef enum {
   GLITZ_FILTER_LINEAR_GRADIENT,
   GLITZ_FILTER_RADIAL_GRADIENT
 } glitz_filter_t;
-
-typedef enum {
-  GLITZ_POLYEDGE_SHARP,
-  GLITZ_POLYEDGE_SMOOTH
-} glitz_polyedge_t;
 
 typedef enum {
   GLITZ_OPERATOR_CLEAR,
@@ -132,21 +94,20 @@ typedef enum {
   GLITZ_OPERATOR_SATURATE
 } glitz_operator_t;
 
-#define GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK        (1L <<  0)
-#define GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK        (1L <<  1)
-#define GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK (1L <<  2)
-#define GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK  (1L <<  3)
-#define GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK     (1L <<  4)
-#define GLITZ_FEATURE_MULTISAMPLE_MASK              (1L <<  5)
-#define GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK    (1L <<  6)
-#define GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK  (1L <<  7)
-#define GLITZ_FEATURE_MULTITEXTURE_MASK             (1L <<  8)
-#define GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK      (1L <<  9)
-#define GLITZ_FEATURE_TEXTURE_ENV_DOT3_MASK         (1L << 10)  
-#define GLITZ_FEATURE_VERTEX_PROGRAM_MASK           (1L << 11)
-#define GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 12)
-#define GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 13)
-#define GLITZ_FEATURE_COMPONENT_ALPHA_MASK          (1L << 14)
+#define GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK        (1L <<  0)
+#define GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK (1L <<  1)
+#define GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK  (1L <<  2)
+#define GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK     (1L <<  3)
+#define GLITZ_FEATURE_MULTISAMPLE_MASK              (1L <<  4)
+#define GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK    (1L <<  5)
+#define GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK  (1L <<  6)
+#define GLITZ_FEATURE_MULTITEXTURE_MASK             (1L <<  7)
+#define GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK      (1L <<  8)
+#define GLITZ_FEATURE_TEXTURE_ENV_DOT3_MASK         (1L <<  9)
+#define GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 10)
+#define GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK     (1L << 11)
+#define GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 12)
+#define GLITZ_FEATURE_COMPONENT_ALPHA_MASK          (1L << 13)
 
 typedef enum {
   GLITZ_STANDARD_ARGB32,
@@ -198,16 +159,18 @@ typedef struct _glitz_format_t {
   glitz_multisample_format_t multisample;
 } glitz_format_t;
 
+typedef struct _glitz_surface glitz_surface_t;
+typedef struct _glitz_buffer glitz_buffer_t;
 
+  
 /* glitz_status.c */
   
 typedef enum {
     GLITZ_STATUS_SUCCESS = 0,
     GLITZ_STATUS_NO_MEMORY,
-    GLITZ_STATUS_NULL_POINTER,
     GLITZ_STATUS_BAD_COORDINATE,
     GLITZ_STATUS_NOT_SUPPORTED,
-    GLITZ_STATUS_INVALID_MATRIX
+    GLITZ_STATUS_CONTENT_DESTROYED
 } glitz_status_t;
 
 const char *
@@ -216,17 +179,17 @@ glitz_status_string (glitz_status_t status);
   
 /* glitz_surface.c */
 
-typedef struct _glitz_surface glitz_surface_t;
-
 void
 glitz_surface_destroy (glitz_surface_t *surface);
+
+void
+glitz_surface_reference (glitz_surface_t *surface);
 
 void
 glitz_surface_set_transform (glitz_surface_t *surface,
                              glitz_transform_t *transform);
 
 typedef enum {
-  GLITZ_FILL_CLIP,
   GLITZ_FILL_TRANSPARENT,
   GLITZ_FILL_NEAREST,
   GLITZ_FILL_REPEAT,
@@ -245,95 +208,35 @@ void
 glitz_surface_set_filter (glitz_surface_t *surface,
                           glitz_filter_t filter,
                           glitz_fixed16_16_t *params,
-                          int n_params);
-  
-void
-glitz_surface_set_polyedge (glitz_surface_t *surface,
-                            glitz_polyedge_t polyedge);
+                          int n_params);  
 
 typedef enum {
-  GLITZ_POLYEDGE_SMOOTH_HINT_FAST,
-  GLITZ_POLYEDGE_SMOOTH_HINT_GOOD,
-  GLITZ_POLYEDGE_SMOOTH_HINT_BEST
-} glitz_polyedge_smooth_hint_t;
+  GLITZ_COLOR_BUFFER_FRONT,
+  GLITZ_COLOR_BUFFER_BACK
+} glitz_color_buffer_t;
 
 void
-glitz_surface_set_polyedge_smooth_hint (glitz_surface_t *surface,
-                                        glitz_polyedge_smooth_hint_t hint);
-
-typedef enum {
-  GLITZ_CLIP_OPERATOR_SET,
-  GLITZ_CLIP_OPERATOR_UNION,
-  GLITZ_CLIP_OPERATOR_INTERSECT
-} glitz_clip_operator_t;
-  
-void
-glitz_surface_clip_rectangles (glitz_surface_t *surface,
-                               glitz_clip_operator_t op,
-                               int x_offset,
-                               int y_offset,
-                               const glitz_rectangle_t *rects,
-                               int n_rects);
-  
-void
-glitz_surface_clip_trapezoids (glitz_surface_t *surface,
-                               glitz_clip_operator_t op,
-                               int x_offset,
-                               int y_offset,
-                               const glitz_trapezoid_t *traps,
-                               int n_traps);
+glitz_surface_set_read_color_buffer (glitz_surface_t *surface,
+                                     glitz_color_buffer_t buffer);
 
 void
-glitz_surface_clip_triangles (glitz_surface_t *surface,
-                              glitz_clip_operator_t op,
-                              int x_offset,
-                              int y_offset,
-                              const glitz_triangle_t *tris,
-                              int n_tris);
-  
-int
-glitz_surface_get_width (glitz_surface_t *surface);
-
-int
-glitz_surface_get_height (glitz_surface_t *surface);
-
-void
-glitz_surface_update_size (glitz_surface_t *surface);
-
-typedef enum {
-  GLITZ_BUFFER_FRONT,
-  GLITZ_BUFFER_BACK
-} glitz_buffer_t;
-
-void
-glitz_surface_set_read_buffer (glitz_surface_t *surface,
-                               glitz_buffer_t buffer);
-
-void
-glitz_surface_set_draw_buffer (glitz_surface_t *surface,
-                               glitz_buffer_t buffer);
-
-void
-glitz_surface_flush (glitz_surface_t *surface);
+glitz_surface_set_draw_color_buffer (glitz_surface_t *surface,
+                                     glitz_color_buffer_t buffer);
   
 void
 glitz_surface_swap_buffers (glitz_surface_t *surface);
 
 void
+glitz_surface_flush (glitz_surface_t *surface);
+
+void
 glitz_surface_finish (glitz_surface_t *surface);
 
-void
-glitz_surface_get_gl_texture (glitz_surface_t *surface,
-                              unsigned int *name,
-                              unsigned int *target,
-                              double *texcoord_width,
-                              double *texcoord_height);
+int
+glitz_surface_get_width (glitz_surface_t *surface);
 
-void
-glitz_surface_gl_begin (glitz_surface_t *surface);
-
-void
-glitz_surface_gl_end (glitz_surface_t *surface);
+int
+glitz_surface_get_height (glitz_surface_t *surface);
 
 glitz_status_t
 glitz_surface_get_status (glitz_surface_t *surface);
@@ -360,13 +263,81 @@ glitz_surface_create_similar (glitz_surface_t *templ,
                               int width,
                               int height);
 
-#define GLITZ_HINT_CLIPPING_MASK     (1L << 0)
-#define GLITZ_HINT_OFFSCREEN_MASK    (1L << 1)
-#define GLITZ_HINT_MULTISAMPLE_MASK  (1L << 2)
-
-unsigned long
-glitz_surface_get_hints (glitz_surface_t *surface);
   
+/* glitz_rect.c */
+
+void
+glitz_set_rectangle (glitz_surface_t *dst,
+                     const glitz_color_t *color,
+                     int x,
+                     int y,
+                     unsigned int width,
+                     unsigned int height);
+  
+void
+glitz_set_rectangles (glitz_surface_t *dst,
+                      const glitz_color_t *color,
+                      const glitz_rectangle_t *rects,
+                      int n_rects);
+
+
+/* glitz_buffer.c */
+  
+typedef enum {
+  GLITZ_BUFFER_HINT_STREAM_DRAW,
+  GLITZ_BUFFER_HINT_STREAM_READ,
+  GLITZ_BUFFER_HINT_STREAM_COPY,
+  GLITZ_BUFFER_HINT_STATIC_DRAW,
+  GLITZ_BUFFER_HINT_STATIC_READ,
+  GLITZ_BUFFER_HINT_STATIC_COPY,
+  GLITZ_BUFFER_HINT_DYNAMIC_DRAW,
+  GLITZ_BUFFER_HINT_DYNAMIC_READ,
+  GLITZ_BUFFER_HINT_DYNAMIC_COPY
+} glitz_buffer_hint_t;
+
+typedef enum {
+  GLITZ_BUFFER_ACCESS_READ_ONLY,
+  GLITZ_BUFFER_ACCESS_WRITE_ONLY,
+  GLITZ_BUFFER_ACCESS_READ_WRITE
+} glitz_buffer_access_t;
+
+glitz_buffer_t *
+glitz_geometry_buffer_create (glitz_surface_t *surface,
+                              void *data,
+                              unsigned int size,
+                              glitz_buffer_hint_t hint);
+
+glitz_buffer_t *
+glitz_pixel_buffer_create (glitz_surface_t *surface,
+                           void *data,
+                           unsigned int size,
+                           glitz_buffer_hint_t hint);
+  
+void
+glitz_buffer_destroy (glitz_buffer_t *buffer);
+
+void
+glitz_buffer_reference (glitz_buffer_t *buffer);
+
+void
+glitz_buffer_set_data (glitz_buffer_t *buffer,
+                       int offset,
+                       unsigned int size,
+                       const void *data);
+
+void
+glitz_buffer_get_data (glitz_buffer_t *buffer,
+                       int offset,
+                       unsigned int size,
+                       void *data);
+       
+void *
+glitz_buffer_map (glitz_buffer_t *buffer,
+                  glitz_buffer_access_t access);
+  
+glitz_status_t
+glitz_buffer_unmap (glitz_buffer_t *buffer);
+
   
 /* glitz_pixel.c */
   
@@ -391,62 +362,14 @@ typedef struct _glitz_pixel_format {
   glitz_pixel_scanline_order_t scanline_order;
 } glitz_pixel_format_t;
 
-typedef struct _glitz_pixel_buffer glitz_pixel_buffer_t;
-
-typedef enum {
-  GLITZ_PIXEL_BUFFER_HINT_STREAM_DRAW,
-  GLITZ_PIXEL_BUFFER_HINT_STREAM_READ,
-  GLITZ_PIXEL_BUFFER_HINT_STREAM_COPY,
-  GLITZ_PIXEL_BUFFER_HINT_STATIC_DRAW,
-  GLITZ_PIXEL_BUFFER_HINT_STATIC_READ,
-  GLITZ_PIXEL_BUFFER_HINT_STATIC_COPY,
-  GLITZ_PIXEL_BUFFER_HINT_DYNAMIC_DRAW,
-  GLITZ_PIXEL_BUFFER_HINT_DYNAMIC_READ,
-  GLITZ_PIXEL_BUFFER_HINT_DYNAMIC_COPY
-} glitz_buffer_hint_t;
-
-glitz_pixel_buffer_t *
-glitz_pixel_buffer_create (glitz_surface_t *surface,
-                           char *data,
-                           unsigned int size,
-                           glitz_buffer_hint_t hint);
-  
-glitz_pixel_buffer_t *
-glitz_pixel_buffer_create_for_data (char *data,
-                                    glitz_pixel_format_t *format);
-
 void
-glitz_pixel_buffer_destroy (glitz_pixel_buffer_t *buffer);
-
-void
-glitz_pixel_buffer_set_format (glitz_pixel_buffer_t *buffer,
-                               glitz_pixel_format_t *format);
-
-void
-glitz_pixel_buffer_get_format (glitz_pixel_buffer_t *buffer,
-                               glitz_pixel_format_t *format);
-
-typedef enum {
-  GLITZ_PIXEL_BUFFER_ACCESS_READ_ONLY,
-  GLITZ_PIXEL_BUFFER_ACCESS_WRITE_ONLY,
-  GLITZ_PIXEL_BUFFER_ACCESS_READ_WRITE
-} glitz_pixel_buffer_access_t;
-
-char *
-glitz_pixel_buffer_get_data (glitz_pixel_buffer_t *buffer,
-                             glitz_pixel_buffer_access_t access);
-  
-void
-glitz_pixel_buffer_put_back_data (glitz_pixel_buffer_t *buffer);
-
-void
-glitz_put_pixels (glitz_surface_t *dst,
+glitz_set_pixels (glitz_surface_t *dst,
                   int x_dst,
                   int y_dst,
                   int width,
                   int height,
-                  glitz_pixel_buffer_t *buffer);
-                  
+                  glitz_pixel_format_t *format,
+                  glitz_buffer_t *buffer);                
 
 void
 glitz_get_pixels (glitz_surface_t *src,
@@ -454,130 +377,55 @@ glitz_get_pixels (glitz_surface_t *src,
                   int y_src,
                   int width,
                   int height,
-                  glitz_pixel_buffer_t *buffer);
+                  glitz_pixel_format_t *format,
+                  glitz_buffer_t *buffer);
   
   
-/* glitz_rect.c */
+/* glitz_geometry.c */
 
-void
-glitz_fill_rectangle (glitz_operator_t op,
-                      glitz_surface_t *dst,
-                      const glitz_color_t *color,
-                      int x,
-                      int y,
-                      unsigned int width,
-                      unsigned int height);
+typedef enum {
+  GLITZ_GEOMETRY_MODE_DIRECT,
+  GLITZ_GEOMETRY_MODE_INDIRECT
+} glitz_geometry_mode_t;
+
+typedef enum {
+  GLITZ_GEOMETRY_EDGE_HINT_SHARP,
+  GLITZ_GEOMETRY_EDGE_HINT_FAST_SMOOTH,
+  GLITZ_GEOMETRY_EDGE_HINT_GOOD_SMOOTH,
+  GLITZ_GEOMETRY_EDGE_HINT_BEST_SMOOTH
+} glitz_geometry_edge_hint_t;
+
+typedef enum {
+  GLITZ_GEOMETRY_PRIMITIVE_TRIANGLES,
+  GLITZ_GEOMETRY_PRIMITIVE_TRIANGLE_STRIP,
+  GLITZ_GEOMETRY_PRIMITIVE_TRIANGLE_FAN,
+  GLITZ_GEOMETRY_PRIMITIVE_QUADS,
+  GLITZ_GEOMETRY_PRIMITIVE_QUAD_STRIP,
+  GLITZ_GEOMETRY_PRIMITIVE_POLYGON
+} glitz_geometry_primitive_t;
   
-void
-glitz_fill_rectangles (glitz_operator_t op,
-                       glitz_surface_t *dst,
-                       int x_offset,
-                       int y_offset,
-                       const glitz_color_t *color,
-                       const glitz_rectangle_t *rects,
-                       int n_rects);
+typedef enum {
+  GLITZ_DATA_TYPE_SHORT,
+  GLITZ_DATA_TYPE_INT,
+  GLITZ_DATA_TYPE_FLOAT,
+  GLITZ_DATA_TYPE_DOUBLE
+} glitz_data_type_t;
 
-
-/* glitz_trap.c */
-
-void
-glitz_fill_trapezoids (glitz_operator_t op,
-                       glitz_surface_t *dst,
-                       int x_offset,
-                       int y_offset,
-                       const glitz_color_t *color,
-                       const glitz_trapezoid_t *traps,
-                       int n_traps);
+typedef struct _glitz_geometry_format {
+  glitz_geometry_mode_t mode;
+  glitz_geometry_edge_hint_t edge_hint;
+  glitz_geometry_primitive_t primitive;
+  glitz_data_type_t type;
+  int first;
+  unsigned int count;
+} glitz_geometry_format_t;
 
 void
-glitz_add_trapezoids (glitz_surface_t *dst,
-                      int x_offset,
-                      int y_offset,
-                      const glitz_trapezoid_t *traps,
-                      int n_traps);
-
-void
-glitz_composite_trapezoids (glitz_operator_t op,
-                            glitz_surface_t *src,
-                            glitz_surface_t *dst,
-                            int x_src,
-                            int y_src,
-                            int x_offset,
-                            int y_offset,
-                            unsigned short opacity,
-                            const glitz_trapezoid_t *traps,
-                            int n_traps);
-
-void
-glitz_color_trapezoids (glitz_operator_t op,
-                        glitz_surface_t *dst,
-                        int x_offset,
-                        int y_offset,
-                        const glitz_color_trapezoid_t *color_traps,
-                        int n_color_traps);
-
-
-/* glitz_tri.c */
-
-void
-glitz_fill_triangles (glitz_operator_t op,
-                      glitz_surface_t *dst,
-                      int x_offset,
-                      int y_offset,
-                      const glitz_color_t *color,
-                      const glitz_triangle_t *tris,
-                      int n_tris);
-
-void
-glitz_add_triangles (glitz_surface_t *dst,
-                     int x_offset,
-                     int y_offset,
-                     const glitz_triangle_t *tris,
-                     int n_tris);
-  
-void
-glitz_composite_triangles (glitz_operator_t op,
-                           glitz_surface_t *src,
-                           glitz_surface_t *dst,
-                           int x_src,
-                           int y_src,
-                           int x_offset,
-                           int y_offset,
-                           unsigned short opacity,
-                           const glitz_triangle_t *tris,
-                           int n_tris);
-
-void
-glitz_composite_tri_strip (glitz_operator_t op,
-                           glitz_surface_t *src,
-                           glitz_surface_t *dst,
-                           int x_src,
-                           int y_src,
-                           int x_offset,
-                           int y_offset,
-                           unsigned short opacity,
-                           const glitz_point_fixed_t *points,
-                           int n_points);
-
-void
-glitz_composite_tri_fan (glitz_operator_t op,
-                         glitz_surface_t *src,
-                         glitz_surface_t *dst,
-                         int x_src,
-                         int y_src,
-                         int x_offset,
-                         int y_offset,
-                         unsigned short opacity,
-                         const glitz_point_fixed_t *points,
-                         int n_points);
-  
-void
-glitz_color_triangles (glitz_operator_t op,
-                       glitz_surface_t *dst,
-                       int x_offset,
-                       int y_offset,
-                       const glitz_color_triangle_t *color_tris,
-                       int n_color_tris);
+glitz_set_geometry (glitz_surface_t *dst,
+                    int x_dst,
+                    int y_dst,
+                    glitz_geometry_format_t *format,
+                    glitz_buffer_t *buffer);
   
 
 /* glitz.c */

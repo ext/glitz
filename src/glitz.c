@@ -44,6 +44,7 @@ glitz_gl_uint_t _texture_units[] = {
 typedef struct _glitz_texture_unit_t {
   glitz_texture_t *texture;
   glitz_gl_uint_t unit;
+  glitz_bool_t transform;
 } glitz_texture_unit_t;
 
 void
@@ -60,17 +61,17 @@ glitz_composite (glitz_operator_t op,
                  int width,
                  int height)
 {
-  glitz_gl_proc_address_list_t *gl = dst->gl;
+  glitz_gl_proc_address_list_t *gl = &dst->backend->gl;
   glitz_surface_t *intermediate = NULL;
   glitz_bounding_box_t rect;
   glitz_composite_op_t comp_op;
   int i, passes, texture_nr = -1;
   glitz_texture_t *stexture, *mtexture;
   glitz_texture_unit_t textures[3];
-  glitz_point_t t0_tl, t0_br, t1_tl, t1_br;
-  glitz_gl_enum_t t0 = 0x0, t1 = 0x0;
-  glitz_point_t *tl, *br;
   glitz_color_t alpha_mask;
+  glitz_gl_enum_t primitive;
+  glitz_gl_int_t first;
+  glitz_gl_sizei_t count;
 
   if (width <= 0 || height <= 0)
     return;
@@ -83,44 +84,6 @@ glitz_composite (glitz_operator_t op,
 
   src = comp_op.src;
   mask = comp_op.mask;
-
-  if (src && SURFACE_CLIP (src)) {
-    if (x_src < 0) {
-      x_dst -= x_src;
-      x_mask -= x_src;
-      width += x_src;
-      x_src = 0;
-    }
-
-    if (y_src < 0) {
-      y_dst -= y_src;
-      y_mask -= y_src;
-      height += y_src;
-      y_src = 0;
-    }
-
-    width = MIN (src->width - x_src, width);
-    height = MIN (src->height - y_src, height);
-  }
-
-  if (mask && SURFACE_CLIP (mask)) {
-    if (x_mask < 0) {
-      x_dst -= x_mask;
-      x_src -= x_mask;
-      width += x_mask;
-      x_mask = 0;
-    }
-
-    if (y_mask < 0) {
-      y_dst -= y_mask;
-      y_src -= y_mask;
-      height += y_mask;
-      y_mask = 0;
-    }
-
-    width = MIN (mask->width - x_mask, width);
-    height = MIN (mask->height - y_mask, height);
-  }
   
   if (comp_op.type == GLITZ_COMBINE_TYPE_INTERMEDIATE) {
     glitz_format_t templ;
@@ -204,53 +167,35 @@ glitz_composite (glitz_operator_t op,
   rect.y1 = y_dst;
   rect.x2 = rect.x1 + width;
   rect.y2 = rect.y1 + height;
-    
+
   if (mtexture) {
     textures[0].texture = mtexture;
     textures[0].unit = _texture_units[0];
+    textures[0].transform = 0;
     texture_nr = 0;
     
     glitz_texture_bind (gl, mtexture);
-    
-    tl = &t0_tl;
-    br = &t0_br;
-    t0 = textures[0].unit;
-      
-    if (SURFACE_WINDOW_SPACE_TEXCOORDS (mask)) {
-      tl->x = x_mask;
-      tl->y = y_mask;
-      br->x = x_mask + width;
-      br->y = y_mask + height;
-    } else {
-      glitz_texture_tex_coord (mtexture, x_mask, y_mask, &tl->x, &tl->y);
-      glitz_texture_tex_coord (mtexture, x_mask + width, y_mask + height,
-                               &br->x, &br->y);
-    }
-    
-    gl->matrix_mode (GLITZ_GL_TEXTURE);
-    gl->load_identity ();
+
+    glitz_texture_set_tex_gen (gl,
+                               mtexture,
+                               rect.x1 - x_mask,
+                               rect.y1 - y_mask,
+                               mask->height,
+                               mask->flags);
     
     if (mask->transform) {
-      if (SURFACE_WINDOW_SPACE_TEXCOORDS (mask)) {
-        gl->mult_matrix_d (mask->transform->m);
-      } else {
-          gl->scale_d (1.0, -1.0, 1.0);
-          gl->translate_d (0.0, -mtexture->texcoord_height, 0.0);
-          gl->mult_matrix_d (mask->transform->m_norm);
-      }
+      textures[0].transform = 1;
+      gl->matrix_mode (GLITZ_GL_TEXTURE);
+      gl->load_matrix_f (SURFACE_TEXTURE_COORDS (mask)?
+                         mask->transform->t: mask->transform->m);
+      gl->matrix_mode (GLITZ_GL_MODELVIEW);
       
       if (SURFACE_LINEAR_TRANSFORM_FILTER (mask))
         glitz_texture_ensure_filter (gl, mtexture, GLITZ_GL_LINEAR);
       else
         glitz_texture_ensure_filter (gl, mtexture, GLITZ_GL_NEAREST);
-    } else {
-      if (!SURFACE_WINDOW_SPACE_TEXCOORDS (mask)) {
-        tl->y = mtexture->texcoord_height - tl->y;
-        br->y = mtexture->texcoord_height - br->y;
-      }
-      
+    } else
       glitz_texture_ensure_filter (gl, mtexture, GLITZ_GL_NEAREST);
-    }
     
     if (SURFACE_REPEAT (mask)) {
       if (SURFACE_MIRRORED (mask))
@@ -258,7 +203,7 @@ glitz_composite (glitz_operator_t op,
       else
         glitz_texture_ensure_wrap (gl, mtexture, GLITZ_GL_REPEAT);
     } else {
-      if (SURFACE_PAD (mask) || SURFACE_CLIP (mask))
+      if (SURFACE_PAD (mask))
         glitz_texture_ensure_wrap (gl, mtexture, GLITZ_GL_CLAMP_TO_EDGE);
       else
         glitz_texture_ensure_wrap (gl, mtexture, GLITZ_GL_CLAMP_TO_BORDER);
@@ -271,56 +216,32 @@ glitz_composite (glitz_operator_t op,
     while (texture_nr < last_texture_nr) {
       textures[++texture_nr].texture = stexture;
       textures[texture_nr].unit = _texture_units[texture_nr];
+      textures[texture_nr].transform = 0;
       if (texture_nr > 0)
         gl->active_texture (textures[texture_nr].unit);
       glitz_texture_bind (gl, stexture);
     }
-    
-    if (t0) {
-      tl = &t1_tl;
-      br = &t1_br;
-      t1 = textures[texture_nr].unit;
-    } else {
-      tl = &t0_tl;
-      br = &t0_br;
-      t0 = textures[texture_nr].unit;
-    }
-    
-    if (SURFACE_WINDOW_SPACE_TEXCOORDS (src)) {
-      tl->x = x_src;
-      tl->y = y_src;
-      br->x = x_src + width;
-      br->y = y_src + height;
-    } else {
-      glitz_texture_tex_coord (stexture, x_src, y_src, &tl->x, &tl->y);
-      glitz_texture_tex_coord (stexture, x_src + width, y_src + height,
-                               &br->x, &br->y);
-    }
 
-    gl->matrix_mode (GLITZ_GL_TEXTURE);
-    gl->load_identity ();
+    glitz_texture_set_tex_gen (gl,
+                               stexture,
+                               rect.x1 - y_src,
+                               rect.y1 - x_src,
+                               src->height,
+                               src->flags);
 
     if (src->transform) {
-      if (SURFACE_WINDOW_SPACE_TEXCOORDS (src)) {
-        gl->mult_matrix_d (src->transform->m);
-      } else {
-        gl->scale_d (1.0, -1.0, 1.0);
-        gl->translate_d (0.0, -stexture->texcoord_height, 0.0);
-        gl->mult_matrix_d (src->transform->m_norm);
-      }
-
+      textures[texture_nr].transform = 1;
+      gl->matrix_mode (GLITZ_GL_TEXTURE);
+      gl->load_matrix_f (SURFACE_TEXTURE_COORDS (src)?
+                         src->transform->t: src->transform->m);
+      gl->matrix_mode (GLITZ_GL_MODELVIEW);
+      
       if (SURFACE_LINEAR_TRANSFORM_FILTER (src))
         glitz_texture_ensure_filter (gl, stexture, GLITZ_GL_LINEAR);
       else
         glitz_texture_ensure_filter (gl, stexture, GLITZ_GL_NEAREST);
-    } else {
-      if (!SURFACE_WINDOW_SPACE_TEXCOORDS (src)) {
-        tl->y = stexture->texcoord_height - tl->y;
-        br->y = stexture->texcoord_height - br->y;
-      }
-    
+    } else
       glitz_texture_ensure_filter (gl, stexture, GLITZ_GL_NEAREST);
-    }
       
     if (SURFACE_REPEAT (src)) {
       if (SURFACE_MIRRORED (src))
@@ -328,7 +249,7 @@ glitz_composite (glitz_operator_t op,
       else
         glitz_texture_ensure_wrap (gl, stexture, GLITZ_GL_REPEAT);
     } else {
-      if (SURFACE_PAD (src) || SURFACE_CLIP (src))
+      if (SURFACE_PAD (src))
         glitz_texture_ensure_wrap (gl, stexture, GLITZ_GL_CLAMP_TO_EDGE);
       else
         glitz_texture_ensure_wrap (gl, stexture, GLITZ_GL_CLAMP_TO_BORDER);
@@ -337,86 +258,135 @@ glitz_composite (glitz_operator_t op,
 
   glitz_set_operator (gl, op);
 
-  if (dst->multi_sample)
-    passes = dst->multi_sample->n_samples;
-  else if (comp_op.component_alpha)
-    passes = comp_op.component_alpha;
-  else
+  gl->scissor (rect.x1,
+               dst->height - rect.y2,
+               rect.x2 - rect.x1,
+               rect.y2 - rect.y1);
+
+  gl->push_matrix ();
+  
+  glitz_geometry_enable (gl, dst, &primitive, &first, &count);
+
+  if (dst->indirect) {
+    glitz_sample_offset_t *offsets;
+
+    passes = dst->indirect->n_samples;
+    offsets = dst->indirect->offsets;
+
+    gl->enable (GLITZ_GL_STENCIL_TEST);
+    gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE, GLITZ_GL_FALSE,
+                    GLITZ_GL_FALSE);
+    gl->clear_stencil (0);
+    gl->clear (GLITZ_GL_STENCIL_BUFFER_BIT);
+    gl->stencil_func (GLITZ_GL_ALWAYS, ~0, ~0);
+    gl->stencil_op (GLITZ_GL_KEEP, GLITZ_GL_INCR, GLITZ_GL_INCR);
+    
+    for (i = 0; i < passes; i++) {
+      gl->push_matrix ();
+      gl->translate_f (offsets[i].x, offsets[i].y, 0.0f);
+      gl->draw_arrays (primitive, first, count);
+      gl->pop_matrix ();
+    }
+
+    gl->pop_matrix ();
+    gl->push_matrix ();
+    
+    gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE, GLITZ_GL_TRUE,
+                    GLITZ_GL_TRUE);
+    
+    glitz_geometry_enable_default (gl, dst);
+    primitive = GLITZ_GL_QUADS;
+    first = 0;
+    count = 4;
+  } else
     passes = 1;
+
+  if (comp_op.component_alpha)
+    passes *= comp_op.component_alpha;
 
   alpha_mask = comp_op.alpha_mask;
 
   for (i = 0; i < passes; i++) {
-    if (dst->multi_sample) {
-      if ((i + 1) == passes)
-        glitz_set_stencil_operator (gl, GLITZ_STENCIL_OPERATOR_CLIP,
-                                    (*dst->stencil_mask & ~0x1) | (i + 1));
+    unsigned short weight, sample;
+    
+    if (dst->indirect) {
+      if (comp_op.component_alpha)
+        sample = i / comp_op.component_alpha;
       else
-        glitz_set_stencil_operator (gl, GLITZ_STENCIL_OPERATOR_CLIP_EQUAL,
-                                    (*dst->stencil_mask & ~0x1) | (i + 1));
-
-      SET_COLOR (comp_op.alpha_mask, 0x0, 0x0, 0x0,
-                 SHORT_MULT (dst->multi_sample->weights[i], alpha_mask.alpha));
+        sample = i;
       
-    } else if (comp_op.component_alpha) {
-      switch (i) {
+      weight = dst->indirect->weights[sample];
+      
+      gl->stencil_func (GLITZ_GL_EQUAL, sample + 1, ~0);
+      gl->stencil_op (GLITZ_GL_KEEP, GLITZ_GL_KEEP, GLITZ_GL_KEEP);
+    } else
+      weight = 0xffff;
+    
+    if (comp_op.component_alpha) {
+      switch (i % comp_op.component_alpha) {
       case 0:
-        SET_COLOR (comp_op.alpha_mask, alpha_mask.red, 0x0, 0x0, 0x0);
-        gl->color_mask (1, 0, 0, 0);
+        SET_COLOR (comp_op.alpha_mask,
+                   SHORT_MULT (weight, alpha_mask.red), 0, 0, 0);
+        gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_FALSE, GLITZ_GL_FALSE,
+                        GLITZ_GL_FALSE);
         break;
       case 1:
-        SET_COLOR (comp_op.alpha_mask, 0x0, 0x0, alpha_mask.blue, 0x0);
-        gl->color_mask (0, 0, 1, 0);
+        SET_COLOR (comp_op.alpha_mask,
+                   0, 0, SHORT_MULT (weight, alpha_mask.blue), 0);
+        gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE, GLITZ_GL_TRUE,
+                        GLITZ_GL_FALSE);
         break;
       case 2:
-        SET_COLOR (comp_op.alpha_mask, 0x0, alpha_mask.green, 0x0, 0x0);
-        gl->color_mask (0, 1, 0, (passes == 4)? 0: 1);
+        SET_COLOR (comp_op.alpha_mask,
+                   0, SHORT_MULT (weight, alpha_mask.green), 0, 0);
+        gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_TRUE, GLITZ_GL_FALSE,
+                        (comp_op.component_alpha == 4)? GLITZ_GL_FALSE:
+                        GLITZ_GL_TRUE);
         break;
       case 3:
-        SET_COLOR (comp_op.alpha_mask, 0x0, 0x0, 0x0, alpha_mask.alpha);
-        gl->color_mask (0, 0, 0, 1);
+        SET_COLOR (comp_op.alpha_mask,
+                   0, 0, 0, SHORT_MULT (weight, alpha_mask.alpha));
+        gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE, GLITZ_GL_FALSE,
+                        GLITZ_GL_TRUE);
         break;
       }
+    } else {
+      SET_COLOR (comp_op.alpha_mask, 0, 0, 0,
+                 SHORT_MULT (weight, alpha_mask.alpha));
     }
-  
+    
     glitz_composite_enable (&comp_op);
     
-    gl->begin (GLITZ_GL_QUADS);
-    
-    if (t0) gl->tex_coord_2d (t0_tl.x, t0_tl.y);
-    if (t1) gl->multi_tex_coord_2d (t1, t1_tl.x, t1_tl.y);
-    gl->vertex_2d (rect.x1, rect.y1);
-    
-    if (t0) gl->tex_coord_2d (t0_br.x, t0_tl.y);
-    if (t1) gl->multi_tex_coord_2d (t1, t1_br.x, t1_tl.y);
-    gl->vertex_2d (rect.x2, rect.y1);
-  
-    if (t0) gl->tex_coord_2d (t0_br.x, t0_br.y);
-    if (t1) gl->multi_tex_coord_2d (t1, t1_br.x, t1_br.y);
-    gl->vertex_2d (rect.x2, rect.y2);
-    
-    if (t0) gl->tex_coord_2d (t0_tl.x, t0_br.y);
-    if (t1) gl->multi_tex_coord_2d (t1, t1_tl.x, t1_br.y);
-    gl->vertex_2d (rect.x1, rect.y2);
-    
-    gl->end ();
-    
+    gl->draw_arrays (primitive, first, count);
   }
 
+  glitz_geometry_disable (gl, dst);
+
+  gl->pop_matrix ();
+
+  if (dst->indirect)
+    gl->disable (GLITZ_GL_STENCIL_TEST);
+  
   if (comp_op.component_alpha)
-    gl->color_mask (1, 1, 1, 1);
-
+    gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE, GLITZ_GL_TRUE,
+                    GLITZ_GL_TRUE);
+  
   glitz_composite_disable (&comp_op);
-
+  
   for (i = texture_nr; i >= 0; i--) {
     glitz_texture_unbind (gl, textures[i].texture);
+    if (textures[i].transform) {
+      gl->matrix_mode (GLITZ_GL_TEXTURE);
+      gl->load_identity ();
+      gl->matrix_mode (GLITZ_GL_MODELVIEW);
+    }
 
     if (i > 0)
       gl->active_texture (textures[i - 1].unit);
   }
   
   glitz_surface_dirty (dst, &rect);
-
+  
   glitz_surface_pop_current (dst);
   
   if (intermediate)
@@ -469,7 +439,7 @@ glitz_copy_area (glitz_surface_t *src,
   if (width <= 0 || height <= 0)
     return;
 
-  gl = dst->gl;
+  gl = &dst->backend->gl;
 
   status = 0;
   if (glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
@@ -480,8 +450,10 @@ glitz_copy_area (glitz_surface_t *src,
     else
       status = 1;
 
-    gl->disable (GLITZ_GL_STENCIL_TEST);
-    dst->update_mask |= GLITZ_UPDATE_STENCIL_OP_MASK;
+    box.x1 = x_dst;
+    box.y1 = y_dst;
+    box.x2 = box.x1 + width;
+    box.y2 = box.y1 + height;
 
     if (status) {
       if (src->format->doublebuffer)
@@ -495,48 +467,32 @@ glitz_copy_area (glitz_surface_t *src,
     } else {
       glitz_texture_t *texture = glitz_surface_get_texture (src, 0);
       if (texture) {
-        glitz_point_t tl, br;
-          
         glitz_texture_bind (gl, texture);
 
-        gl->matrix_mode (GLITZ_GL_TEXTURE);
-        gl->load_identity ();
-        
+        glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, height, ~0); 
+
         gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                        GLITZ_GL_REPLACE);
         gl->color_4us (0x0, 0x0, 0x0, 0xffff);
-
-        glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
         
         glitz_texture_ensure_wrap (gl, texture, GLITZ_GL_CLAMP_TO_EDGE);
         glitz_texture_ensure_filter (gl, texture, GLITZ_GL_NEAREST);
+
+        glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
+
+        gl->scissor (box.x1,
+                     dst->height - box.y2,
+                     width, height);
         
-        glitz_texture_tex_coord (&dst->texture, x_dst, y_dst, &tl.x, &tl.y);
-        glitz_texture_tex_coord (&dst->texture,
-                                 x_dst + width, y_dst + height, &br.x, &br.y);
-
-        tl.y = dst->texture.texcoord_height - tl.y;
-        br.y = dst->texture.texcoord_height - br.y;
-
-        gl->begin (GLITZ_GL_QUADS);
-        gl->tex_coord_2d (tl.x, tl.y);
-        gl->vertex_2d (x_dst, y_dst);
-        gl->tex_coord_2d (br.x, tl.y);
-        gl->vertex_2d (x_dst + width, y_dst);
-        gl->tex_coord_2d (br.x, br.y);
-        gl->vertex_2d (x_dst + width, y_dst + height);
-        gl->tex_coord_2d (tl.x, br.y);
-        gl->vertex_2d (x_dst, y_dst + height);
-        gl->end ();
+        glitz_geometry_enable_default (gl, dst);
+        
+        gl->draw_arrays (GLITZ_GL_QUADS, 0, 4);
+        
+        glitz_geometry_disable (gl, dst);
 
         glitz_texture_unbind (gl, texture);
       }
     }
-
-    box.x1 = x_dst;
-    box.y1 = y_dst;
-    box.x2 = box.x1 + width;
-    box.y2 = box.y1 + height;
     
     glitz_surface_dirty (dst, &box);
     glitz_surface_pop_current (dst);
@@ -570,21 +526,19 @@ glitz_copy_area (glitz_surface_t *src,
       0, 0, 0,
       GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
     };
-    glitz_pixel_buffer_t *buffer =
+    glitz_buffer_t *buffer =
       glitz_pixel_buffer_create (src,
                                  NULL,
                                  width * height * 4,
-                                 GLITZ_PIXEL_BUFFER_HINT_STATIC_COPY);
+                                 GLITZ_BUFFER_HINT_STATIC_COPY);
     if (!buffer) {
       glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
       return;
     }
 
-    glitz_pixel_buffer_set_format (buffer, &pf);
+    glitz_get_pixels (src, x_src, y_src, width, height, &pf, buffer);
+    glitz_set_pixels (dst, x_dst, y_dst, width, height, &pf, buffer);
     
-    glitz_get_pixels (src, x_src, y_src, width, height, buffer);
-    glitz_put_pixels (dst, x_dst, y_dst, width, height, buffer);
-    
-    glitz_pixel_buffer_destroy (buffer);
+    glitz_buffer_destroy (buffer);
   }
 }

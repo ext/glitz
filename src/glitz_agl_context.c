@@ -31,6 +31,8 @@
 
 #include "glitz_aglint.h"
 
+extern glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address;
+
 static void
 _glitz_agl_context_create (glitz_agl_thread_info_t *thread_info,
                            AGLPixelFormat pixel_format,
@@ -71,6 +73,19 @@ glitz_agl_context_get (glitz_agl_thread_info_t *thread_info,
                              thread_info->format_ids[format->id],
                              context);
   context->offscreen = offscreen;
+
+  glitz_agl_surface_backend_init (&context->backend);
+
+  memcpy (&context->backend.gl,
+          &_glitz_agl_gl_proc_address,
+          sizeof (glitz_gl_proc_address_list_t));
+  
+  context->backend.formats = thread_info->formats;
+  context->backend.n_formats = thread_info->n_formats;
+  context->backend.program_map = &thread_info->program_map;
+  context->backend.feature_mask = thread_info->feature_mask;
+
+  context->backend.gl.need_lookup = 0;
   
   return context;
 }

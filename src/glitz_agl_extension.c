@@ -50,9 +50,13 @@ static glitz_extension_map gl_extensions[] = {
   { "GL_NV_multisample_filter_hint",
     GLITZ_AGL_FEATURE_MULTISAMPLE_FILTER_HINT_MASK },
   { "GL_ARB_multitexture", GLITZ_AGL_FEATURE_MULTITEXTURE_MASK },
-  { "GL_ARB_vertex_program", GLITZ_AGL_FEATURE_VERTEX_PROGRAM_MASK },
   { "GL_ARB_fragment_program", GLITZ_AGL_FEATURE_FRAGMENT_PROGRAM_MASK },
-  { "GL_EXT_pixel_buffer_object", GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
+  /* TODO: lookup all symbols not part of OpenGL 1.1
+     { "GL_ARB_vertex_buffer_object",
+     GLITZ_AGL_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
+     { "GL_EXT_pixel_buffer_object",
+     GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
+  */
   { NULL, 0 }
 };
 
@@ -75,9 +79,6 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
 
   thread_info->feature_mask = 0;
   thread_info->texture_mask = GLITZ_TEXTURE_TARGET_2D_MASK;
-
-  if (thread_info->agl_feature_mask & GLITZ_AGL_FEATURE_PBUFFER_MASK)
-    thread_info->feature_mask |= GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
 
   if (thread_info->agl_feature_mask & GLITZ_AGL_FEATURE_MULTISAMPLE_MASK) {
     thread_info->feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;
@@ -133,13 +134,14 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
         thread_info->feature_mask |= GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
     }
     
-    if (thread_info->agl_feature_mask & GLITZ_AGL_FEATURE_VERTEX_PROGRAM_MASK)
-      thread_info->feature_mask |= GLITZ_FEATURE_VERTEX_PROGRAM_MASK;
-    
     if (thread_info->agl_feature_mask &
         GLITZ_AGL_FEATURE_FRAGMENT_PROGRAM_MASK)
       thread_info->feature_mask |= GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
   }
+
+  if (thread_info->agl_feature_mask &
+      GLITZ_AGL_FEATURE_VERTEX_BUFFER_OBJECT_MASK)
+    thread_info->feature_mask |= GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK;
   
   if (thread_info->agl_feature_mask &
       GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK)

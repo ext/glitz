@@ -31,25 +31,6 @@
 
 #include "glitz_glxint.h"
 
-static glitz_surface_t *
-_glitz_glx_surface_create_similar (void *abstract_templ,
-                                   glitz_format_t *format,
-                                   int width,
-                                   int height);
-
-static void
-_glitz_glx_surface_destroy (void *abstract_surface);
-
-static glitz_texture_t *
-_glitz_glx_surface_get_texture (void *abstract_surface,
-                                glitz_bool_t allocate);
-
-static void
-_glitz_glx_surface_update_size (void *abstract_surface);
-
-static void
-_glitz_glx_surface_swap_buffers (void *abstract_surface);
-
 static glitz_bool_t
 _glitz_glx_surface_push_current (void *abstract_surface,
                                  glitz_constraint_t constraint)
@@ -114,22 +95,11 @@ _glitz_glx_surface_make_current_read (void *abstract_surface)
   return 0;
 }
 
-static const struct glitz_surface_backend glitz_glx_surface_backend = {
-  _glitz_glx_surface_create_similar,
-  _glitz_glx_surface_destroy,
-  _glitz_glx_surface_push_current,
-  _glitz_glx_surface_pop_current,
-  _glitz_glx_surface_get_texture,
-  _glitz_glx_surface_update_size,
-  _glitz_glx_surface_swap_buffers,
-  _glitz_glx_surface_make_current_read
-};
-
 static glitz_bool_t
-_glitz_glx_surface_update_size_for_window (Display *display,
-                                           Window drawable,
-                                           int *width,
-                                           int *height)
+_glitz_glx_surface_get_window_size (Display *display,
+                                    Window drawable,
+                                    int *width,
+                                    int *height)
 {
   unsigned int uwidth, uheight, bwidth_ignore, depth_ignore;
   Window root_ignore;
@@ -151,7 +121,7 @@ _glitz_glx_surface_get_texture (void *abstract_surface,
 {
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
   
-  if (surface->base.hint_mask & GLITZ_INT_HINT_DIRTY_MASK) {
+  if (surface->base.flags & GLITZ_FLAG_DIRTY_MASK) {
     glitz_bounding_box_t copy_box;
 
     copy_box.x1 = copy_box.y1 = 0;
@@ -161,7 +131,8 @@ _glitz_glx_surface_get_texture (void *abstract_surface,
                                   &copy_box, &copy_box);
 
     if (!surface->base.texture.allocated)
-      glitz_texture_allocate (surface->base.gl, &surface->base.texture);  
+      glitz_texture_allocate (&surface->base.backend->gl,
+                              &surface->base.texture);  
       
     glitz_texture_copy_surface (&surface->base.texture, &surface->base,
                                 copy_box.x1,
@@ -170,69 +141,20 @@ _glitz_glx_surface_get_texture (void *abstract_surface,
                                 copy_box.y2 - copy_box.y1,
                                 copy_box.x1,
                                 copy_box.y1);
-    surface->base.hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
+    
+    surface->base.flags &= ~GLITZ_FLAG_DIRTY_MASK;
   }
 
   if (allocate) {
     if (!surface->base.texture.allocated)
-      glitz_texture_allocate (surface->base.gl, &surface->base.texture);
+      glitz_texture_allocate (&surface->base.backend->gl,
+                              &surface->base.texture);
   }
   
   if (surface->base.texture.allocated)
     return &surface->base.texture;
   else
     return NULL;
-}
-
-static void
-_glitz_glx_set_features (glitz_glx_surface_t *surface)
-{
-  surface->base.feature_mask = surface->screen_info->feature_mask;
-
-  surface->base.feature_mask &= ~GLITZ_FEATURE_MULTITEXTURE_MASK;
-  surface->base.feature_mask &= ~GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
-  surface->base.feature_mask &= ~GLITZ_FEATURE_VERTEX_PROGRAM_MASK;
-  surface->base.feature_mask &= ~GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
-  surface->base.feature_mask &= ~GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
-
-  if (surface->context->gl.need_lookup) {
-    glitz_glx_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
-    glitz_glx_context_pop_current (surface);
-  }
-
-  if (surface->context->gl.active_texture &&
-      surface->context->gl.multi_tex_coord_2d) {
-    surface->base.feature_mask |= GLITZ_FEATURE_MULTITEXTURE_MASK;
-
-    if (surface->screen_info->feature_mask &
-        GLITZ_FEATURE_COMPONENT_ALPHA_MASK)
-      surface->base.feature_mask |= GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
-
-    if (surface->context->gl.gen_programs &&
-        surface->context->gl.delete_programs &&
-        surface->context->gl.program_string &&
-        surface->context->gl.bind_program &&
-        surface->context->gl.program_local_param_4d) {
-      if (surface->screen_info->feature_mask &
-          GLITZ_FEATURE_VERTEX_PROGRAM_MASK) {
-        surface->base.feature_mask |= GLITZ_FEATURE_VERTEX_PROGRAM_MASK;
-        
-        if (surface->screen_info->feature_mask &
-            GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK)
-          surface->base.feature_mask |= GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
-      }
-    }
-  }
-
-  if (surface->context->gl.gen_buffers &&
-      surface->context->gl.delete_buffers &&
-      surface->context->gl.bind_buffer &&
-      surface->context->gl.buffer_data &&
-      surface->context->gl.map_buffer &&
-      surface->context->gl.unmap_buffer)
-    if (surface->screen_info->feature_mask &
-        GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
-      surface->base.feature_mask |= GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
 }
 
 static glitz_surface_t *
@@ -253,25 +175,24 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
     return NULL;
 
   glitz_surface_init (&surface->base,
-                      &glitz_glx_surface_backend,
-                      &context->gl,
+                      &context->backend,
                       format,
-                      screen_info->formats,
-                      screen_info->n_formats,
                       width,
                       height,
-                      &screen_info->program_map,
                       screen_info->texture_mask);
   
   surface->screen_info = screen_info;
   surface->context = context;
   
-  surface->base.hint_mask |= GLITZ_HINT_OFFSCREEN_MASK;
+  surface->base.flags |= GLITZ_FLAG_OFFSCREEN_MASK;
 
   if (format->draw.offscreen)
-    surface->base.hint_mask |= GLITZ_INT_HINT_DRAWABLE_MASK;
+    surface->base.flags |= GLITZ_FLAG_DRAWABLE_MASK;
 
-  _glitz_glx_set_features (surface);
+  if (surface->context->backend.gl.need_lookup) {
+    glitz_glx_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
+    glitz_glx_context_pop_current (surface);
+  }
 
   return &surface->base;
 }
@@ -307,8 +228,7 @@ glitz_glx_surface_create_for_window (Display *display,
   if (!context)
     return NULL;
 
-  if (!_glitz_glx_surface_update_size_for_window (display, window,
-                                                  &width, &height))
+  if (!_glitz_glx_surface_get_window_size (display, window, &width, &height))
     return NULL;
 
   surface = (glitz_glx_surface_t *) calloc (1, sizeof (glitz_glx_surface_t));
@@ -316,23 +236,22 @@ glitz_glx_surface_create_for_window (Display *display,
     return NULL;
 
   glitz_surface_init (&surface->base,
-                      &glitz_glx_surface_backend,
-                      &context->gl,
+                      &context->backend,
                       format,
-                      screen_info->formats,
-                      screen_info->n_formats,
                       width,
                       height,
-                      &screen_info->program_map,
                       screen_info->texture_mask);
   
   surface->screen_info = screen_info;
   surface->context = context;
   surface->drawable = window;
 
-  surface->base.hint_mask |= GLITZ_INT_HINT_DRAWABLE_MASK;
+  surface->base.flags |= GLITZ_FLAG_DRAWABLE_MASK;
 
-  _glitz_glx_set_features (surface);
+  if (surface->context->backend.gl.need_lookup) {
+    glitz_glx_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
+    glitz_glx_context_pop_current (surface);
+  }
   
   return &surface->base;
 }
@@ -373,39 +292,6 @@ _glitz_glx_surface_destroy (void *abstract_surface)
 }
 
 static void
-_glitz_glx_surface_update_size (void *abstract_surface)
-{
-  glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
-  
-  if ((!surface->pbuffer) && surface->drawable) {
-    int width, height;
-    
-    _glitz_glx_surface_update_size_for_window
-      (surface->screen_info->display_info->display, surface->drawable,
-       &width, &height);
-
-    if (width != surface->base.width || height != surface->base.height) {
-      glitz_texture_t texture;
-
-      glitz_texture_init (&texture,
-                          width, height,
-                          surface->base.texture.format,
-                          surface->screen_info->texture_mask);
-      
-      if (texture.width != surface->base.texture.width ||
-          texture.height != surface->base.texture.height ||
-          texture.target != surface->base.texture.target) {
-        texture.name = surface->base.texture.name;
-        surface->base.texture = texture;
-      }
-      
-      surface->base.width = width;
-      surface->base.height = height;
-    }
-  }
-}
-
-static void
 _glitz_glx_surface_swap_buffers (void *abstract_surface)
 {
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
@@ -419,4 +305,16 @@ _glitz_glx_surface_swap_buffers (void *abstract_surface)
                   surface->drawable);
   
   glitz_glx_context_pop_current (surface);
+}
+
+void
+glitz_glx_surface_backend_init (glitz_surface_backend_t *backend)
+{
+  backend->create_similar = _glitz_glx_surface_create_similar;
+  backend->destroy = _glitz_glx_surface_destroy;
+  backend->push_current = _glitz_glx_surface_push_current;
+  backend->pop_current = _glitz_glx_surface_pop_current;
+  backend->get_texture = _glitz_glx_surface_get_texture;
+  backend->swap_buffers = _glitz_glx_surface_swap_buffers;
+  backend->make_current_read = _glitz_glx_surface_make_current_read;
 }

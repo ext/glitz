@@ -183,7 +183,6 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
   fbconfigs = glx->get_fbconfigs (display, screen_info->screen, &num_configs);
   if (!fbconfigs) {
     /* GLX 1.3 is not support, falling back to GLX 1.2 */
-    screen_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
     screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_GLX13_MASK;
     return 1;
   }
@@ -287,7 +286,7 @@ glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info)
          sizeof (glitz_format_t), _glitz_glx_format_compare);
  
   glitz_format_for_each_texture_format (&_glitz_glx_add_texture_format,
-					&screen_info->root_context.gl,
+					&screen_info->root_context.backend.gl,
 					(void *) screen_info);
   
   _glitz_move_out_ids (screen_info);

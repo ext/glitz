@@ -50,8 +50,9 @@ static glitz_extension_map client_glx_extensions[] = {
   { "GL_NV_multisample_filter_hint",
     GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_HINT_MASK },
   { "GL_ARB_multitexture", GLITZ_GLX_FEATURE_MULTITEXTURE_MASK },
-  { "GL_ARB_vertex_program", GLITZ_GLX_FEATURE_VERTEX_PROGRAM_MASK },
   { "GL_ARB_fragment_program", GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK },
+  { "GL_ARB_vertex_buffer_object",
+    GLITZ_GLX_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
   { "GL_EXT_pixel_buffer_object", GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
   { NULL, 0 }
 };
@@ -92,15 +93,13 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
       glx->get_fbconfig_attrib &&
       glx->get_visual_from_fbconfig &&
       glx->create_pbuffer &&
-      glx->destroy_pbuffer) {
-    screen_info->feature_mask |= GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
+      glx->destroy_pbuffer)
     screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_GLX13_MASK;
-  }
 
   if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_MULTISAMPLE_MASK &&
       screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK) {
-    const char *renderer = (char *) glGetString (GL_RENDERER);
+    const glitz_gl_ubyte_t *renderer = glGetString (GL_RENDERER);
     
     screen_info->feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;
     
@@ -158,13 +157,14 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
         screen_info->feature_mask |= GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
     }
         
-    if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_VERTEX_PROGRAM_MASK)
-      screen_info->feature_mask |= GLITZ_FEATURE_VERTEX_PROGRAM_MASK;
-
     if (screen_info->glx_feature_mask &
         GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK)
       screen_info->feature_mask |= GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
   }
+
+  if (screen_info->glx_feature_mask &
+      GLITZ_GLX_FEATURE_VERTEX_BUFFER_OBJECT_MASK)
+    screen_info->feature_mask |= GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK;
 
   if (screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
