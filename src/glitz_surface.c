@@ -337,20 +337,23 @@ glitz_surface_set_transform (glitz_surface_t *surface,
 
     height = surface->texture.texcoord_height_unit * surface->texture.box.y1;
     
-    /* translate coordinates into texture. this only makes a difference when
+    /* Translate coordinates into texture. This only makes a difference when
        GL_ARB_texture_border_clamp is missing as box.x1 and box.y1 are
-       otherwise always zero. hmm, does this break projective
-       transformations? affine transformations should be fine */
+       otherwise always zero. This breaks projective transformations so
+       those wont work without GL_ARB_texture_border_clamp. */
     t[12] += surface->texture.texcoord_width_unit * surface->texture.box.x1;
     t[13] += surface->texture.texcoord_height_unit * surface->texture.box.y1;
 
     surface->flags |= GLITZ_SURFACE_FLAG_TRANSFORM_MASK;
+    if (m[3] != 0.0f || m[7] != 0.0f || (m[15] != 1.0f && m[15] != -1.0f))
+      surface->flags |= GLITZ_SURFACE_FLAG_PROJECTIVE_TRANSFORM_MASK;
   } else {
     if (surface->transform)
       free (surface->transform);
     
     surface->transform = NULL;
     surface->flags &= ~GLITZ_SURFACE_FLAG_TRANSFORM_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_PROJECTIVE_TRANSFORM_MASK;
   }
 }
 slim_hidden_def(glitz_surface_set_transform);

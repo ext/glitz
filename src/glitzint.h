@@ -335,6 +335,7 @@ typedef struct glitz_surface_backend {
 #define GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK             (1L << 14)
 #define GLITZ_SURFACE_FLAG_EYE_COORDS_MASK              (1L << 15)
 #define GLITZ_SURFACE_FLAG_TRANSFORM_MASK               (1L << 16)
+#define GLITZ_SURFACE_FLAG_PROJECTIVE_TRANSFORM_MASK    (1L << 17)
 
 #define SURFACE_OFFSCREEN(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_OFFSCREEN_MASK)
@@ -385,6 +386,9 @@ typedef struct glitz_surface_backend {
 
 #define SURFACE_TRANSFORM(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_TRANSFORM_MASK)
+
+#define SURFACE_PROJECTIVE_TRANSFORM(surface) \
+  ((surface)->flags & GLITZ_SURFACE_FLAG_PROJECTIVE_TRANSFORM_MASK)
 
 typedef struct _glitz_sample_offset {
   glitz_float_t x;

@@ -1,3 +1,16 @@
+2004-09-10  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Added PROJECTIVE_TRANSFORM flag.
+
+	* src/glitz_surface.c (glitz_surface_set_transform): Check if
+	projective transform.
+
+	* src/glitz_program.c: Fixed so that perspective transformations
+	work with convolution filters and gradient filters.
+
+	* src/glitz_compose.c (SURFACE_WRAP): Only allow projective
+	transformations if GL_ARB_texture_clamp_to_border is present.
+
 2004-09-09  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: IGNORE_REPEAT flag replaced by IGNORE_WRAP flag.

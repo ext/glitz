@@ -417,8 +417,13 @@ _glitz_combine_map[GLITZ_SURFACE_TYPES][GLITZ_SURFACE_TYPES] = {
      ) \
     ) \
    : \
-   ((!SURFACE_PAD (surface)) || \
+   ((SURFACE_PAD (surface))? \
     (TEXTURE_PADABLE (&(surface)->texture)) \
+    : \
+    ( \
+     (!SURFACE_PROJECTIVE_TRANSFORM (surface)) || \
+     ((feature_mask) & GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK) \
+    ) \
    ) \
   )
      

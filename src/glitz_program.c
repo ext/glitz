@@ -99,31 +99,33 @@ static const struct _glitz_program_expand_t {
 };
 
 /*
- * general convolution filter (projective transformations might not
- * produce correct results).
+ * general convolution filter.
  */
 static const char *_convolution_header[] = {
   "PARAM p[%d] = { program.local[0..%d] };",
   "ATTRIB pos = fragment.texcoord[%s];",
-  "TEMP color, in, coord;",
+  "TEMP color, in, coord, position;",
 
   /* extra declerations */
   "%s"
-
-  "MOV coord, pos;", NULL
+  
+  /* perspective divide */
+  "RCP position.w, pos.w;",
+  "MUL position, pos, position.w;", NULL
 };
 
 static const char *_convolution_sample_first[] = {
-  "ADD coord.x, pos.x, p[0].x;",
-  "ADD coord.y, pos.y, p[0].y;",
-  "TXP in, coord, texture[%s], %s;",
+  "MOV coord, 0.0;",
+  "ADD coord.x, position.x, p[0].x;",
+  "ADD coord.y, position.y, p[0].y;",
+  "TEX in, coord, texture[%s], %s;",
   "MUL color, in, p[0].z;", NULL
 };
 
 static const char *_convolution_sample[] = {
-  "ADD coord.x, pos.x, p[%d].x;",
-  "ADD coord.y, pos.y, p[%d].y;",
-  "TXP in, coord, texture[%s], %s;",
+  "ADD coord.x, position.x, p[%d].x;",
+  "ADD coord.y, position.y, p[%d].y;",
+  "TEX in, coord, texture[%s], %s;",
   "MAD color, in, p[%d].z, color;", NULL
 };
 
@@ -138,7 +140,11 @@ static const char *_gradient_header[] = {
   "TEMP color, second_color, stop0, stop1, position;",
 
   /* extra declerations */
-  "%s", NULL
+  "%s",
+
+  /* perspective divide */
+  "RCP position.w, pos.w;",
+  "MUL position, pos, position.w;", NULL
 };
 
 /*
@@ -150,8 +156,8 @@ static const char *_gradient_header[] = {
  * gradient.w = -sin (angle)
  */
 static const char *_linear_gradient_calculations[] = {
-  "MUL position.x, gradient.z, pos.x;",
-  "MAD position.x, gradient.w, pos.y, position.x;",
+  "MUL position.x, gradient.z, position.x;",
+  "MAD position.x, gradient.w, position.y, position.x;",
   "SUB position.z, position.x, gradient.x;",
   "MUL position.z, position.z, gradient.y;", NULL
 };
@@ -165,7 +171,7 @@ static const char *_linear_gradient_calculations[] = {
  * gradient.w = 1 / (radius1 - radius0)
  */
 static const char *_radial_gradient_calculations[] = {
-  "SUB position, pos, gradient;",
+  "SUB position, position, gradient;",
   "MUL position.x, position.x, position.x;",
   "MAD position.x, position.y, position.y, position.x;",
   "RSQ position.y, position.x;",
@@ -452,11 +458,11 @@ glitz_program_map_fini (glitz_gl_proc_address_list_t *gl,
 #define TEXTURE_INDEX(surface) \
   ((surface)? \
    (((surface)->texture.target == GLITZ_GL_TEXTURE_2D)? \
-    GLITZ_TEXTURE_2D: \
-    GLITZ_TEXTURE_RECT \
-    ) : \
+     GLITZ_TEXTURE_2D: \
+     GLITZ_TEXTURE_RECT \
+   ) : \
    GLITZ_TEXTURE_NONE \
-   )
+  )
 
 glitz_gl_uint_t
 glitz_get_fragment_program (glitz_composite_op_t *op,
