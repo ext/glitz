@@ -147,6 +147,10 @@ extern glitz_glx_context_t *__internal_linkage
 glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
                        glitz_format_t *format);
 
+extern int __internal_linkage
+glitz_glx_ensure_pbuffer_support (glitz_glx_screen_info_t *screen_info,
+                                  XID fbconfigid);
+
 extern glitz_glx_context_t *__internal_linkage
 glitz_glx_context_get_default (glitz_glx_screen_info_t *screen_info);
 

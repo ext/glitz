@@ -300,8 +300,13 @@ static void
 glitz_glx_use_fake_offscreen_formats (glitz_glx_screen_info_t *screen_info)
 {
   glitz_format_t format;
+  glitz_format_t *formats = screen_info->formats;
+  int n_formats = screen_info->n_formats;
   
   screen_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
+
+  for (; n_formats; n_formats--, formats++)
+    formats->drawable.offscreen = 0;
   
   /* Adding fake offscreen formats. Surfaces created with these format can
      only be used with draw/read pixel functions and as source in composite
@@ -322,6 +327,7 @@ void
 glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info)
 {
   glitz_bool_t status = 1;
+  glitz_format_t *format;
 
   if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX13_MASK)
     status = glitz_glx_query_formats_glx13 (screen_info);
@@ -329,10 +335,13 @@ glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info)
   if (status)
     glitz_glx_query_formats_glx12 (screen_info);
   
-  if (!glitz_format_find_standard (screen_info->formats,
-                                   screen_info->n_formats,
-                                   GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
-                                   GLITZ_STANDARD_ARGB32))
+  format = glitz_format_find_standard (screen_info->formats,
+                                       screen_info->n_formats,
+                                       GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
+                                       GLITZ_STANDARD_ARGB32);
+
+  if (format == NULL ||
+      glitz_glx_ensure_pbuffer_support (screen_info, format->id))
     glitz_glx_use_fake_offscreen_formats (screen_info);
   
   _glitz_move_out_ids (screen_info);

@@ -1,5 +1,15 @@
 2004-05-02  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz_glx_format.c (glitz_glx_query_formats): Make sure
+	pbuffers are really working before we allow full offscreen support.
+
+	* src/glitz_glxint.h: Added glitz_glx_ensure_pbuffer_support.
+
+	* src/glitz_glx_context.c: Added glitz_glx_ensure_pbuffer_support.
+
+	* src/glitz_glx_extension.c (glitz_glx_query_extensions): Moved
+	renderer declaration.
+
 	* TODO: Added planned features and some ideas.
 
 2004-05-01  David Reveman  <c99drn@cs.umu.se>

@@ -86,9 +86,8 @@ _glitz_glx_context_create_glx13 (glitz_glx_screen_info_t *screen_info,
       (screen_info->display_info->display, fbconfigs[i]);
   
   if (vinfo) {
-    context->context =
-      context->context = glXCreateContext (screen_info->display_info->display,
-                                           vinfo, share_list, 1);    
+    context->context = glXCreateContext (screen_info->display_info->display,
+                                         vinfo, share_list, 1);
     context->id = fbconfigid;
     context->fbconfig = fbconfigs[i];
   } else {
@@ -99,6 +98,44 @@ _glitz_glx_context_create_glx13 (glitz_glx_screen_info_t *screen_info,
 
   if (fbconfigs)
     XFree (fbconfigs);
+}
+
+int
+glitz_glx_ensure_pbuffer_support (glitz_glx_screen_info_t *screen_info,
+                                  XID fbconfigid)
+{
+  GLXFBConfig *fbconfigs;
+  int i, n_fbconfigs;
+  
+  fbconfigs = _glitz_glx_proc_address.get_fbconfigs
+    (screen_info->display_info->display, screen_info->screen, &n_fbconfigs);
+  for (i = 0; i < n_fbconfigs; i++) {
+    int value;
+    
+    _glitz_glx_proc_address.get_fbconfig_attrib
+      (screen_info->display_info->display, fbconfigs[i],
+       GLX_FBCONFIG_ID, &value);
+    if (value == (int) fbconfigid)
+      break;
+  }
+  
+  if (i < n_fbconfigs) {
+    GLXPbuffer pbuffer;
+    glitz_texture_t texture;
+    
+    texture.width = texture.height = 1;
+    pbuffer =
+      glitz_glx_pbuffer_create (screen_info->display_info->display,
+                                fbconfigs[i],
+                                &texture);
+    if (pbuffer) {
+      glitz_glx_pbuffer_destroy (screen_info->display_info->display, pbuffer);
+      
+      return 0;
+    }
+  }
+  
+  return 1;
 }
 
 glitz_glx_context_t *

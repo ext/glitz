@@ -95,10 +95,11 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
   if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_MULTISAMPLE_MASK &&
       screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK) {
-    screen_info->feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;
     char *renderer = (char *) glGetString (GL_RENDERER);
+    
+    screen_info->feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;
+    
     if (renderer) {
-
       /* All geforce and quadro cards seems to support multisample with
          pbuffers */
       if (!strncmp ("GeForce", renderer, 7))
