@@ -1,3 +1,8 @@
+2004-09-14  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_compose.c: Fixed division by zero bug that occurred when
+	solid color alpha was zero.
+
 2004-09-13  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_glx_info.c:

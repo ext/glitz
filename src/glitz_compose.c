@@ -297,10 +297,14 @@ _glitz_combine_solid_argbc (glitz_composite_op_t *op)
 
   op->gl->enable (GLITZ_GL_BLEND);
   op->gl->blend_func (GLITZ_GL_CONSTANT_COLOR, GLITZ_GL_ONE_MINUS_SRC_COLOR);
-  op->gl->blend_color ((glitz_gl_clampf_t) solid.red / solid.alpha,
-                       (glitz_gl_clampf_t) solid.green / solid.alpha,
-                       (glitz_gl_clampf_t) solid.blue / solid.alpha,
-                       1.0f);
+  
+  if (solid.alpha > 0)
+    op->gl->blend_color ((glitz_gl_clampf_t) solid.red / solid.alpha,
+                         (glitz_gl_clampf_t) solid.green / solid.alpha,
+                         (glitz_gl_clampf_t) solid.blue / solid.alpha,
+                         1.0f);
+  else
+    op->gl->blend_color (1.0f, 1.0f, 1.0f, 1.0f);
   
   op->gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                      GLITZ_GL_MODULATE);
@@ -316,10 +320,16 @@ _glitz_combine_solid_solidc (glitz_composite_op_t *op)
 {
   op->gl->enable (GLITZ_GL_BLEND);
   op->gl->blend_func (GLITZ_GL_CONSTANT_COLOR, GLITZ_GL_ONE_MINUS_SRC_COLOR);
-  op->gl->blend_color ((glitz_gl_clampf_t) op->solid->red / op->solid->alpha,
-                       (glitz_gl_clampf_t) op->solid->green / op->solid->alpha,
-                       (glitz_gl_clampf_t) op->solid->blue / op->solid->alpha,
-                       1.0f);
+
+  if (op->solid->alpha > 0)
+    op->gl->blend_color ((glitz_gl_clampf_t) op->solid->red / op->solid->alpha,
+                         (glitz_gl_clampf_t)
+                         op->solid->green / op->solid->alpha,
+                         (glitz_gl_clampf_t)
+                         op->solid->blue / op->solid->alpha,
+                         1.0f);
+  else
+    op->gl->blend_color (1.0f, 1.0f, 1.0f, 1.0f);
 
   op->gl->color_4us (SHORT_MULT (op->alpha_mask.red, op->solid->alpha),
                      SHORT_MULT (op->alpha_mask.green, op->solid->alpha),
