@@ -38,12 +38,16 @@ static glitz_extension_map gl_extensions[] = {
   { "GL_ARB_texture_non_power_of_two", GLITZ_AGL_FEATURE_TEXTURE_NPOT_MASK },
   { "GL_ARB_texture_mirrored_repeat",
     GLITZ_AGL_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK },
+  { "GL_ARB_texture_env_combine",
+    GLITZ_AGL_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK },
+  { "GL_ARB_texture_env_dot3", GLITZ_AGL_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK },
   { "GL_ARB_multisample", GLITZ_AGL_FEATURE_MULTISAMPLE_MASK },
   { "GL_NV_multisample_filter_hint",
     GLITZ_AGL_FEATURE_MULTISAMPLE_FILTER_MASK },
   { "GL_ARB_multitexture", GLITZ_AGL_FEATURE_ARB_MULTITEXTURE_MASK },
   { "GL_ARB_vertex_program", GLITZ_AGL_FEATURE_ARB_VERTEX_PROGRAM_MASK },
   { "GL_ARB_fragment_program", GLITZ_AGL_FEATURE_ARB_FRAGMENT_PROGRAM_MASK },
+  { "GL_EXT_pixel_buffer_object", GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
   { NULL, 0 }
 };
 
@@ -98,6 +102,25 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
   if (thread_info->agl_feature_mask &
       GLITZ_AGL_FEATURE_ARB_MULTITEXTURE_MASK) {
     thread_info->feature_mask |= GLITZ_FEATURE_ARB_MULTITEXTURE_MASK;
+
+    if (thread_info->agl_feature_mask &
+        GLITZ_AGL_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK)
+      thread_info->feature_mask |= GLITZ_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK;
+    
+    if (thread_info->agl_feature_mask &
+        GLITZ_AGL_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK)
+      thread_info->feature_mask |= GLITZ_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK;
+    
+    if ((thread_info->feature_mask &
+         GLITZ_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK) &&
+        (thread_info->feature_mask &
+         GLITZ_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK)) {
+      GLint max_texture_units;
+      
+      glGetIntegerv (GLITZ_GL_MAX_TEXTURE_UNITS, &max_texture_units);
+      if (max_texture_units >= 3)
+        thread_info->feature_mask |= GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
+    }
     
     if (thread_info->agl_feature_mask &
         GLITZ_AGL_FEATURE_ARB_VERTEX_PROGRAM_MASK)
@@ -107,4 +130,8 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
         GLITZ_AGL_FEATURE_ARB_FRAGMENT_PROGRAM_MASK)
       thread_info->feature_mask |= GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
   }
+
+    if (thread_info->agl_feature_mask &
+      GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
+    thread_info->feature_mask |= GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
 }

@@ -28,6 +28,8 @@
 #ifndef GLITZ_GL_H_INCLUDED
 #define GLITZ_GL_H_INCLUDED
 
+#include <stddef.h>
+
 typedef unsigned int glitz_gl_enum_t;
 typedef unsigned char glitz_gl_boolean_t;
 typedef void glitz_gl_void_t;
@@ -41,6 +43,8 @@ typedef unsigned int glitz_gl_bitfield_t;
 typedef double glitz_gl_clampd_t;
 typedef float glitz_gl_clampf_t;
 typedef unsigned char glitz_gl_ubyte_t;
+typedef ptrdiff_t glitz_gl_sizeiptr_t;
+
 
 #define GLITZ_GL_FALSE 0x0
 #define GLITZ_GL_TRUE  0x1
@@ -83,6 +87,7 @@ typedef unsigned char glitz_gl_ubyte_t;
 #define GLITZ_GL_TEXTURE_WRAP_T         0x2803
 #define GLITZ_GL_TEXTURE_MAG_FILTER     0x2800
 #define GLITZ_GL_TEXTURE_MIN_FILTER     0x2801
+#define GLITZ_GL_TEXTURE_ENV_COLOR      0x2201
 #define GLITZ_GL_MODULATE               0x2100
 #define GLITZ_GL_NEAREST                0x2600
 #define GLITZ_GL_LINEAR                 0x2601
@@ -92,7 +97,34 @@ typedef unsigned char glitz_gl_ubyte_t;
 #define GLITZ_GL_TEXTURE_GREEN_SIZE     0x805D
 #define GLITZ_GL_TEXTURE_BLUE_SIZE      0x805E
 #define GLITZ_GL_TEXTURE_ALPHA_SIZE     0x805F
-#define GLITZ_GL_TEXTURE_INTENSITY_SIZE	0x8061
+
+#define GLITZ_GL_TEXTURE        0x1702
+#define GLITZ_GL_SRC_COLOR      0x0300
+
+#define GLITZ_GL_COMBINE        0x8570
+#define GLITZ_GL_COMBINE_RGB    0x8571
+#define GLITZ_GL_COMBINE_ALPHA  0x8572
+#define GLITZ_GL_SOURCE0_RGB    0x8580
+#define GLITZ_GL_SOURCE1_RGB    0x8581
+#define GLITZ_GL_SOURCE2_RGB    0x8582
+#define GLITZ_GL_SOURCE0_ALPHA  0x8588
+#define GLITZ_GL_SOURCE1_ALPHA  0x8589
+#define GLITZ_GL_SOURCE2_ALPHA  0x858A
+#define GLITZ_GL_OPERAND0_RGB   0x8590
+#define GLITZ_GL_OPERAND1_RGB   0x8591
+#define GLITZ_GL_OPERAND2_RGB   0x8592
+#define GLITZ_GL_OPERAND0_ALPHA	0x8598
+#define GLITZ_GL_OPERAND1_ALPHA	0x8599
+#define GLITZ_GL_OPERAND2_ALPHA	0x859A
+#define GLITZ_GL_RGB_SCALE      0x8573
+#define GLITZ_GL_ADD_SIGNED     0x8574
+#define GLITZ_GL_INTERPOLATE    0x8575
+#define GLITZ_GL_SUBTRACT       0x84E7
+#define GLITZ_GL_CONSTANT       0x8576
+#define GLITZ_GL_PRIMARY_COLOR  0x8577
+#define GLITZ_GL_PREVIOUS       0x8578
+#define GLITZ_GL_DOT3_RGB       0x86AE
+#define GLITZ_GL_DOT3_RGBA      0x86AF
 
 #define GLITZ_GL_STENCIL_TEST 0x0B90
 #define GLITZ_GL_KEEP         0x1E00
@@ -120,25 +152,24 @@ typedef unsigned char glitz_gl_ubyte_t;
 #define GLITZ_GL_BGR       0x80E0
 #define GLITZ_GL_BGRA      0x80E1
 
-#define GLITZ_GL_INTENSITY   0x8049
-#define GLITZ_GL_INTENSITY4  0x804A
-#define GLITZ_GL_INTENSITY8  0x804B
-#define GLITZ_GL_INTENSITY12 0x804C
-#define GLITZ_GL_INTENSITY16 0x804D
-#define GLITZ_GL_R3_G3_B2    0x2A10
-#define GLITZ_GL_RGB4        0x804F
-#define GLITZ_GL_RGB5        0x8050
-#define GLITZ_GL_RGB8        0x8051
-#define GLITZ_GL_RGB10       0x8052
-#define GLITZ_GL_RGB12       0x8053
-#define GLITZ_GL_RGB16       0x8054
-#define GLITZ_GL_RGBA2       0x8055
-#define GLITZ_GL_RGBA4       0x8056
-#define GLITZ_GL_RGB5_A1     0x8057
-#define GLITZ_GL_RGBA8       0x8058
-#define GLITZ_GL_RGB10_A2    0x8059
-#define GLITZ_GL_RGBA12      0x805A
-#define GLITZ_GL_RGBA16      0x805B
+#define GLITZ_GL_ALPHA4   0x803B
+#define GLITZ_GL_ALPHA8   0x803C
+#define GLITZ_GL_ALPHA12  0x803D
+#define GLITZ_GL_ALPHA16  0x803E
+#define GLITZ_GL_R3_G3_B2 0x2A10
+#define GLITZ_GL_RGB4     0x804F
+#define GLITZ_GL_RGB5     0x8050
+#define GLITZ_GL_RGB8     0x8051
+#define GLITZ_GL_RGB10    0x8052
+#define GLITZ_GL_RGB12    0x8053
+#define GLITZ_GL_RGB16    0x8054
+#define GLITZ_GL_RGBA2    0x8055
+#define GLITZ_GL_RGBA4    0x8056
+#define GLITZ_GL_RGB5_A1  0x8057
+#define GLITZ_GL_RGBA8    0x8058
+#define GLITZ_GL_RGB10_A2 0x8059
+#define GLITZ_GL_RGBA12   0x805A
+#define GLITZ_GL_RGBA16   0x805B
 
 #define GLITZ_GL_FRONT_AND_BACK 0x0408
 #define GLITZ_GL_FLAT           0x1D00
@@ -168,26 +199,45 @@ typedef unsigned char glitz_gl_ubyte_t;
 
 #define GLITZ_GL_COMPILE 0x1300
 
-#define GLITZ_GL_TEXTURE_RECTANGLE_EXT 0x84F5
+#define GLITZ_GL_TEXTURE_RECTANGLE 0x84F5
 
-#define GLITZ_GL_MIRRORED_REPEAT_ARB 0x8370
+#define GLITZ_GL_MIRRORED_REPEAT 0x8370
 
-#define GLITZ_GL_TEXTURE0_ARB       0x84C0
-#define GLITZ_GL_TEXTURE1_ARB       0x84C1
-#define GLITZ_GL_TEXTURE2_ARB       0x84C2
-#define GLITZ_GL_ACTIVE_TEXTURE_ARB 0x84E0
+#define GLITZ_GL_TEXTURE0          0x84C0
+#define GLITZ_GL_TEXTURE1          0x84C1
+#define GLITZ_GL_TEXTURE2          0x84C2
+#define GLITZ_GL_ACTIVE_TEXTURE    0x84E0
+#define GLITZ_GL_MAX_TEXTURE_UNITS 0x84E2
 
-#define GLITZ_GL_MULTISAMPLE_ARB 0x809D
+#define GLITZ_GL_MULTISAMPLE 0x809D
 
-#define GLITZ_GL_MULTISAMPLE_FILTER_HINT_NV 0x8534
+#define GLITZ_GL_MULTISAMPLE_FILTER_HINT 0x8534
 
-#define GLITZ_GL_VERTEX_PROGRAM_ARB         0x8620
-#define GLITZ_GL_PROGRAM_STRING_ARB         0x8628
-#define GLITZ_GL_PROGRAM_FORMAT_ASCII_ARB   0x8875
-#define GLITZ_GL_PROGRAM_ERROR_POSITION_ARB 0x864B
+#define GLITZ_GL_VERTEX_PROGRAM         0x8620
+#define GLITZ_GL_PROGRAM_STRING         0x8628
+#define GLITZ_GL_PROGRAM_FORMAT_ASCII   0x8875
+#define GLITZ_GL_PROGRAM_ERROR_POSITION 0x864B
 
-#define GLITZ_GL_FRAGMENT_PROGRAM_ARB             0x8804
-#define GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS_ARB 0x880D
+#define GLITZ_GL_FRAGMENT_PROGRAM             0x8804
+#define GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS 0x880D
+
+#define GLITZ_GL_PIXEL_PACK_BUFFER   0x88EB
+#define GLITZ_GL_PIXEL_UNPACK_BUFFER 0x88EC
+
+#define GLITZ_GL_STREAM_DRAW  0x88E0
+#define GLITZ_GL_STREAM_READ  0x88E1
+#define GLITZ_GL_STREAM_COPY  0x88E2
+#define GLITZ_GL_STATIC_DRAW  0x88E4
+#define GLITZ_GL_STATIC_READ  0x88E5
+#define GLITZ_GL_STATIC_COPY  0x88E6
+#define GLITZ_GL_DYNAMIC_DRAW 0x88E8
+#define GLITZ_GL_DYNAMIC_READ 0x88E9
+#define GLITZ_GL_DYNAMIC_COPY 0x88EA
+
+#define GLITZ_GL_READ_ONLY  0x88B8
+#define GLITZ_GL_WRITE_ONLY 0x88B9
+#define GLITZ_GL_READ_WRITE 0x88BA
+
 
 typedef glitz_gl_void_t (* glitz_gl_enable_t)
      (glitz_gl_enum_t cap);
@@ -203,6 +253,9 @@ typedef glitz_gl_void_t (* glitz_gl_vertex_2d_t)
      (glitz_gl_double_t x, glitz_gl_double_t y);
 typedef glitz_gl_void_t (* glitz_gl_tex_env_f_t)
      (glitz_gl_enum_t target, glitz_gl_enum_t pname, glitz_gl_float_t param);
+typedef glitz_gl_void_t (* glitz_gl_tex_env_fv_t)
+     (glitz_gl_enum_t target, glitz_gl_enum_t pname,
+      const glitz_gl_float_t *params);
 typedef glitz_gl_void_t (* glitz_gl_tex_coord_2d_t)
      (glitz_gl_double_t s, glitz_gl_double_t t);
 typedef glitz_gl_void_t (* glitz_gl_scissor_t)
@@ -211,6 +264,9 @@ typedef glitz_gl_void_t (* glitz_gl_scissor_t)
 typedef glitz_gl_void_t (* glitz_gl_color_4us_t)
      (glitz_gl_ushort_t red, glitz_gl_ushort_t green, glitz_gl_ushort_t blue,
       glitz_gl_ushort_t alpha);
+typedef glitz_gl_void_t (* glitz_gl_color_4d_t)
+     (glitz_gl_double_t red, glitz_gl_double_t green, glitz_gl_double_t blue,
+      glitz_gl_double_t alpha);
 typedef glitz_gl_void_t (* glitz_gl_blend_func_t)
      (glitz_gl_enum_t sfactor, glitz_gl_enum_t dfactor);
 typedef glitz_gl_void_t (* glitz_gl_clear_t)
@@ -326,6 +382,8 @@ typedef glitz_gl_void_t (* glitz_gl_copy_tex_sub_image_2d_t)
       glitz_gl_sizei_t width, glitz_gl_sizei_t height);
 typedef glitz_gl_void_t (* glitz_gl_get_integer_v_t)
      (glitz_gl_enum_t pname, glitz_gl_int_t *params);
+typedef glitz_gl_void_t (* glitz_gl_get_pointer_v_t)
+     (glitz_gl_enum_t pname, glitz_gl_void_t **params);
 typedef glitz_gl_void_t (* glitz_gl_delete_lists_t)
      (glitz_gl_uint_t list, glitz_gl_sizei_t range);
 typedef glitz_gl_uint_t (* glitz_gl_gen_lists_t)
@@ -336,24 +394,37 @@ typedef glitz_gl_void_t (* glitz_gl_end_list_t)
      (glitz_gl_void_t);
 typedef glitz_gl_void_t (* glitz_gl_call_list_t)
      (glitz_gl_uint_t list);
-typedef glitz_gl_void_t (* glitz_gl_active_texture_arb_t)
+typedef glitz_gl_void_t (* glitz_gl_active_texture_t)
      (glitz_gl_enum_t);
-typedef glitz_gl_void_t (* glitz_gl_multi_tex_coord_2d_arb_t)
+typedef glitz_gl_void_t (* glitz_gl_multi_tex_coord_2d_t)
      (glitz_gl_enum_t, glitz_gl_double_t, glitz_gl_double_t);
-typedef glitz_gl_void_t (* glitz_gl_gen_programs_arb_t)
+typedef glitz_gl_void_t (* glitz_gl_gen_programs_t)
      (glitz_gl_sizei_t, glitz_gl_uint_t *);
-typedef glitz_gl_void_t (* glitz_gl_delete_programs_arb_t)
+typedef glitz_gl_void_t (* glitz_gl_delete_programs_t)
      (glitz_gl_sizei_t, const glitz_gl_uint_t *);
-typedef glitz_gl_void_t (* glitz_gl_program_string_arb_t)
+typedef glitz_gl_void_t (* glitz_gl_program_string_t)
      (glitz_gl_enum_t, glitz_gl_enum_t, glitz_gl_sizei_t,
       const glitz_gl_void_t *);
-typedef glitz_gl_void_t (* glitz_gl_bind_program_arb_t)
+typedef glitz_gl_void_t (* glitz_gl_bind_program_t)
      (glitz_gl_enum_t, glitz_gl_uint_t);
-typedef glitz_gl_void_t (* glitz_gl_program_local_param_4d_arb_t)
+typedef glitz_gl_void_t (* glitz_gl_program_local_param_4d_t)
      (glitz_gl_enum_t, glitz_gl_uint_t,
       glitz_gl_double_t, glitz_gl_double_t,
       glitz_gl_double_t, glitz_gl_double_t);
-typedef glitz_gl_void_t (* glitz_gl_get_program_iv_arb_t)
+typedef glitz_gl_void_t (* glitz_gl_get_program_iv_t)
      (glitz_gl_enum_t, glitz_gl_enum_t, glitz_gl_uint_t *);
+typedef glitz_gl_void_t (* glitz_gl_gen_buffers_t)
+     (glitz_gl_sizei_t, glitz_gl_uint_t *buffers);
+typedef glitz_gl_void_t (* glitz_gl_delete_buffers_t)
+     (glitz_gl_sizei_t, const glitz_gl_uint_t *buffers);
+typedef glitz_gl_void_t (* glitz_gl_bind_buffer_t)
+     (glitz_gl_enum_t, glitz_gl_uint_t buffer);
+typedef glitz_gl_void_t (* glitz_gl_buffer_data_t)
+     (glitz_gl_enum_t, glitz_gl_sizeiptr_t, const glitz_gl_void_t *,
+      glitz_gl_enum_t);
+typedef glitz_gl_void_t *(* glitz_gl_map_buffer_t)
+     (glitz_gl_enum_t, glitz_gl_enum_t);
+typedef glitz_gl_boolean_t (* glitz_gl_unmap_buffer_t)
+     (glitz_gl_enum_t);
 
 #endif /* GLITZ_GL_H_INCLUDED */

@@ -46,6 +46,36 @@ if test "x$GCC" = "xyes"; then
   *) CFLAGS="$CFLAGS -Wall" ;;
   esac
 
+  case " $CFLAGS " in
+  *[[\ \	]]-Wpointer-arith[[\ \	]]*) ;;
+  *) CFLAGS="$CFLAGS -Wpointer-arith" ;;
+  esac
+
+  case " $CFLAGS " in
+  *[[\ \	]]-Wstrict-prototypes[[\ \	]]*) ;;
+  *) CFLAGS="$CFLAGS -Wstrict-prototypes" ;;
+  esac
+
+  case " $CFLAGS " in
+  *[[\ \	]]-Wmissing-prototypes[[\ \	]]*) ;;
+  *) CFLAGS="$CFLAGS -Wmissing-prototypes" ;;
+  esac
+
+  case " $CFLAGS " in
+  *[[\ \	]]-Wmissing-declarations[[\ \	]]*) ;;
+  *) CFLAGS="$CFLAGS -Wmissing-declarations" ;;
+  esac
+
+  case " $CFLAGS " in
+  *[[\ \	]]-Wnested-externs[[\ \	]]*) ;;
+  *) CFLAGS="$CFLAGS -Wnested-externs" ;;
+  esac
+
+  case " $CFLAGS " in
+  *[[\ \	]]-fno-strict-aliasing[[\ \	]]*) ;;
+  *) CFLAGS="$CFLAGS -fno-strict-aliasing" ;;
+  esac
+
   if test "x$enable_ansi" = "xyes"; then
     case " $CFLAGS " in
     *[[\ \	]]-ansi[[\ \	]]*) ;;

@@ -1,3 +1,121 @@
+2004-07-20  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Added glTexEnvfv, glColor4d and pixel buffer
+	functions to glitz_gl_proc_address_list_t.
+	Moved some stuff into glitz_color_range.c.
+	Added new glitz_render_op_t infrastructure.
+	Added component-alpha support.
+	Fixed some macros.
+	Added reference counting to glitz_surface_t.
+	programs -> program_map.
+	SHORT_MODULATE -> SHORT_MULT.
+
+	* src/glitz_surface.c (glitz_surface_init): programs -> program_map.
+	Added reference counting to surfaces.
+	Added glitz_surface_set_component_alpha.
+
+	* src/glitz_render.c: Added new glitz_render_op_t infrastructure.
+	This is a major improvement to the old mess. This new infrastructure
+	scales very well, is much easier to understand and is more efficient.
+
+	* src/glitz_programmatic.c: GLITZ_PROGRAMMATIC_SURFACE_LINEAR_TYPE ->
+	GLITZ_PROGRAMMATIC_SURFACE_TYPE_LINEAR and 
+	GLITZ_PROGRAMMATIC_SURFACE_RADIAL_TYPE ->
+	GLITZ_PROGRAMMATIC_SURFACE_TYPE_RADIAL.
+	(_glitz_programmatic_surface_create): Use MAXSHORT for static surface
+	size.
+	Removed glitz_programmatic_surface_setup.
+	Removed glitz_programmatic_surface_bind as that code should now be
+	in glitz_render.c.
+
+	* src/glitz_program.c: Cleaned up and moved some that should be in
+	glitz_render.c. Added support for component-alpha.
+
+	* src/glitz_pixel.c: Added new pixel buffer interface, which 
+	allows for asynchronous pixel transfers and access to 
+	high-performance memory. Modified pixel transfer functions
+	to use the new pixel buffer interface.
+
+	* src/glitz_glxint.h: Added
+	GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK,
+	GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK,
+	GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
+	programs -> program_map.
+
+	* src/glitz_glx_surface.c (_glitz_glx_set_features): Better check
+	for multi-texturing and check pixel buffer object extension
+	support.
+	programs -> program_map.
+
+	* src/glitz_glx_info.c: Added glTexEnvfv, glColor4d and pixel buffer
+	functions to _glitz_glx_gl_proc_address.
+	(glitz_glx_thread_info_get): Fixed thread specific data
+	allocation.
+	(glitz_glx_display_destroy): Fixed memory leak.
+	(glitz_glx_screen_info_get): Use glitz_program_map_init to
+	initialize program map.
+	(glitz_glx_screen_destroy): Use glitz_program_map_fini to
+	clean up program map.
+
+	* src/glitz_glx_extension.c: Check for GL_ARB_texture_env_combine,
+	GL_ARB_texture_env_dot3 and GL_EXT_pixel_buffer_object.
+
+	* src/glitz_glx_context.c (glitz_glx_context_proc_address_lookup): 
+	Lookup pixel buffer object function pointers.
+
+	* src/glitz_gl.h: Added a bunch of new tokens and function
+	declarations.
+
+	* src/glitz_format.c: OpenGL GL_ALPHA formats are now used for
+	alpha textures instead of GL_INTENSITY.
+
+	* src/glitz_color_range.c: Moved some stuff from glitzint.h to this
+	file and use the new pixel buffer interface for asynchronous
+	color range data transfers.
+
+	* src/glitz_aglint.h: Added
+	GLITZ_AGL_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK,
+	GLITZ_AGL_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK,
+	GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK.
+	programs -> program_map.
+
+	* src/glitz_agl_surface.c: programs -> program_map.
+
+	* src/glitz_agl_info.c: Added glTexEnvfv, glColor4d and pixel buffer
+	functions to _glitz_agl_gl_proc_address.
+	(glitz_agl_thread_info_get): Fixed thread specific data
+	allocation.
+	(glitz_agl_thread_info_init): Use glitz_program_map_init to
+	initialize program map.
+	(glitz_agl_thread_info_fini): Use glitz_program_map_fini to
+	clean up program map.
+	(glitz_agl_thread_info_fini): Do not free thread specific data here.
+
+	* src/glitz_agl_extension.c: Check for GL_ARB_texture_env_combine,
+	GL_ARB_texture_env_dot3 and GL_EXT_pixel_buffer_object.
+
+	* src/glitz.h: glitz_color_range_create now needs a surface
+	reference.
+	Added glitz_surface_set_component_alpha.
+	Added skip_lines to glitz_pixel_format_t.
+	Added new pixel buffer interface, which allows for asynchronous
+	pixel transfers and access to high-performance memory.
+
+	* src/glitz.h: Added GLITZ_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK,
+	GLITZ_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK,
+	GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK,
+	GLITZ_FEATURE_COMPONENT_ALPHA_MASK.
+
+	* src/glitz.c: Moved in my new glitz.c code, much of it is similar
+	to the old glitz.c code. However, this new code uses the new
+	glitz_render_op_t infrastructure and supports component alpha.
+
+	* configure.in: Added GCC warning flags.
+
+	* TODO: Updated todo list.
+
+	* README: Added a short description of glitz.
+
 2004-06-21  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.1.5.

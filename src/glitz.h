@@ -131,16 +131,20 @@ typedef enum {
   GLITZ_OPERATOR_SATURATE
 } glitz_operator_t;
 
-#define GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK       (1L << 0)
-#define GLITZ_FEATURE_CONVOLUTION_FILTER_MASK      (1L << 1)
-#define GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK       (1L << 2)
-#define GLITZ_FEATURE_TEXTURE_NPOT_MASK            (1L << 3)
-#define GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK (1L << 4)
-#define GLITZ_FEATURE_MULTISAMPLE_MASK             (1L << 5)
-#define GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK   (1L << 6)
-#define GLITZ_FEATURE_ARB_MULTITEXTURE_MASK        (1L << 7)
-#define GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK      (1L << 8)
-#define GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK    (1L << 9)
+#define GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK       (1L <<  0)
+#define GLITZ_FEATURE_CONVOLUTION_FILTER_MASK      (1L <<  1)
+#define GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK       (1L <<  2)
+#define GLITZ_FEATURE_TEXTURE_NPOT_MASK            (1L <<  3)
+#define GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK (1L <<  4)
+#define GLITZ_FEATURE_MULTISAMPLE_MASK             (1L <<  5)
+#define GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK   (1L <<  6)
+#define GLITZ_FEATURE_ARB_MULTITEXTURE_MASK        (1L <<  7)
+#define GLITZ_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK (1L <<  8)
+#define GLITZ_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK    (1L <<  9)  
+#define GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK      (1L << 10)
+#define GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK    (1L << 11)
+#define GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK     (1L << 12)
+#define GLITZ_FEATURE_COMPONENT_ALPHA_MASK         (1L << 13)
 
 typedef enum {  
   GLITZ_STANDARD_ARGB32,
@@ -215,10 +219,12 @@ typedef enum {
 const char *
 glitz_status_string (glitz_status_t status);
 
+  
 /* glitz_color_range.c */
 
+typedef struct _glitz_surface glitz_surface_t;
 typedef struct _glitz_color_range glitz_color_range_t;
-
+  
 typedef enum {
   GLITZ_EXTEND_PAD,
   GLITZ_EXTEND_REPEAT,
@@ -226,12 +232,13 @@ typedef enum {
 } glitz_extend_t;
   
 glitz_color_range_t *
-glitz_color_range_create (unsigned int size);
+glitz_color_range_create (glitz_surface_t *surface,
+                          unsigned int size);
 
 void
 glitz_color_range_destroy (glitz_color_range_t *color_range);
 
-unsigned char *
+char *
 glitz_color_range_get_data (glitz_color_range_t *color_range);
 
 void
@@ -247,8 +254,6 @@ glitz_color_range_set_extend (glitz_color_range_t *color_range,
 
   
 /* glitz_surface.c */
-
-typedef struct _glitz_surface glitz_surface_t;
 
 typedef enum {
   GLITZ_POLYEDGE_SHARP,
@@ -283,6 +288,10 @@ glitz_surface_set_convolution (glitz_surface_t *surface,
 void
 glitz_surface_set_repeat (glitz_surface_t *surface,
                           glitz_bool_t repeat);
+
+void
+glitz_surface_set_component_alpha (glitz_surface_t *surface,
+                                   glitz_bool_t component_alpha);
 
 void
 glitz_surface_set_filter (glitz_surface_t *surface,
@@ -405,7 +414,7 @@ glitz_surface_create_similar (glitz_surface_t *templ,
 
 unsigned long
 glitz_surface_get_hints (glitz_surface_t *surface);
-
+  
   
 /* glitz_pixel.c */
   
@@ -425,9 +434,58 @@ typedef struct _glitz_pixel_masks {
 typedef struct _glitz_pixel_format {
   glitz_pixel_masks_t masks;
   int xoffset;
+  int skip_lines;
   int bytes_per_line;
   glitz_pixel_scanline_order_t scanline_order;
 } glitz_pixel_format_t;
+
+typedef struct _glitz_pixel_buffer glitz_pixel_buffer_t;
+
+typedef enum {
+  GLITZ_PIXEL_BUFFER_HINT_STREAM_DRAW,
+  GLITZ_PIXEL_BUFFER_HINT_STREAM_READ,
+  GLITZ_PIXEL_BUFFER_HINT_STREAM_COPY,
+  GLITZ_PIXEL_BUFFER_HINT_STATIC_DRAW,
+  GLITZ_PIXEL_BUFFER_HINT_STATIC_READ,
+  GLITZ_PIXEL_BUFFER_HINT_STATIC_COPY,
+  GLITZ_PIXEL_BUFFER_HINT_DYNAMIC_DRAW,
+  GLITZ_PIXEL_BUFFER_HINT_DYNAMIC_READ,
+  GLITZ_PIXEL_BUFFER_HINT_DYNAMIC_COPY
+} glitz_buffer_hint_t;
+
+glitz_pixel_buffer_t *
+glitz_pixel_buffer_create (glitz_surface_t *surface,
+                           char *data,
+                           unsigned int size,
+                           glitz_buffer_hint_t hint);
+  
+glitz_pixel_buffer_t *
+glitz_pixel_buffer_create_for_data (char *data,
+                                    glitz_pixel_format_t *format);
+
+void
+glitz_pixel_buffer_destroy (glitz_pixel_buffer_t *buffer);
+
+void
+glitz_pixel_buffer_set_format (glitz_pixel_buffer_t *buffer,
+                               glitz_pixel_format_t *format);
+
+void
+glitz_pixel_buffer_get_format (glitz_pixel_buffer_t *buffer,
+                               glitz_pixel_format_t *format);
+
+typedef enum {
+  GLITZ_PIXEL_BUFFER_ACCESS_READ_ONLY,
+  GLITZ_PIXEL_BUFFER_ACCESS_WRITE_ONLY,
+  GLITZ_PIXEL_BUFFER_ACCESS_READ_WRITE
+} glitz_pixel_buffer_access_t;
+
+char *
+glitz_pixel_buffer_get_data (glitz_pixel_buffer_t *buffer,
+                             glitz_pixel_buffer_access_t access);
+  
+void
+glitz_pixel_buffer_put_back_data (glitz_pixel_buffer_t *buffer);
 
 void
 glitz_put_pixels (glitz_surface_t *dst,
@@ -435,8 +493,8 @@ glitz_put_pixels (glitz_surface_t *dst,
                   int y_dst,
                   int width,
                   int height,
-                  glitz_pixel_format_t *format,
-                  char *pixels);
+                  glitz_pixel_buffer_t *buffer);
+                  
 
 void
 glitz_get_pixels (glitz_surface_t *src,
@@ -444,9 +502,8 @@ glitz_get_pixels (glitz_surface_t *src,
                   int y_src,
                   int width,
                   int height,
-                  glitz_pixel_format_t *format,
-                  char *pixels);
-
+                  glitz_pixel_buffer_t *buffer);
+  
   
 /* glitz_rect.c */
 

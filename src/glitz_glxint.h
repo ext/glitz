@@ -44,17 +44,20 @@
 #define GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK      (1L <<  4)
 #define GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_MASK      (1L <<  5)
 #define GLITZ_GLX_FEATURE_ARB_MULTITEXTURE_MASK        (1L <<  6)
-#define GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK      (1L <<  7)
-#define GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK    (1L <<  8)
-#define GLITZ_GLX_FEATURE_GLX13_MASK                   (1L <<  9)
-#define GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK      (1L << 10)
+#define GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK (1L <<  7)
+#define GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK    (1L <<  8)
+#define GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK      (1L <<  9)
+#define GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK    (1L << 10)
+#define GLITZ_GLX_FEATURE_GLX13_MASK                   (1L << 11)
+#define GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK      (1L << 12)
+#define GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK     (1L << 13)
 
 typedef struct _glitz_glx_surface glitz_glx_surface_t;
 typedef struct _glitz_glx_screen_info_t glitz_glx_screen_info_t;
 typedef struct _glitz_glx_display_info_t glitz_glx_display_info_t;
 
 typedef struct _glitz_glx_static_proc_address_list_t {
-  glitz_glx_get_proc_address_arb_t get_proc_address_arb;
+  glitz_glx_get_proc_address_t get_proc_address;
   glitz_glx_get_fbconfigs_t get_fbconfigs;
   glitz_glx_get_fbconfig_attrib_t get_fbconfig_attrib;
   glitz_glx_get_visual_from_fbconfig_t get_visual_from_fbconfig;
@@ -65,8 +68,8 @@ typedef struct _glitz_glx_static_proc_address_list_t {
 } glitz_glx_static_proc_address_list_t;
 
 typedef struct _glitz_glx_proc_address_list_t {
-  glitz_glx_bind_tex_image_arb_t bind_tex_image_arb;
-  glitz_glx_release_tex_image_arb_t release_tex_image_arb;
+  glitz_glx_bind_tex_image_t bind_tex_image;
+  glitz_glx_release_tex_image_t release_tex_image;
   glitz_bool_t need_lookup;
 } glitz_glx_proc_address_list_t;
 
@@ -120,7 +123,7 @@ struct _glitz_glx_screen_info_t {
   long int glx_feature_mask;
   long int texture_mask;
 
-  glitz_programs_t programs;
+  glitz_program_map_t program_map;
 };
 
 struct _glitz_glx_surface {

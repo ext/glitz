@@ -88,17 +88,17 @@ glitz_agl_context_set_surface_anti_aliasing (glitz_agl_surface_t *surface)
 {
   if (surface->base.format->multisample.supported) {
     if (surface->base.polyedge == GLITZ_POLYEDGE_SMOOTH) {
-      glEnable (GLITZ_GL_MULTISAMPLE_ARB);
+      glEnable (GLITZ_GL_MULTISAMPLE);
       if (surface->thread_info->agl_feature_mask &
           GLITZ_AGL_FEATURE_MULTISAMPLE_FILTER_MASK) {
         if (surface->base.polyedge_smooth_hint ==
             GLITZ_POLYEDGE_SMOOTH_HINT_FAST)
-          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT_NV, GLITZ_GL_FASTEST);
+          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_FASTEST);
         else
-          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT_NV, GLITZ_GL_NICEST);
+          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_NICEST);
       }
     } else
-      glDisable (GLITZ_GL_MULTISAMPLE_ARB);
+      glDisable (GLITZ_GL_MULTISAMPLE);
   }
 }
 

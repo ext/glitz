@@ -43,17 +43,19 @@ glitz_surface_init (glitz_surface_t *surface,
                     int n_formats,
                     int width,
                     int height,
-                    glitz_programs_t *programs,
+                    glitz_program_map_t *program_map,
                     unsigned long texture_mask)
 {
   surface->backend = backend;
+
+  surface->ref_count = 1;
 
   surface->filter = GLITZ_FILTER_NEAREST;
   surface->polyedge = GLITZ_POLYEDGE_SMOOTH;
   surface->polyedge_smooth_hint = GLITZ_POLYEDGE_SMOOTH_HINT_GOOD;
   surface->polyopacity = 0xffff;
-
-  surface->programs = programs;
+  
+  surface->program_map = program_map;
   surface->format = format;
   surface->formats = formats;
   surface->n_formats = n_formats;
@@ -221,8 +223,24 @@ glitz_surface_create_radial (glitz_point_fixed_t *center,
 slim_hidden_def(glitz_surface_create_radial);
 
 void
+glitz_surface_reference (glitz_surface_t *surface)
+{
+  if (surface == NULL)
+    return;
+
+  surface->ref_count++;
+}
+
+void
 glitz_surface_destroy (glitz_surface_t *surface)
 {
+  if (!surface)
+    return;
+
+  surface->ref_count--;
+  if (surface->ref_count)
+    return;
+  
   surface->backend->destroy (surface);
 }
 
@@ -383,6 +401,21 @@ glitz_surface_set_repeat (glitz_surface_t *surface,
     
 }
 slim_hidden_def(glitz_surface_set_repeat);
+
+void
+glitz_surface_set_component_alpha (glitz_surface_t *surface,
+                                   glitz_bool_t component_alpha)
+{
+  if (SURFACE_PROGRAMMATIC (surface))
+    return;
+
+  if (component_alpha && surface->format->red_size)
+    surface->hint_mask |= GLITZ_INT_HINT_COMPONENT_ALPHA_MASK;
+  else
+    surface->hint_mask &= ~GLITZ_INT_HINT_COMPONENT_ALPHA_MASK;
+    
+}
+slim_hidden_def(glitz_surface_set_component_alpha);
 
 void
 glitz_surface_set_filter (glitz_surface_t *surface,

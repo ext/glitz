@@ -1,11 +1,9 @@
-* Text support. Glyph set management, glyph and string compositing
-  operations. Some ideas: Multi-texturing for compositing multiple glyphs 
-  per render pass, Sub-pixel rendering, vector text; glyphs loaded into 
-  display lists.
-
-* A programmable surface type which can store a set of rendering operations
-  in a display list.
+* GL_MESA_pack_invert support.
 
 * Projective transformations.
 
+* Retained-mode rendering.
+
 * WGL (Windows GL) backend.
+
+* Mesa-solo backend.

@@ -41,8 +41,10 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_vertex_2i_t) glVertex2i,
   (glitz_gl_vertex_2d_t) glVertex2d,
   (glitz_gl_tex_env_f_t) glTexEnvf,
+  (glitz_gl_tex_env_fv_t) glTexEnvfv,
   (glitz_gl_tex_coord_2d_t) glTexCoord2d,
   (glitz_gl_color_4us_t) glColor4us,
+  (glitz_gl_color_4d_t) glColor4d,
   (glitz_gl_scissor_t) glScissor,
   (glitz_gl_blend_func_t) glBlendFunc,
   (glitz_gl_clear_t) glClear,
@@ -91,14 +93,20 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_end_list_t) glEndList,
   (glitz_gl_call_list_t) glCallList,
   
-  (glitz_gl_active_texture_arb_t) glActiveTextureARB,
-  (glitz_gl_multi_tex_coord_2d_arb_t) glMultiTexCoord2dARB,
-  (glitz_gl_gen_programs_arb_t) glGenProgramsARB,
-  (glitz_gl_delete_programs_arb_t) glDeleteProgramsARB,
-  (glitz_gl_program_string_arb_t) glProgramStringARB,
-  (glitz_gl_bind_program_arb_t) glBindProgramARB,
-  (glitz_gl_program_local_param_4d_arb_t) glProgramLocalParameter4dARB,
-  (glitz_gl_get_program_iv_arb_t) glGetProgramivARB,
+  (glitz_gl_active_texture_t) glActiveTextureARB,
+  (glitz_gl_multi_tex_coord_2d_t) glMultiTexCoord2dARB,
+  (glitz_gl_gen_programs_t) glGenProgramsARB,
+  (glitz_gl_delete_programs_t) glDeleteProgramsARB,
+  (glitz_gl_program_string_t) glProgramStringARB,
+  (glitz_gl_bind_program_t) glBindProgramARB,
+  (glitz_gl_program_local_param_4d_t) glProgramLocalParameter4dARB,
+  (glitz_gl_get_program_iv_t) glGetProgramivARB,
+  (glitz_gl_gen_buffers_t) 0,
+  (glitz_gl_delete_buffers_t) 0,
+  (glitz_gl_bind_buffer_t) 0,
+  (glitz_gl_buffer_data_t) 0,
+  (glitz_gl_map_buffer_t) 0,
+  (glitz_gl_unmap_buffer_t) 0,
   0
 };
 
@@ -127,17 +135,25 @@ glitz_agl_thread_info_destroy (void *p)
 glitz_agl_thread_info_t *
 glitz_agl_thread_info_get (void)
 {
+  glitz_agl_thread_info_t *thread_info;
+  void *p;
+  
   if (!tsd_initialized) {
-    glitz_agl_thread_info_t *info = malloc (sizeof (glitz_agl_thread_info_t));
-    glitz_agl_thread_info_init (info);
-    
     pthread_key_create (&info_tsd, glitz_agl_thread_info_destroy);
-    pthread_setspecific (info_tsd, info);
-    
     tsd_initialized = 1;
-    return info;
+  }
+  
+  p = pthread_getspecific (info_tsd);
+
+  if (p == NULL) {
+    thread_info = malloc (sizeof (glitz_agl_thread_info_t));
+    glitz_agl_thread_info_init (thread_info);
+  
+    pthread_setspecific (info_tsd, thread_info);
   } else
-    return (glitz_agl_thread_info_t *) pthread_getspecific (info_tsd);
+    thread_info = (glitz_agl_thread_info_t *) p;
+  
+  return thread_info;
 }
 
 #else
@@ -185,7 +201,7 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
   thread_info->contexts = NULL;
   thread_info->n_contexts = 0;
 
-  memset (&thread_info->programs, 0, sizeof (glitz_programs_t));
+  glitz_program_map_init (&thread_info->program_map);
   
   thread_info->root_context.pixel_format =
     aglChoosePixelFormat (NULL, 0, attrib);
@@ -201,9 +217,9 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
        GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK)) {
     glitz_gl_uint_t texture_indirections;
     
-     _glitz_agl_gl_proc_address.get_program_iv_arb
-       (GLITZ_GL_FRAGMENT_PROGRAM_ARB,
-        GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS_ARB,
+     _glitz_agl_gl_proc_address.get_program_iv
+       (GLITZ_GL_FRAGMENT_PROGRAM,
+        GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS,
         &texture_indirections);
 
     /* Convolution filter programs require support for at least nine
@@ -226,8 +242,8 @@ glitz_agl_thread_info_fini (glitz_agl_thread_info_t *thread_info)
   int i;
   
   aglSetCurrentContext (thread_info->root_context.context);
-  glitz_programs_fini (&_glitz_agl_gl_proc_address,
-                       &thread_info->programs);
+  glitz_program_map_fini (&_glitz_agl_gl_proc_address,
+                          &thread_info->program_map);
   aglSetCurrentContext (NULL);
 
   if (thread_info->context_stack)
@@ -246,8 +262,6 @@ glitz_agl_thread_info_fini (glitz_agl_thread_info_t *thread_info)
     free (thread_info->format_ids);
 
   aglDestroyContext (thread_info->root_context.context);
-
-  free (thread_info);
 }
 
 void

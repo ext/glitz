@@ -171,11 +171,11 @@ _glitz_glx_set_features (glitz_glx_surface_t *surface)
 {
   surface->base.feature_mask = surface->screen_info->feature_mask;
 
+  surface->base.feature_mask &= ~GLITZ_FEATURE_ARB_MULTITEXTURE_MASK;
   surface->base.feature_mask &= ~GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK;
   surface->base.feature_mask &= ~GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
   surface->base.feature_mask &= ~GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
-  surface->base.feature_mask &= ~GLITZ_FEATURE_MULTISAMPLE_MASK;
-  surface->base.feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK;
+  surface->base.feature_mask &= ~GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
 
   if (surface->context->glx.need_lookup) {
     glitz_surface_push_current (&surface->base,
@@ -185,41 +185,49 @@ _glitz_glx_set_features (glitz_glx_surface_t *surface)
 
   if ((surface->screen_info->glx_feature_mask &
        GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK) &&
-      surface->context->glx.bind_tex_image_arb &&
-      surface->context->glx.release_tex_image_arb)
+      surface->context->glx.bind_tex_image &&
+      surface->context->glx.release_tex_image)
     surface->render_texture = 1;
 
-  if (surface->context->gl.active_texture_arb &&
-      surface->context->gl.multi_tex_coord_2d_arb &&
-      surface->context->gl.gen_programs_arb &&
-      surface->context->gl.delete_programs_arb &&
-      surface->context->gl.program_string_arb &&
-      surface->context->gl.bind_program_arb) {
-    if (surface->screen_info->feature_mask &
-        GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK)
-      surface->base.feature_mask |= GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
+  if (surface->context->gl.active_texture &&
+      surface->context->gl.multi_tex_coord_2d) {
+    surface->base.feature_mask |= GLITZ_FEATURE_ARB_MULTITEXTURE_MASK;
+
+    if (surface->context->gl.gen_programs &&
+        surface->context->gl.delete_programs &&
+        surface->context->gl.program_string &&
+        surface->context->gl.bind_program &&
+        surface->context->gl.program_local_param_4d) {
+      
+      if (surface->screen_info->feature_mask &
+          GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK)
+        surface->base.feature_mask |= GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
+      
+      if (surface->screen_info->feature_mask &
+          GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK)
+        surface->base.feature_mask |= GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK;
     
-    if (surface->screen_info->feature_mask &
-        GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK)
-      surface->base.feature_mask |= GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK;
-    
-    if ((surface->base.feature_mask & GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK) &&
-        (surface->base.feature_mask &
-         GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) &&
-        surface->context->gl.program_local_param_4d_arb &&
-        surface->context->texture_indirections >= 9) {
-      /* Convolution filter programs require support for at least nine
-         texture indirections. */
-      surface->base.feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
+      if ((surface->base.feature_mask &
+           GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK) &&
+          (surface->base.feature_mask &
+           GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) &&
+          surface->context->texture_indirections >= 9) {
+        /* Convolution filter programs require support for at least nine
+           texture indirections. */
+        surface->base.feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
+      }
     }
   }
 
-  if (surface->screen_info->feature_mask & GLITZ_FEATURE_MULTISAMPLE_MASK)
-    surface->base.feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;
-  
-  if (surface->screen_info->feature_mask &
-      GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK)
-    surface->base.feature_mask |= GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK;
+  if (surface->context->gl.gen_buffers &&
+      surface->context->gl.delete_buffers &&
+      surface->context->gl.bind_buffer &&
+      surface->context->gl.buffer_data &&
+      surface->context->gl.map_buffer &&
+      surface->context->gl.unmap_buffer)
+    if (surface->screen_info->feature_mask &
+        GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
+      surface->base.feature_mask |= GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
 }
 
 static glitz_surface_t *
@@ -247,7 +255,7 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
                       screen_info->n_formats,
                       width,
                       height,
-                      &screen_info->programs,
+                      &screen_info->program_map,
                       screen_info->texture_mask);
   
   surface->screen_info = screen_info;
@@ -318,7 +326,7 @@ glitz_glx_surface_create_for_window (Display *display,
                       screen_info->n_formats,
                       width,
                       height,
-                      &screen_info->programs,
+                      &screen_info->program_map,
                       screen_info->texture_mask);
   
   surface->screen_info = screen_info;

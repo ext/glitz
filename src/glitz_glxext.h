@@ -94,7 +94,7 @@ typedef XID GLXPbuffer;
 
 #endif
 
-typedef glitz_function_pointer_t (* glitz_glx_get_proc_address_arb_t)
+typedef glitz_function_pointer_t (* glitz_glx_get_proc_address_t)
      (const glitz_gl_ubyte_t *);
 typedef GLXFBConfig *(* glitz_glx_get_fbconfigs_t)
      (Display *display, int screen, int *n_elements);
@@ -114,9 +114,9 @@ typedef Bool (* glitz_glx_make_context_current_t)
 #define GLX_SAMPLES_ARB                     0x186a1
 #endif
 
-typedef Bool *(* glitz_glx_bind_tex_image_arb_t)
+typedef Bool *(* glitz_glx_bind_tex_image_t)
      (Display *display, GLXPbuffer pbuffer, int buffer);
-typedef Bool (* glitz_glx_release_tex_image_arb_t)
+typedef Bool (* glitz_glx_release_tex_image_t)
      (Display *display, GLXPbuffer pbuffer, int buffer);
 
 #endif /* GLITZ_GLXEXT_H_INCLUDED */

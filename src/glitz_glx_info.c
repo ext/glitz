@@ -42,8 +42,10 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_vertex_2i_t) glVertex2i,
   (glitz_gl_vertex_2d_t) glVertex2d,
   (glitz_gl_tex_env_f_t) glTexEnvf,
+  (glitz_gl_tex_env_fv_t) glTexEnvfv,
   (glitz_gl_tex_coord_2d_t) glTexCoord2d,
   (glitz_gl_color_4us_t) glColor4us,
+  (glitz_gl_color_4d_t) glColor4d,
   (glitz_gl_scissor_t) glScissor,
   (glitz_gl_blend_func_t) glBlendFunc,
   (glitz_gl_clear_t) glClear,
@@ -92,14 +94,20 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_end_list_t) glEndList,
   (glitz_gl_call_list_t) glCallList,
 
-  (glitz_gl_active_texture_arb_t) 0,
-  (glitz_gl_multi_tex_coord_2d_arb_t) 0,
-  (glitz_gl_gen_programs_arb_t) 0,
-  (glitz_gl_delete_programs_arb_t) 0,
-  (glitz_gl_program_string_arb_t) 0,
-  (glitz_gl_bind_program_arb_t) 0,
-  (glitz_gl_program_local_param_4d_arb_t) 0,
-  (glitz_gl_get_program_iv_arb_t) 0,
+  (glitz_gl_active_texture_t) 0,
+  (glitz_gl_multi_tex_coord_2d_t) 0,
+  (glitz_gl_gen_programs_t) 0,
+  (glitz_gl_delete_programs_t) 0,
+  (glitz_gl_program_string_t) 0,
+  (glitz_gl_bind_program_t) 0,
+  (glitz_gl_program_local_param_4d_t) 0,
+  (glitz_gl_get_program_iv_t) 0,
+  (glitz_gl_gen_buffers_t) 0,
+  (glitz_gl_delete_buffers_t) 0,
+  (glitz_gl_bind_buffer_t) 0,
+  (glitz_gl_buffer_data_t) 0,
+  (glitz_gl_map_buffer_t) 0,
+  (glitz_gl_unmap_buffer_t) 0,
   1
 };
 
@@ -108,8 +116,8 @@ glitz_glx_get_proc_address (glitz_glx_thread_info_t *info, const char *name)
 {
   glitz_function_pointer_t address = NULL;
   
-  if (info->glx.get_proc_address_arb)
-    address = info->glx.get_proc_address_arb ((glitz_gl_ubyte_t *) name);
+  if (info->glx.get_proc_address)
+    address = info->glx.get_proc_address ((glitz_gl_ubyte_t *) name);
   
   if (!address) {
     if (!info->dlhand)
@@ -141,7 +149,7 @@ glitz_glx_proc_address_lookup (glitz_glx_thread_info_t *info)
     glitz_glx_get_proc_address (info, "glXDestroyPbuffer");
   info->glx.make_context_current = (glitz_glx_make_context_current_t)
     glitz_glx_get_proc_address (info, "glXMakeContextCurrent");
-  info->glx.get_proc_address_arb = (glitz_glx_get_proc_address_arb_t)
+  info->glx.get_proc_address = (glitz_glx_get_proc_address_t)
     glitz_glx_get_proc_address (info, "glXGetProcAddressARB");
   
   info->glx.need_lookup = 0;
@@ -211,25 +219,33 @@ static glitz_glx_thread_info_t *
 glitz_glx_thread_info_get (const char *gl_library)
 {
   glitz_glx_thread_info_t *thread_info;
+  void *p;
     
   if (!tsd_initialized) {
+    xthread_key_create (&info_tsd, glitz_glx_thread_info_destroy);
+    tsd_initialized = 1;
+  }
+
+  xthread_get_specific (info_tsd, &p);
+  
+  if (p == NULL) {
     thread_info = malloc (sizeof (glitz_glx_thread_info_t));
     glitz_glx_thread_info_init (thread_info);
-      
-    xthread_key_create (&info_tsd, glitz_glx_thread_info_destroy);
-    xthread_set_specific (info_tsd, thread_info);
     
-    tsd_initialized = 1;
-  } else {
-    void *p;
-
-    xthread_get_specific (info_tsd, &p);
+    xthread_set_specific (info_tsd, thread_info);
+  } else
     thread_info = (glitz_glx_thread_info_t *) p;
-  }
   
   if (thread_info->glx.need_lookup) {
-    if (gl_library)
-      thread_info->gl_library = strdup (gl_library);
+    if (gl_library) {
+      int len = strlen (gl_library);
+      
+      thread_info->gl_library = malloc (len + 1);
+      if (thread_info->gl_library) {
+        memcpy (thread_info->gl_library, gl_library, len);
+        thread_info->gl_library[len] = '\0';
+      }
+    }
     
     glitz_glx_proc_address_lookup (thread_info);
   }
@@ -300,7 +316,10 @@ glitz_glx_display_destroy (glitz_glx_display_info_t *display_info)
   for (i = 0; i < display_info->n_screens; i++)
     glitz_glx_screen_destroy (display_info->screens[i]);
 
-  free (display_info->screens);
+  if (display_info->screens)
+    free (display_info->screens);
+  
+  free (display_info);
 }
 
 static void
@@ -402,7 +421,7 @@ glitz_glx_screen_info_get (Display *display,
   screen_info->contexts = NULL;
   screen_info->n_contexts = 0;
 
-  memset (&screen_info->programs, 0, sizeof (glitz_programs_t));
+  glitz_program_map_init (&screen_info->program_map);
 
   glitz_glx_create_root_context (screen_info);
 
@@ -439,8 +458,8 @@ glitz_glx_screen_destroy (glitz_glx_screen_info_t *screen_info)
       glXMakeCurrent (screen_info->display_info->display,
                       screen_info->root_drawable,
                       screen_info->root_context.context)) {
-    glitz_programs_fini (&screen_info->root_context.gl,
-                         &screen_info->programs);
+    glitz_program_map_fini (&screen_info->root_context.gl,
+                            &screen_info->program_map);
   }
 
   glXMakeCurrent (display, None, NULL);

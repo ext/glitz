@@ -31,8 +31,6 @@
 
 #include "glitzint.h"
 
-#include <math.h>
-
 static glitz_surface_t *
 _glitz_programmatic_surface_create_similar (void *abstract_templ,
                                             glitz_format_t *format,
@@ -49,10 +47,10 @@ _glitz_programmatic_surface_destroy (void *abstract_surface)
     (glitz_programmatic_surface_t *) abstract_surface;
 
   switch (surface->type) {
-  case GLITZ_PROGRAMMATIC_SURFACE_LINEAR_TYPE:
+  case GLITZ_PROGRAMMATIC_SURFACE_TYPE_LINEAR:
     glitz_color_range_destroy (surface->u.linear.color_range);
     break;
-  case GLITZ_PROGRAMMATIC_SURFACE_RADIAL_TYPE:
+  case GLITZ_PROGRAMMATIC_SURFACE_TYPE_RADIAL:
     glitz_color_range_destroy (surface->u.radial.color_range);
   default:
     break;
@@ -137,26 +135,14 @@ _glitz_programmatic_surface_create (void)
   surface->base.texture.target = GLITZ_GL_TEXTURE_2D;
   surface->base.texture.format = GLITZ_GL_RGBA;
   surface->base.texture.filter = surface->base.filter;
-  surface->base.texture.texcoord_width =
-    surface->base.texture.texcoord_height = 1.0;
+  surface->base.texture.texcoord_width = surface->base.width =
+    surface->base.texture.width = MAXSHORT;
+  surface->base.texture.texcoord_height = surface->base.height =
+    surface->base.texture.height = MAXSHORT;
   surface->base.texture.repeatable = surface->base.texture.repeat = 1;
   surface->matrix = identity;
   
   return surface;
-}
-
-void
-glitz_programmatic_surface_setup (glitz_surface_t *abstract_surface,
-                                  int width,
-                                  int height)
-{
-  glitz_programmatic_surface_t *surface =
-    (glitz_programmatic_surface_t *) abstract_surface;
-  
-  surface->base.texture.texcoord_width = surface->base.width =
-    surface->base.texture.width = width;
-  surface->base.texture.texcoord_height = surface->base.height =
-    surface->base.texture.height = height;
 }
 
 glitz_surface_t *
@@ -168,7 +154,7 @@ glitz_programmatic_surface_create_solid (glitz_color_t *color)
   if (!surface)
     return NULL;
 
-  surface->type = GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE;
+  surface->type = GLITZ_PROGRAMMATIC_SURFACE_TYPE_SOLID;
   surface->u.solid.color = *color;
   
   return &surface->base;
@@ -185,7 +171,7 @@ glitz_programmatic_surface_create_linear (glitz_point_fixed_t *start,
   if (!surface)
     return NULL;
 
-  surface->type = GLITZ_PROGRAMMATIC_SURFACE_LINEAR_TYPE;
+  surface->type = GLITZ_PROGRAMMATIC_SURFACE_TYPE_LINEAR;
   surface->u.linear.start = *start;
   surface->u.linear.stop = *stop;
   surface->u.linear.color_range = color_range;
@@ -206,7 +192,7 @@ glitz_programmatic_surface_create_radial (glitz_point_fixed_t *start,
   if (!surface)
     return NULL;
 
-  surface->type = GLITZ_PROGRAMMATIC_SURFACE_RADIAL_TYPE;
+  surface->type = GLITZ_PROGRAMMATIC_SURFACE_TYPE_RADIAL;
   surface->u.radial.center = *start;
   surface->u.radial.radius0 = radius0;
   surface->u.radial.radius1 = radius1;
@@ -230,85 +216,4 @@ glitz_programmatic_surface_set_transform (glitz_surface_t *abstract_surface,
   surface->matrix.m[0][1] = FIXED_TO_DOUBLE (transform->matrix[1][0]);
   surface->matrix.m[1][1] = FIXED_TO_DOUBLE (transform->matrix[1][1]);
   surface->matrix.m[2][1] = FIXED_TO_DOUBLE (transform->matrix[1][2]);
-}
-
-void
-glitz_programmatic_surface_bind (glitz_gl_proc_address_list_t *gl,
-                                 glitz_programmatic_surface_t *surface,
-                                 unsigned long feature_mask,
-                                 unsigned short opacity)
-{
-  switch (surface->type) {
-  case GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE:
-    if (opacity != 0xffff) {
-      gl->color_4us (SHORT_MODULATE (surface->u.solid.color.red, opacity),
-                     SHORT_MODULATE (surface->u.solid.color.green, opacity),
-                     SHORT_MODULATE (surface->u.solid.color.blue, opacity),
-                     SHORT_MODULATE (surface->u.solid.color.alpha, opacity));
-    } else
-      gl->color_4us (surface->u.solid.color.red,
-                     surface->u.solid.color.green,
-                     surface->u.solid.color.blue,
-                     surface->u.solid.color.alpha);
-    break;
-  case GLITZ_PROGRAMMATIC_SURFACE_LINEAR_TYPE: {
-    glitz_point_t p1, p2;
-    double length, angle, start;
-    
-    p1.x = FIXED_TO_DOUBLE (surface->u.linear.start.x);
-    p1.y = FIXED_TO_DOUBLE (surface->u.linear.start.y);
-    p2.x = FIXED_TO_DOUBLE (surface->u.linear.stop.x);
-    p2.y = FIXED_TO_DOUBLE (surface->u.linear.stop.y);
-    
-    length = sqrt ((p2.x - p1.x) * (p2.x - p1.x) +
-                   (p2.y - p1.y) * (p2.y - p1.y));
-  
-    angle = -atan2 (p2.y - p1.y, p2.x - p1.x);
-
-    start = cos (angle) * p1.x;
-    start += -sin (angle) * p1.y;
-
-    gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 0,
-                                    start,
-                                    (length)? 1.0 / length: INT_MAX,
-                                    cos (angle),
-                                    -sin (angle));
-    gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 1,
-                                    surface->matrix.m[0][0],
-                                    surface->matrix.m[0][1],
-                                    surface->matrix.m[1][0],
-                                    surface->matrix.m[1][1]);
-    gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 2,
-                                    surface->matrix.m[2][0],
-                                    surface->matrix.m[2][1],
-                                    surface->base.height, 0.0);
-
-    gl->active_texture_arb (GLITZ_GL_TEXTURE2_ARB);
-    glitz_color_range_bind (gl, surface->u.linear.color_range, feature_mask);
-    gl->active_texture_arb (GLITZ_GL_TEXTURE0_ARB);
-  } break;
-  case GLITZ_PROGRAMMATIC_SURFACE_RADIAL_TYPE:
-    gl->program_local_param_4d_arb
-      (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 0,
-       FIXED_TO_DOUBLE (surface->u.radial.center.x),
-       FIXED_TO_DOUBLE (surface->u.radial.center.y),
-       1.0 / (FIXED_TO_DOUBLE (surface->u.radial.radius1) -
-              FIXED_TO_DOUBLE (surface->u.radial.radius0)),
-       FIXED_TO_DOUBLE (surface->u.radial.radius0));
-    gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 1,
-                                    surface->matrix.m[0][0],
-                                    surface->matrix.m[0][1],
-                                    surface->matrix.m[1][0],
-                                    surface->matrix.m[1][1]);
-    gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 2,
-                                    surface->matrix.m[2][0],
-                                    surface->matrix.m[2][1],
-                                    surface->base.height, 0.0);
-
-    gl->active_texture_arb (GLITZ_GL_TEXTURE2_ARB);
-    glitz_color_range_bind (gl, surface->u.radial.color_range, feature_mask);
-    gl->active_texture_arb (GLITZ_GL_TEXTURE0_ARB);
-  default:
-    break;
-  }
 }

@@ -203,45 +203,63 @@ glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
   glitz_glx_thread_info_t *thread_info =
     screen_info->display_info->thread_info;
     
-  context->glx.bind_tex_image_arb =
-    (glitz_glx_bind_tex_image_arb_t)
+  context->glx.bind_tex_image =
+    (glitz_glx_bind_tex_image_t)
     glitz_glx_get_proc_address (thread_info, "glXBindTexImageARB");
-  context->glx.release_tex_image_arb =
-    (glitz_glx_release_tex_image_arb_t)
+  context->glx.release_tex_image =
+    (glitz_glx_release_tex_image_t)
     glitz_glx_get_proc_address (thread_info, "glXReleaseTexImageARB");
 
-  context->gl.active_texture_arb =
-    (glitz_gl_active_texture_arb_t)
+  context->gl.active_texture =
+    (glitz_gl_active_texture_t)
     glitz_glx_get_proc_address (thread_info, "glActiveTextureARB");
-  context->gl.multi_tex_coord_2d_arb =
-    (glitz_gl_multi_tex_coord_2d_arb_t)
+  context->gl.multi_tex_coord_2d =
+    (glitz_gl_multi_tex_coord_2d_t)
     glitz_glx_get_proc_address (thread_info, "glMultiTexCoord2dARB");
 
-  context->gl.gen_programs_arb =
-    (glitz_gl_gen_programs_arb_t)
+  context->gl.gen_programs =
+    (glitz_gl_gen_programs_t)
     glitz_glx_get_proc_address (thread_info, "glGenProgramsARB");
-  context->gl.delete_programs_arb =
-    (glitz_gl_delete_programs_arb_t)
+  context->gl.delete_programs =
+    (glitz_gl_delete_programs_t)
     glitz_glx_get_proc_address (thread_info, "glDeleteProgramsARB");
-  context->gl.program_string_arb =
-    (glitz_gl_program_string_arb_t)
+  context->gl.program_string =
+    (glitz_gl_program_string_t)
     glitz_glx_get_proc_address (thread_info, "glProgramStringARB");
-  context->gl.bind_program_arb =
-    (glitz_gl_bind_program_arb_t)
+  context->gl.bind_program =
+    (glitz_gl_bind_program_t)
     glitz_glx_get_proc_address (thread_info, "glBindProgramARB");
-  context->gl.program_local_param_4d_arb =
-    (glitz_gl_program_local_param_4d_arb_t)
+  context->gl.program_local_param_4d =
+    (glitz_gl_program_local_param_4d_t)
     glitz_glx_get_proc_address (thread_info, "glProgramLocalParameter4dARB");
-  context->gl.get_program_iv_arb =
-    (glitz_gl_get_program_iv_arb_t)
+  context->gl.get_program_iv =
+    (glitz_gl_get_program_iv_t)
     glitz_glx_get_proc_address (thread_info, "glGetProgramivARB");
 
+  context->gl.gen_buffers =
+    (glitz_gl_gen_buffers_t)
+    glitz_glx_get_proc_address (thread_info, "glGenBuffers");
+  context->gl.delete_buffers =
+    (glitz_gl_delete_buffers_t)
+    glitz_glx_get_proc_address (thread_info, "glDeleteBuffers");
+  context->gl.bind_buffer =
+    (glitz_gl_bind_buffer_t)
+    glitz_glx_get_proc_address (thread_info, "glBindBuffer");
+  context->gl.buffer_data =
+    (glitz_gl_buffer_data_t)
+    glitz_glx_get_proc_address (thread_info, "glBufferData");
+  context->gl.map_buffer =
+    (glitz_gl_map_buffer_t)
+    glitz_glx_get_proc_address (thread_info, "glMapBuffer");
+  context->gl.unmap_buffer =
+    (glitz_gl_unmap_buffer_t)
+    glitz_glx_get_proc_address (thread_info, "glUnmapBuffer");
+
   if (screen_info->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
-    if (context->gl.get_program_iv_arb) {
-      context->gl.get_program_iv_arb
-        (GLITZ_GL_FRAGMENT_PROGRAM_ARB,
-         GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS_ARB,
-         &context->texture_indirections);
+    if (context->gl.get_program_iv) {
+      context->gl.get_program_iv (GLITZ_GL_FRAGMENT_PROGRAM,
+                                  GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS,
+                                  &context->texture_indirections);
     }
   }
   
@@ -254,17 +272,17 @@ glitz_glx_context_set_surface_anti_aliasing (glitz_glx_surface_t *surface)
 {
   if (surface->base.format->multisample.supported) {
     if (surface->base.polyedge == GLITZ_POLYEDGE_SMOOTH) {
-      glEnable (GLITZ_GL_MULTISAMPLE_ARB);
+      glEnable (GLITZ_GL_MULTISAMPLE);
       if (surface->screen_info->glx_feature_mask &
           GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_MASK) {
         if (surface->base.polyedge_smooth_hint ==
             GLITZ_POLYEDGE_SMOOTH_HINT_FAST)
-          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT_NV, GLITZ_GL_FASTEST);
+          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_FASTEST);
         else
-          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT_NV, GLITZ_GL_NICEST);
+          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_NICEST);
       }
     } else
-      glDisable (GLITZ_GL_MULTISAMPLE_ARB);
+      glDisable (GLITZ_GL_MULTISAMPLE);
   }
 }
 

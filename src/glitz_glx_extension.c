@@ -43,12 +43,16 @@ static glitz_extension_map client_glx_extensions[] = {
   { "GL_ARB_texture_non_power_of_two", GLITZ_GLX_FEATURE_TEXTURE_NPOT_MASK },
   { "GL_ARB_texture_mirrored_repeat",
     GLITZ_GLX_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK },
+  { "GL_ARB_texture_env_combine",
+    GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK },
+  { "GL_ARB_texture_env_dot3", GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK },
   { "GL_ARB_multisample", GLITZ_GLX_FEATURE_MULTISAMPLE_MASK },
   { "GL_NV_multisample_filter_hint",
     GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_MASK },
   { "GL_ARB_multitexture", GLITZ_GLX_FEATURE_ARB_MULTITEXTURE_MASK },
   { "GL_ARB_vertex_program", GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK },
   { "GL_ARB_fragment_program", GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK },
+  { "GL_EXT_pixel_buffer_object", GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
   { NULL, 0 }
 };
 
@@ -134,6 +138,25 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
     screen_info->feature_mask |= GLITZ_FEATURE_ARB_MULTITEXTURE_MASK;
 
     if (screen_info->glx_feature_mask &
+        GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK)
+      screen_info->feature_mask |= GLITZ_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK;
+    
+    if (screen_info->glx_feature_mask &
+        GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK)
+      screen_info->feature_mask |= GLITZ_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK;
+      
+    if ((screen_info->feature_mask &
+         GLITZ_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK) &&
+        (screen_info->feature_mask &
+         GLITZ_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK)) {
+      glitz_gl_int_t max_texture_units;
+      
+      glGetIntegerv (GLITZ_GL_MAX_TEXTURE_UNITS, &max_texture_units);
+      if (max_texture_units >= 3)
+        screen_info->feature_mask |= GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
+    }
+        
+    if (screen_info->glx_feature_mask &
         GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK)
       screen_info->feature_mask |= GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK;
 
@@ -145,4 +168,8 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
         (screen_info->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK))
       screen_info->feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
   }
+
+  if (screen_info->glx_feature_mask &
+      GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
+    screen_info->feature_mask |= GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
 }

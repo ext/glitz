@@ -215,7 +215,7 @@ _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
                       thread_info->n_formats,
                       width,
                       height,
-                      &thread_info->programs,
+                      &thread_info->program_map,
                       texture_mask);
   
   surface->thread_info = thread_info;
@@ -279,7 +279,7 @@ glitz_agl_surface_create_for_window (glitz_format_t *format,
                       thread_info->n_formats,
                       width,
                       height,
-                      &thread_info->programs,
+                      &thread_info->program_map,
                       thread_info->texture_mask);
   
   surface->thread_info = thread_info;

@@ -31,32 +31,25 @@
 
 #include "glitzint.h"
 
-static void
-glitz_color_range_init (glitz_color_range_t *color_range,
-                        unsigned int size)
-{
-  color_range->texture = 0;
-  color_range->filter = GLITZ_FILTER_NEAREST;
-  color_range->extend = GLITZ_EXTEND_PAD;
-  color_range->ref_count = 1;
-  color_range->data = malloc (size * 4);
-  color_range->size = size;
-  color_range->update_mask = GLITZ_COLOR_RANGE_UPDATE_ALL_MASK;
-  color_range->delete_textures = NULL;
-}
+#define GLITZ_COLOR_RANGE_UPDATE_TEXTURE_MASK (1L << 0)
+#define GLITZ_COLOR_RANGE_UPDATE_FILTER_MASK  (1L << 1)
+#define GLITZ_COLOR_RANGE_UPDATE_EXTEND_MASK  (1L << 2)
+#define GLITZ_COLOR_RANGE_UPDATE_ALL_MASK     ((1L << 3) - 1)
 
-static void
-glitz_color_range_fini (glitz_color_range_t *color_range)
-{
-  if (color_range->texture)
-    color_range->delete_textures (1, &color_range->texture);
-
-  if (color_range->data)
-    free (color_range->data);
-}
+struct _glitz_color_range {
+  unsigned int size;
+  glitz_gl_uint_t texture;
+  glitz_filter_t filter;
+  glitz_extend_t extend;
+  unsigned long update_mask;
+  unsigned int ref_count;
+  glitz_pixel_buffer_t *buffer;
+  glitz_surface_t *surface;
+};
 
 glitz_color_range_t *
-glitz_color_range_create (unsigned int size)
+glitz_color_range_create (glitz_surface_t *surface,
+                          unsigned int size)
 {
   glitz_color_range_t *color_range;
   
@@ -64,13 +57,30 @@ glitz_color_range_create (unsigned int size)
   if (!color_range)
     return NULL;
 
-  glitz_color_range_init (color_range, size);
+  color_range->texture = 0;
+  color_range->filter = GLITZ_FILTER_NEAREST;
+  color_range->extend = GLITZ_EXTEND_PAD;
+  color_range->ref_count = 1;
 
-  if (!color_range->data) {
+  /* If data is not POT and NPOT texture support is missing we force
+     the size to POT */
+  if ((!(surface->feature_mask & GLITZ_FEATURE_TEXTURE_NPOT_MASK)) &&
+      (!glitz_uint_is_power_of_two (size)))
+    glitz_uint_to_power_of_two (&size);
+  
+  color_range->size = size;
+  color_range->buffer =
+    glitz_pixel_buffer_create (surface, NULL, size * 4 /* ARGB32 */,
+                               GLITZ_PIXEL_BUFFER_HINT_STATIC_DRAW);
+  if (color_range->buffer == NULL) {
     free (color_range);
     return NULL;
   }
   
+  color_range->update_mask = GLITZ_COLOR_RANGE_UPDATE_ALL_MASK;
+  color_range->surface = surface;
+  glitz_surface_reference (surface);
+
   return color_range;
 }
 slim_hidden_def(glitz_color_range_create);
@@ -79,7 +89,7 @@ void
 glitz_color_range_reference (glitz_color_range_t *color_range)
 {
   if (color_range == NULL)
-	return;
+    return;
 
   color_range->ref_count++;
 }
@@ -94,7 +104,19 @@ glitz_color_range_destroy (glitz_color_range_t *color_range)
   if (color_range->ref_count)
     return;
 
-  glitz_color_range_fini (color_range);
+  glitz_pixel_buffer_destroy (color_range->buffer);
+  
+  if (color_range->texture) {
+    glitz_surface_push_current (color_range->surface,
+                                GLITZ_CN_ANY_CONTEXT_CURRENT);
+    
+    color_range->surface->gl->delete_textures (1, &color_range->texture);
+
+    glitz_surface_pop_current (color_range->surface);
+  }
+
+  glitz_surface_destroy (color_range->surface);
+  
   free (color_range);
 }
 
@@ -104,23 +126,16 @@ glitz_color_range_bind (glitz_gl_proc_address_list_t *gl,
                         unsigned long feature_mask)
 {
   if (color_range->update_mask & GLITZ_COLOR_RANGE_UPDATE_TEXTURE_MASK) {
+    char *data;
     
-    if (!color_range->texture) {
+    if (!color_range->texture)
       gl->gen_textures (1, &color_range->texture);
-      color_range->delete_textures = gl->delete_textures;
-    }
     
     gl->enable (GLITZ_GL_TEXTURE_1D);
     gl->bind_texture (GLITZ_GL_TEXTURE_1D, color_range->texture);
-    
-    /* If data is not POT and NPOT texture support is missing we reallocate
-       a POT sized memory block for glTexImage1D */
-    if ((!(feature_mask & GLITZ_FEATURE_TEXTURE_NPOT_MASK)) &&
-        (!glitz_uint_is_power_of_two (color_range->size))) {
-      glitz_uint_to_power_of_two (&color_range->size);
-      
-      color_range->data = realloc (color_range->data, color_range->size * 4);
-    }
+
+    data = glitz_pixel_buffer_bind (color_range->buffer,
+                                    GLITZ_GL_PIXEL_UNPACK_BUFFER);
     
     gl->tex_image_1d (GLITZ_GL_TEXTURE_1D, 0, GLITZ_GL_RGBA,
                       color_range->size, 0,
@@ -132,7 +147,9 @@ glitz_color_range_bind (glitz_gl_proc_address_list_t *gl,
                       GLITZ_GL_UNSIGNED_BYTE,
 #endif
                       
-                      color_range->data);
+                      data);
+
+    glitz_pixel_buffer_unbind (color_range->buffer);
     
     color_range->update_mask &= ~GLITZ_COLOR_RANGE_UPDATE_TEXTURE_MASK;
   } else {
@@ -185,7 +202,7 @@ glitz_color_range_bind (glitz_gl_proc_address_list_t *gl,
       if (feature_mask & GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK)
         gl->tex_parameter_i (GLITZ_GL_TEXTURE_1D,
                              GLITZ_GL_TEXTURE_WRAP_S,
-                             GLITZ_GL_MIRRORED_REPEAT_ARB);
+                             GLITZ_GL_MIRRORED_REPEAT);
       else
         gl->tex_parameter_i (GLITZ_GL_TEXTURE_1D,
                              GLITZ_GL_TEXTURE_WRAP_S,
@@ -196,16 +213,19 @@ glitz_color_range_bind (glitz_gl_proc_address_list_t *gl,
   }
 }
 
-unsigned char *
+char *
 glitz_color_range_get_data (glitz_color_range_t *color_range)
 {
-  return color_range->data;
+  return glitz_pixel_buffer_get_data (color_range->buffer,
+                                      GLITZ_PIXEL_BUFFER_ACCESS_WRITE_ONLY);
 }
 slim_hidden_def(glitz_color_range_get_data);
 
 void
 glitz_color_range_put_back_data (glitz_color_range_t *color_range)
 {
+  glitz_pixel_buffer_put_back_data (color_range->buffer);
+  
   color_range->update_mask |= GLITZ_COLOR_RANGE_UPDATE_TEXTURE_MASK;
 }
 slim_hidden_def(glitz_color_range_put_back_data);

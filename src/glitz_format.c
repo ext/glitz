@@ -35,13 +35,13 @@
 
 static glitz_format_t _texture_formats[] = {
   {
-    GLITZ_GL_INTENSITY4, 0, 0, 0, 4, 0, 0, 0, { 0, 1 }, { 0, 0 }, { 0, 0 }
+    GLITZ_GL_ALPHA4, 0, 0, 0, 4, 0, 0, 0, { 0, 1 }, { 0, 0 }, { 0, 0 }
   }, {
-    GLITZ_GL_INTENSITY8, 0, 0, 0, 8, 0, 0, 0, { 0, 1 }, { 0, 0 }, { 0, 0 }
+    GLITZ_GL_ALPHA8, 0, 0, 0, 8, 0, 0, 0, { 0, 1 }, { 0, 0 }, { 0, 0 }
   }, {
-    GLITZ_GL_INTENSITY12, 0, 0, 0, 12, 0, 0, 0, { 0, 1 }, { 0, 0 }, { 0, 0 }
+    GLITZ_GL_ALPHA12, 0, 0, 0, 12, 0, 0, 0, { 0, 1 }, { 0, 0 }, { 0, 0 }
   }, {
-    GLITZ_GL_INTENSITY16, 0, 0, 0, 16, 0, 0, 0, { 0, 1 }, { 0, 0 }, { 0, 0 }
+    GLITZ_GL_ALPHA16, 0, 0, 0, 16, 0, 0, 0, { 0, 1 }, { 0, 0 }, { 0, 0 }
   }, {
     GLITZ_GL_R3_G3_B2, 3, 3, 2, 0, 0, 0, 0, { 0, 1 }, { 0, 0 }, { 0, 0 }
   }, {
@@ -106,12 +106,8 @@ glitz_format_for_each_texture_format (glitz_format_call_back_t call_back,
 
     gl->get_tex_level_parameter_iv (GLITZ_GL_PROXY_TEXTURE_2D, 0,
 				    GLITZ_GL_TEXTURE_ALPHA_SIZE, &value);
-    if (value != _texture_formats[i].alpha_size) {
-      gl->get_tex_level_parameter_iv (GLITZ_GL_PROXY_TEXTURE_2D, 0,
-                                      GLITZ_GL_TEXTURE_INTENSITY_SIZE, &value);
-      if (value != _texture_formats[i].alpha_size)
-        continue;
-    }
+    if (value != _texture_formats[i].alpha_size)
+      continue;
 
     call_back (&_texture_formats[i], ptr);
   }

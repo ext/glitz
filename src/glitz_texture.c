@@ -43,7 +43,7 @@ _glitz_texture_find_best_target (unsigned int width,
       (!glitz_uint_is_power_of_two (width)) ||
       (!glitz_uint_is_power_of_two (height))) {
     if (target_mask & GLITZ_TEXTURE_TARGET_RECTANGLE_MASK)
-      *target = GLITZ_GL_TEXTURE_RECTANGLE_EXT;
+      *target = GLITZ_GL_TEXTURE_RECTANGLE;
   }
 }
 
@@ -179,7 +179,7 @@ void
 glitz_texture_bind (glitz_gl_proc_address_list_t *gl,
                     glitz_texture_t *texture)
 {  
-  gl->disable (GLITZ_GL_TEXTURE_RECTANGLE_EXT);
+  gl->disable (GLITZ_GL_TEXTURE_RECTANGLE);
   gl->disable (GLITZ_GL_TEXTURE_2D);
 
   if (!texture->target)

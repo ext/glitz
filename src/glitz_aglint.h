@@ -36,15 +36,18 @@
 #include <Carbon/Carbon.h>
 #include <AGL/agl.h>
 
-#define GLITZ_AGL_FEATURE_PBUFFER_MASK                 (1L << 0)
-#define GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK       (1L << 1)
-#define GLITZ_AGL_FEATURE_TEXTURE_NPOT_MASK            (1L << 2)
-#define GLITZ_AGL_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK (1L << 3)
-#define GLITZ_AGL_FEATURE_MULTISAMPLE_MASK             (1L << 4)
-#define GLITZ_AGL_FEATURE_MULTISAMPLE_FILTER_MASK      (1L << 5)
-#define GLITZ_AGL_FEATURE_ARB_MULTITEXTURE_MASK        (1L << 6)
-#define GLITZ_AGL_FEATURE_ARB_VERTEX_PROGRAM_MASK      (1L << 7)
-#define GLITZ_AGL_FEATURE_ARB_FRAGMENT_PROGRAM_MASK    (1L << 8)
+#define GLITZ_AGL_FEATURE_PBUFFER_MASK                 (1L <<  0)
+#define GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK       (1L <<  1)
+#define GLITZ_AGL_FEATURE_TEXTURE_NPOT_MASK            (1L <<  2)
+#define GLITZ_AGL_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK (1L <<  3)
+#define GLITZ_AGL_FEATURE_MULTISAMPLE_MASK             (1L <<  4)
+#define GLITZ_AGL_FEATURE_MULTISAMPLE_FILTER_MASK      (1L <<  5)
+#define GLITZ_AGL_FEATURE_ARB_MULTITEXTURE_MASK        (1L <<  6)
+#define GLITZ_AGL_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK (1L <<  7)
+#define GLITZ_AGL_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK    (1L <<  8)
+#define GLITZ_AGL_FEATURE_ARB_VERTEX_PROGRAM_MASK      (1L <<  9)
+#define GLITZ_AGL_FEATURE_ARB_FRAGMENT_PROGRAM_MASK    (1L << 10)
+#define GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK     (1L << 11)
 
 typedef struct _glitz_agl_surface_t glitz_agl_surface_t;
 
@@ -77,7 +80,7 @@ typedef struct _glitz_agl_thread_info_t {
   long int agl_feature_mask;
   long int texture_mask;
 
-  glitz_programs_t programs;
+  glitz_program_map_t program_map;
 } glitz_agl_thread_info_t;
 
 struct _glitz_agl_surface_t {
