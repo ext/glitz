@@ -1,5 +1,9 @@
 2005-03-01  David Reveman  <davidr@novell.com>
 
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.1.
+
+	* configure.in: Bump version to 0.4.1.
+
 	* src/glitz_pixel.c (glitz_set_pixels): Rectangular clipping.
 
 2005-02-09  David Reveman  <davidr@novell.com>
