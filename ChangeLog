@@ -1,5 +1,35 @@
 2004-05-10  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz_agl_surface.c: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
+	* src/glitz_glx_surface.c: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
+	* src/glitz_tri.c: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
+	* src/glitz_trap.c: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
+	* src/glitz_rect.c: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
+	* src/glitz_surface.c: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
+	* src/glitz_matrix.c: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
+	* src/glitz.c: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
+	* src/glitz_util.c: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
+	* src/glitzint.h: region_box -> bounding_box,
+	sub_pixel_region_box -> bounding_box_double.
+
 	* TODO: Fixed simultaneous transform and repeat.
 
 	* src/glitz_tri.c (glitz_int_composite_triangles): Use ARGB32 format

@@ -214,7 +214,7 @@ glitz_texture_unbind (glitz_gl_proc_address_list_t *gl,
 void
 glitz_texture_copy_surface (glitz_texture_t *texture,
                             glitz_surface_t *surface,
-                            glitz_region_box_t *region)
+                            glitz_bounding_box_t *box)
 {
   glitz_surface_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
   
@@ -223,16 +223,16 @@ glitz_texture_copy_surface (glitz_texture_t *texture,
   if (!texture->allocated)
     _glitz_texture_allocate (surface->gl, texture);
 
-  if (region->x1 < 0) region->x1 = 0;
-  if (region->y1 < 0) region->y1 = 0;
-  if (region->x2 > surface->width) region->x2 = surface->width;
-  if (region->y2 > surface->height) region->y2 = surface->height;
+  if (box->x1 < 0) box->x1 = 0;
+  if (box->y1 < 0) box->y1 = 0;
+  if (box->x2 > surface->width) box->x2 = surface->width;
+  if (box->y2 > surface->height) box->y2 = surface->height;
 
   surface->gl->copy_tex_sub_image_2d (texture->target, 0,
-                                      region->x1, region->y1,
-                                      region->x1, region->y1,
-                                      region->x2 - region->x1,
-                                      region->y2 - region->y1);
+                                      box->x1, box->y1,
+                                      box->x1, box->y1,
+                                      box->x2 - box->x1,
+                                      box->y2 - box->y1);
   
   surface->gl->flush ();
 

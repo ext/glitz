@@ -59,7 +59,7 @@ glitz_line_fixed_x (const glitz_line_fixed_t *l,
 static void
 glitz_trapezoid_bounds (int n_traps,
                         const glitz_trapezoid_t *traps,
-                        glitz_region_box_t *box)
+                        glitz_bounding_box_t *box)
 {
   box->y1 = MAXSHORT;
   box->y2 = MINSHORT;
@@ -151,7 +151,7 @@ glitz_fill_trapezoids (glitz_operator_t op,
                        const glitz_trapezoid_t *traps,
                        int n_traps)
 {
-  glitz_region_box_t bounds;
+  glitz_bounding_box_t bounds;
   
   glitz_trapezoid_bounds (n_traps, traps, &bounds);
   if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
@@ -180,7 +180,7 @@ glitz_composite_trapezoids (glitz_operator_t op,
                             int n_traps)
 {
   glitz_surface_t *mask;
-  glitz_region_box_t trap_bounds;
+  glitz_bounding_box_t trap_bounds;
   glitz_bool_t use_mask;
   int x_dst, y_dst;
   int x_offset, y_offset;
@@ -200,7 +200,7 @@ glitz_composite_trapezoids (glitz_operator_t op,
   glitz_trapezoid_bounds (n_traps, traps, &trap_bounds);
 
   if (use_mask) {
-    glitz_region_box_t src_bounds, dst_bounds, bounds;
+    glitz_bounding_box_t src_bounds, dst_bounds, bounds;
     static glitz_color_t color = { 0xffff, 0xffff, 0xffff, 0xffff };
     
     glitz_surface_bounds (src, &src_bounds);
@@ -211,8 +211,8 @@ glitz_composite_trapezoids (glitz_operator_t op,
     src_bounds.x2 += (x_dst - x_src);
     src_bounds.y2 += (y_dst - y_src);
 
-    glitz_intersect_region (&src_bounds, &trap_bounds, &bounds);
-    glitz_intersect_region (&dst_bounds, &bounds, &bounds);
+    glitz_intersect_bounding_box (&src_bounds, &trap_bounds, &bounds);
+    glitz_intersect_bounding_box (&dst_bounds, &bounds, &bounds);
 
     if ((bounds.x2 - bounds.x1) <= 0 || (bounds.y2 - bounds.y1) <= 0)
       return;
@@ -302,7 +302,7 @@ slim_hidden_def(glitz_composite_trapezoids);
 static void
 glitz_color_trapezoid_bounds (int n_color_traps,
                               const glitz_color_trapezoid_t *color_traps,
-                              glitz_region_box_t *box)
+                              glitz_bounding_box_t *box)
 {
   box->y1 = MAXSHORT;
   box->y2 = MINSHORT;
@@ -343,7 +343,7 @@ glitz_color_trapezoids (glitz_operator_t op,
 {
   glitz_gl_vertex_2d_t vertex_2d;
   glitz_gl_color_4us_t color_4us;
-  glitz_region_box_t bounds;
+  glitz_bounding_box_t bounds;
   int index;
   glitz_bool_t shade = 0;
   

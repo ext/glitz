@@ -34,7 +34,7 @@
 static void
 glitz_rectangle_bounds (int n_rects,
                         const glitz_rectangle_t *rects,
-                        glitz_region_box_t *box)
+                        glitz_bounding_box_t *box)
 {
   box->x1 = rects->x;
   box->x2 = rects->x + rects->width;
@@ -63,7 +63,7 @@ glitz_int_fill_rectangles (glitz_operator_t op,
                            const glitz_rectangle_t *rects,
                            int n_rects)
 {
-  glitz_region_box_t bounds;
+  glitz_bounding_box_t bounds;
   glitz_gl_vertex_2i_t vertex_2i;
   glitz_gl_bitfield_t clear_mask;
   
@@ -124,7 +124,7 @@ glitz_fill_rectangle (glitz_operator_t op,
                       unsigned int width,
                       unsigned int height)
 {
-  glitz_region_box_t bounds;
+  glitz_bounding_box_t bounds;
   glitz_rectangle_t rect;
 
   bounds.x1 = x;
@@ -159,7 +159,7 @@ glitz_fill_rectangles (glitz_operator_t op,
                        const glitz_rectangle_t *rects,
                        int n_rects)
 {
-  glitz_region_box_t bounds;
+  glitz_bounding_box_t bounds;
   
   glitz_rectangle_bounds (n_rects, rects, &bounds);
   if (bounds.x1 > dst->width || bounds.y1 > dst->height ||

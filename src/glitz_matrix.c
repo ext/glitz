@@ -58,40 +58,40 @@ glitz_matrix_transform_point (glitz_matrix_t *matrix,
 }
 
 void
-glitz_matrix_transform_region (glitz_matrix_t *matrix,
-                               glitz_region_box_t *region)
+glitz_matrix_transform_bounding_box (glitz_matrix_t *matrix,
+                                     glitz_bounding_box_t *box)
 {
   glitz_point_t point;
 
-  point.x = region->x1;
-  point.y = region->y1;
+  point.x = box->x1;
+  point.y = box->y1;
   _glitz_matrix_transform_distance (matrix, &point.x, &point.y);
-  region->x1 = floor (point.x);
-  region->y1 = floor (point.y);
+  box->x1 = floor (point.x);
+  box->y1 = floor (point.y);
 
-  point.x = region->x2;
-  point.y = region->y2;
+  point.x = box->x2;
+  point.y = box->y2;
   _glitz_matrix_transform_distance (matrix, &point.x, &point.y);
-  region->x2 = ceil (point.x);
-  region->y2 = ceil (point.y);
+  box->x2 = ceil (point.x);
+  box->y2 = ceil (point.y);
   
-  region->x1 += (int) floor (matrix->m[2][0]);
-  region->y1 += (int) floor (matrix->m[2][1]);
-  region->x2 += (int) ceil (matrix->m[2][0]);
-  region->y2 += (int) ceil (matrix->m[2][1]);
+  box->x1 += (int) floor (matrix->m[2][0]);
+  box->y1 += (int) floor (matrix->m[2][1]);
+  box->x2 += (int) ceil (matrix->m[2][0]);
+  box->y2 += (int) ceil (matrix->m[2][1]);
 }
 
 void
-glitz_matrix_transform_sub_pixel_region (glitz_matrix_t *matrix,
-                                         glitz_sub_pixel_region_box_t *region)
+glitz_matrix_transform_bounding_box_double (glitz_matrix_t *matrix,
+                                            glitz_bounding_box_double_t *box)
 {
-  _glitz_matrix_transform_distance (matrix, &region->x1, &region->y1);
-  _glitz_matrix_transform_distance (matrix, &region->x2, &region->y2);
+  _glitz_matrix_transform_distance (matrix, &box->x1, &box->y1);
+  _glitz_matrix_transform_distance (matrix, &box->x2, &box->y2);
   
-  region->x1 += matrix->m[2][0];
-  region->y1 += matrix->m[2][1];
-  region->x2 += matrix->m[2][0];
-  region->y2 += matrix->m[2][1];
+  box->x1 += matrix->m[2][0];
+  box->y1 += matrix->m[2][1];
+  box->x2 += matrix->m[2][0];
+  box->y2 += matrix->m[2][1];
 }
 
 static void

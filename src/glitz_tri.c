@@ -34,7 +34,7 @@
 static void
 glitz_point_fixed_bounds (int n_point,
                           const glitz_point_fixed_t *points,
-                          glitz_region_box_t *box)
+                          glitz_bounding_box_t *box)
 {
   box->x1 = FIXED_TO_INT (points->x);
   box->x2 = FIXED_TO_INT (FIXED_CEIL (points->x));
@@ -110,7 +110,7 @@ glitz_fill_triangles (glitz_operator_t op,
                       const glitz_triangle_t *tris,
                       int n_tris)
 {
-  glitz_region_box_t bounds;
+  glitz_bounding_box_t bounds;
   
   glitz_point_fixed_bounds (n_tris * 3, (glitz_point_fixed_t *) tris, &bounds);
   if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
@@ -146,7 +146,7 @@ glitz_int_composite_triangles (glitz_operator_t op,
                                int n_points)
 {
   glitz_surface_t *mask;
-  glitz_region_box_t tri_bounds;
+  glitz_bounding_box_t tri_bounds;
   glitz_bool_t use_mask;
   int x_dst, y_dst;
   int x_offset, y_offset;
@@ -163,7 +163,7 @@ glitz_int_composite_triangles (glitz_operator_t op,
   glitz_point_fixed_bounds (n_points, points, &tri_bounds);
 
   if (use_mask) {
-    glitz_region_box_t src_bounds, dst_bounds, bounds;
+    glitz_bounding_box_t src_bounds, dst_bounds, bounds;
     static glitz_color_t color = { 0xffff, 0xffff, 0xffff, 0xffff };
     
     glitz_surface_bounds (src, &src_bounds);
@@ -174,8 +174,8 @@ glitz_int_composite_triangles (glitz_operator_t op,
     src_bounds.x2 += (x_dst - x_src);
     src_bounds.y2 += (y_dst - y_src);
 
-    glitz_intersect_region (&src_bounds, &tri_bounds, &bounds);
-    glitz_intersect_region (&dst_bounds, &bounds, &bounds);
+    glitz_intersect_bounding_box (&src_bounds, &tri_bounds, &bounds);
+    glitz_intersect_bounding_box (&dst_bounds, &bounds, &bounds);
 
     if ((bounds.x2 - bounds.x1) <= 0 || (bounds.y2 - bounds.y1) <= 0)
       return;
@@ -313,7 +313,7 @@ slim_hidden_def(glitz_composite_tri_fan);
 static void
 glitz_color_triangle_bounds (int n_color_tris,
                              const glitz_color_triangle_t *color_tris,
-                             glitz_region_box_t *box)
+                             glitz_bounding_box_t *box)
 {
   box->x1 = MIN (MIN (FIXED_TO_INT (color_tris->p1.point.x),
                       FIXED_TO_INT (color_tris->p2.point.x)),
@@ -374,7 +374,7 @@ glitz_color_triangles (glitz_operator_t op,
 {
   glitz_gl_vertex_2d_t vertex_2d;
   glitz_gl_color_4us_t color_4us;
-  glitz_region_box_t bounds;
+  glitz_bounding_box_t bounds;
   int index;
   glitz_bool_t shade = 0;
 

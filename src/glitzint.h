@@ -205,13 +205,13 @@ typedef enum {
   GLITZ_TRIANGLE_TYPE_FAN
 } glitz_triangle_type_t;
 
-typedef struct _glitz_region_box_t {
+typedef struct _glitz_bounding_box_t {
   int x1, x2, y1, y2;
-} glitz_region_box_t;
+} glitz_bounding_box_t;
 
-typedef struct _glitz_sub_pixel_region_box_t {
+typedef struct _glitz_bounding_box_double_t {
   double x1, x2, y1, y2;
-} glitz_sub_pixel_region_box_t;
+} glitz_bounding_box_double_t;
 
 typedef struct _glitz_point_t {
   double x, y;
@@ -306,7 +306,7 @@ struct _glitz_surface {
   glitz_matrix_t *transforms;
   unsigned int n_transforms;
   int width, height;
-  glitz_region_box_t dirty_region;
+  glitz_bounding_box_t dirty_box;
   glitz_gl_proc_address_list_t *gl;
   glitz_programs_t *programs;
   glitz_matrix_t *convolution;
@@ -364,12 +364,12 @@ glitz_matrix_transform_point (glitz_matrix_t *matrix,
                               glitz_point_t *point);
 
 extern void __internal_linkage
-glitz_matrix_transform_region (glitz_matrix_t *matrix,
-                               glitz_region_box_t *region);
+glitz_matrix_transform_bounding_box (glitz_matrix_t *matrix,
+                                     glitz_bounding_box_t *box);
      
 extern void __internal_linkage
-glitz_matrix_transform_sub_pixel_region (glitz_matrix_t *matrix,
-                                         glitz_sub_pixel_region_box_t *region);
+glitz_matrix_transform_bounding_box_double (glitz_matrix_t *matrix,
+                                            glitz_bounding_box_double_t *box);
 
 extern glitz_status_t __internal_linkage
 glitz_matrix_invert (glitz_matrix_t *matrix);
@@ -405,24 +405,24 @@ glitz_set_clip_operator (glitz_gl_proc_address_list_t *gl,
                          int mask);
 
 extern void __internal_linkage
-glitz_intersect_region (glitz_region_box_t *box1,
-                        glitz_region_box_t *box2,
-                        glitz_region_box_t *return_box);
+glitz_intersect_bounding_box (glitz_bounding_box_t *box1,
+                              glitz_bounding_box_t *box2,
+                              glitz_bounding_box_t *return_box);
 
 extern void __internal_linkage
-glitz_union_region (glitz_region_box_t *box1,
-                    glitz_region_box_t *box2,
-                    glitz_region_box_t *return_box);
+glitz_union_bounding_box (glitz_bounding_box_t *box1,
+                          glitz_bounding_box_t *box2,
+                          glitz_bounding_box_t *return_box);
 
 extern void __internal_linkage
-glitz_intersect_sub_pixel_region (glitz_sub_pixel_region_box_t *box1,
-                                  glitz_sub_pixel_region_box_t *box2,
-                                  glitz_sub_pixel_region_box_t *return_box);
+glitz_intersect_bounding_box_double (glitz_bounding_box_double_t *box1,
+                                     glitz_bounding_box_double_t *box2,
+                                     glitz_bounding_box_double_t *return_box);
 
 extern void __internal_linkage
-glitz_union_sub_pixel_region (glitz_sub_pixel_region_box_t *box1,
-                              glitz_sub_pixel_region_box_t *box2,
-                              glitz_sub_pixel_region_box_t *return_box);
+glitz_union_box_double (glitz_bounding_box_double_t *box1,
+                        glitz_bounding_box_double_t *box2,
+                        glitz_bounding_box_double_t *return_box);
 
 glitz_gl_enum_t
 glitz_get_gl_format_from_bpp (unsigned short bpp);
@@ -473,7 +473,7 @@ glitz_texture_unbind (glitz_gl_proc_address_list_t *gl,
 void
 glitz_texture_copy_surface (glitz_texture_t *texture,
                             glitz_surface_t *surface,
-                            glitz_region_box_t *region);
+                            glitz_bounding_box_t *box);
 
 void
 glitz_surface_init (glitz_surface_t *surface,
@@ -509,7 +509,7 @@ glitz_surface_pop_current (glitz_surface_t *surface);
 
 extern void __internal_linkage
 glitz_surface_bounds (glitz_surface_t *surface,
-                      glitz_region_box_t *box);
+                      glitz_bounding_box_t *box);
 
 extern void __internal_linkage
 glitz_surface_enable_program (glitz_program_type_t type,
@@ -525,7 +525,7 @@ glitz_surface_disable_program (glitz_program_type_t type,
 
 extern void __internal_linkage
 glitz_surface_dirty (glitz_surface_t *surface,
-                     glitz_region_box_t *region);
+                     glitz_bounding_box_t *box);
 
 extern void __internal_linkage
 glitz_surface_status_add (glitz_surface_t *surface, int flags);

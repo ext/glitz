@@ -121,7 +121,7 @@ _glitz_glx_surface_get_texture (void *abstract_surface)
   
   if (surface->base.hint_mask & GLITZ_INT_HINT_DIRTY_MASK) {
     glitz_texture_copy_surface (&surface->base.texture, &surface->base,
-                                &surface->base.dirty_region);
+                                &surface->base.dirty_box);
     surface->base.hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
   }
   

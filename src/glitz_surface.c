@@ -237,7 +237,7 @@ glitz_surface_pop_transform (glitz_surface_t *surface)
 
 void
 glitz_surface_bounds (glitz_surface_t *surface,
-                      glitz_region_box_t *box)
+                      glitz_bounding_box_t *box)
 {
   box->y1 = MINSHORT;
   box->y2 = MAXSHORT;
@@ -479,19 +479,19 @@ slim_hidden_def(glitz_surface_flush);
 
 void
 glitz_surface_dirty (glitz_surface_t *surface,
-                     glitz_region_box_t *region)
+                     glitz_bounding_box_t *box)
 {
-  if (!region) {
-    surface->dirty_region.x1 = surface->dirty_region.y1 = 0;
-    surface->dirty_region.x2 = surface->width;
-    surface->dirty_region.y2 = surface->height;
+  if (!box) {
+    surface->dirty_box.x1 = surface->dirty_box.y1 = 0;
+    surface->dirty_box.x2 = surface->width;
+    surface->dirty_box.y2 = surface->height;
   } else {
     if (!SURFACE_DIRTY (surface)) {
-      surface->dirty_region = *region;
+      surface->dirty_box = *box;
     } else
-      glitz_union_region (region,
-                          &surface->dirty_region,
-                          &surface->dirty_region);
+      glitz_union_bounding_box (box,
+                                &surface->dirty_box,
+                                &surface->dirty_box);
   }
   
   surface->hint_mask |= GLITZ_INT_HINT_DIRTY_MASK;
@@ -708,7 +708,7 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
   }
 
   if (drawable) {
-    glitz_region_box_t bounds;
+    glitz_bounding_box_t bounds;
 
     bounds.x1 = x;
     bounds.x2 = x + width;
@@ -803,13 +803,13 @@ slim_hidden_def(glitz_surface_gl_begin);
 void
 glitz_surface_gl_end (glitz_surface_t *surface)
 {
-  glitz_region_box_t region;
+  glitz_bounding_box_t box;
 
-  region.x1 = region.y1 = 0;
-  region.x2 = surface->width;
-  region.y2 = surface->height;
+  box.x1 = box.y1 = 0;
+  box.x2 = surface->width;
+  box.y2 = surface->height;
   
-  glitz_surface_dirty (surface, &region);
+  glitz_surface_dirty (surface, &box);
   
   glitz_surface_pop_current (surface);
 }

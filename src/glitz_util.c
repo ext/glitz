@@ -35,9 +35,9 @@
 #include <string.h>
 
 void
-glitz_intersect_region (glitz_region_box_t *box1,
-                        glitz_region_box_t *box2,
-                        glitz_region_box_t *return_box)
+glitz_intersect_bounding_box (glitz_bounding_box_t *box1,
+                              glitz_bounding_box_t *box2,
+                              glitz_bounding_box_t *return_box)
 {
   return_box->x1 = (box1->x1 >= box2->x1)? box1->x1: box2->x1;
   return_box->x2 = (box1->x2 <= box2->x2)? box1->x2: box2->x2;
@@ -52,9 +52,9 @@ glitz_intersect_region (glitz_region_box_t *box1,
 }
 
 void
-glitz_union_region (glitz_region_box_t *box1,
-                    glitz_region_box_t *box2,
-                    glitz_region_box_t *return_box)
+glitz_union_bounding_box (glitz_bounding_box_t *box1,
+                          glitz_bounding_box_t *box2,
+                          glitz_bounding_box_t *return_box)
 {
   return_box->x1 = (box1->x1 <= box2->x1)? box1->x1: box2->x1;
   return_box->x2 = (box1->x2 >= box2->x2)? box1->x2: box2->x2;
@@ -63,9 +63,9 @@ glitz_union_region (glitz_region_box_t *box1,
 }
 
 void
-glitz_intersect_sub_pixel_region (glitz_sub_pixel_region_box_t *box1,
-                                  glitz_sub_pixel_region_box_t *box2,
-                                  glitz_sub_pixel_region_box_t *return_box)
+glitz_intersect_bounding_box_double (glitz_bounding_box_double_t *box1,
+                                     glitz_bounding_box_double_t *box2,
+                                     glitz_bounding_box_double_t *return_box)
 {
   return_box->x1 = (box1->x1 >= box2->x1)? box1->x1: box2->x1;
   return_box->x2 = (box1->x2 <= box2->x2)? box1->x2: box2->x2;
@@ -80,9 +80,9 @@ glitz_intersect_sub_pixel_region (glitz_sub_pixel_region_box_t *box1,
 }
 
 void
-glitz_union_sub_pixel_region (glitz_sub_pixel_region_box_t *box1,
-                              glitz_sub_pixel_region_box_t *box2,
-                              glitz_sub_pixel_region_box_t *return_box)
+glitz_union_bounding_box_double (glitz_bounding_box_double_t *box1,
+                                 glitz_bounding_box_double_t *box2,
+                                 glitz_bounding_box_double_t *return_box)
 {
   return_box->x1 = (box1->x1 <= box2->x1)? box1->x1: box2->x1;
   return_box->x2 = (box1->x2 >= box2->x2)? box1->x2: box2->x2;
