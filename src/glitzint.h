@@ -181,13 +181,18 @@ typedef enum {
 
 #define GLITZ_VERTEX_PROGRAM_TYPES 2
 #define GLITZ_FRAGMENT_PROGRAM_TYPES 18
+
+#define GLITZ_CONVOLUTION_TYPES 2
+#define GLITZ_FRAGMENT_CONVOLUTION_PROGRAM_TYPES \
+  (GLITZ_FRAGMENT_PROGRAM_TYPES * GLITZ_CONVOLUTION_TYPES * 3)
 #define GLITZ_FRAGMENT_PROGRAMMATIC_PROGRAM_TYPES \
   (GLITZ_FRAGMENT_PROGRAM_TYPES * GLITZ_PROGRAMMATIC_SURFACE_NUM)
 
 typedef struct _glitz_programs_t {
   glitz_gl_uint_t vertex_convolution[GLITZ_VERTEX_PROGRAM_TYPES];
   glitz_gl_uint_t fragment_simple[GLITZ_FRAGMENT_PROGRAM_TYPES];
-  glitz_gl_uint_t fragment_convolution[GLITZ_FRAGMENT_PROGRAM_TYPES * 3];
+  glitz_gl_uint_t
+  fragment_convolution[GLITZ_FRAGMENT_CONVOLUTION_PROGRAM_TYPES];
   glitz_gl_uint_t
   fragment_programmatic[GLITZ_FRAGMENT_PROGRAMMATIC_PROGRAM_TYPES];
 } glitz_programs_t;

@@ -169,8 +169,13 @@ static char *_glitz_fragment_program_simple =
 
 "END";
 
+typedef enum {
+  GLITZ_CONVOLUTION_3X3_GENERAL = 1,
+  GLITZ_CONVOLUTION_3X3_SIMPLE = 2
+} glitz_convolution_type_t;
+
 /*
- * 3x3 convolution filter.
+ * General 3x3 convolution filter.
  * Convolution kernel must be normalized.
  *
  * program.local[0]: Top convolution kernel row
@@ -229,6 +234,55 @@ static char *_glitz_fragment_program_convolution =
 "MOV coord.x, west.x;\n"
 "TEX in, coord, texture[%d], %s;\n"
 "MAD color, in, k2.x, color;\n"
+
+/* west */
+"TEX in, west, texture[%d], %s;\n"
+"MAD color, in, k1.x, color;\n"
+
+/* pd operation */
+"%s"
+
+"END";
+
+/*
+ * Simple 3x3 convolution filter (corners are zero).
+ * Convolution kernel must be normalized.
+ *
+ * program.local[0]: Top convolution kernel row
+ * program.local[1]: Middle convolution kernel row
+ * program.local[2]: Bottom convolution kernel row
+ *
+ * Author: David Reveman <c99drn@cs.umu.se>
+ */
+static char *_glitz_fragment_program_convolution_simple =
+"!!ARBfp1.0\n"
+"ATTRIB east = fragment.texcoord[2];\n"
+"ATTRIB west = fragment.texcoord[3];\n"
+"ATTRIB south = fragment.texcoord[4];\n"
+"ATTRIB north = fragment.texcoord[5];\n"
+"PARAM k0 = program.local[0];\n"
+"PARAM k1 = program.local[1];\n"
+"PARAM k2 = program.local[2];\n"
+"TEMP color, in, coord;\n"
+
+/* temporary */
+"%s"
+
+/* center */
+"TEX in, fragment.texcoord[%d], texture[%d], %s;\n"
+"MUL color, in, k1.y;\n"
+
+/* north */
+"TEX in, north, texture[%d], %s;\n"
+"MAD color, in, k0.y, color;\n"
+
+/* east */
+"TEX in, east, texture[%d], %s;\n"
+"MAD color, in, k1.x, color;\n"
+
+/* south */
+"TEX in, south, texture[%d], %s;\n"
+"MAD color, in, k2.y, color;\n"
 
 /* west */
 "TEX in, west, texture[%d], %s;\n"
@@ -503,7 +557,8 @@ glitz_program_compile_vertex_convolution (glitz_gl_proc_address_list_t *gl,
 static glitz_gl_uint_t
 glitz_program_compile_convolution (glitz_gl_proc_address_list_t *gl,
                                    int offset,
-                                   int solid_offset)
+                                   int solid_offset,
+                                   glitz_convolution_type_t type)
 {
   char *solid_op_table[] = {
     "MUL result.color, color, solid.a;\n",
@@ -521,19 +576,34 @@ glitz_program_compile_convolution (glitz_gl_proc_address_list_t *gl,
     operation = expand->operation;
   }
 
-  sprintf (program_buffer,
-           _glitz_fragment_program_convolution,
-           temporary,
-           expand->index, expand->index, expand->tex,
-           expand->index, expand->tex,
-           expand->index, expand->tex,
-           expand->index, expand->tex,
-           expand->index, expand->tex,
-           expand->index, expand->tex,
-           expand->index, expand->tex,
-           expand->index, expand->tex,
-           expand->index, expand->tex,
-           operation);
+  switch (type) {
+  case GLITZ_CONVOLUTION_3X3_GENERAL:
+    sprintf (program_buffer,
+             _glitz_fragment_program_convolution,
+             temporary,
+             expand->index, expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             operation);
+    break;
+  case GLITZ_CONVOLUTION_3X3_SIMPLE:
+    sprintf (program_buffer,
+             _glitz_fragment_program_convolution_simple,
+             temporary,
+             expand->index, expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             expand->index, expand->tex,
+             operation);
+    break;
+  }
 
   return glitz_program_compile_fragment_arb (gl, program_buffer);
 }
@@ -604,6 +674,7 @@ glitz_program_enable_convolution (glitz_gl_proc_address_list_t *gl,
   glitz_texture_t *texture;
   glitz_surface_t *surface;
   int fragment_offset, vertex_offset = (offset)? 1: 0;
+  glitz_convolution_type_t type;
 
   if (offset) {
     texture = mask_texture;
@@ -615,7 +686,16 @@ glitz_program_enable_convolution (glitz_gl_proc_address_list_t *gl,
 
   offset += _glitz_program_offset (src_texture, mask_texture);
 
-  fragment_offset = offset + GLITZ_FRAGMENT_PROGRAM_TYPES * solid_offset;
+  if (surface->convolution->m[0][0] == 0.0 &&
+      surface->convolution->m[0][2] == 0.0 &&
+      surface->convolution->m[2][2] == 0.0 &&
+      surface->convolution->m[2][0] == 0.0)
+    type = GLITZ_CONVOLUTION_3X3_SIMPLE;
+  else
+    type = GLITZ_CONVOLUTION_3X3_GENERAL;
+
+  fragment_offset = GLITZ_FRAGMENT_PROGRAM_TYPES * solid_offset * type +
+    offset;
 
   if (!programs->vertex_convolution[vertex_offset])
     programs->vertex_convolution[vertex_offset] =
@@ -623,7 +703,7 @@ glitz_program_enable_convolution (glitz_gl_proc_address_list_t *gl,
   
   if (!programs->fragment_convolution[fragment_offset])
     programs->fragment_convolution[fragment_offset] =
-      glitz_program_compile_convolution (gl, offset, solid_offset);
+      glitz_program_compile_convolution (gl, offset, solid_offset, type);
   
   if (programs->fragment_convolution[fragment_offset] &&
       programs->vertex_convolution[vertex_offset]) {
