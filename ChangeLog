@@ -1,3 +1,8 @@
+2004-11-12  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_rect.c (glitz_set_rectangles): Clear solid damage
+	flag when setting solid color (Luca Barbieri).
+
 2004-11-08  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_buffer.c: Important bug fix. Bind default buffer

@@ -79,6 +79,7 @@ glitz_set_rectangles (glitz_surface_t         *dst,
     STORE_16 (dst->solid.blue, dst->format->color.blue_size, color->blue);
     STORE_16 (dst->solid.alpha, dst->format->color.alpha_size, color->alpha);
 
+    dst->flags &= ~GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK;
     glitz_surface_damage (dst, &bounds,
                           GLITZ_DAMAGE_TEXTURE_MASK |
                           GLITZ_DAMAGE_DRAWABLE_MASK);
