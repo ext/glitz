@@ -217,8 +217,7 @@ glitz_composite_trapezoids (glitz_operator_t op,
     if ((bounds.x2 - bounds.x1) <= 0 || (bounds.y2 - bounds.y1) <= 0)
       return;
     
-    mask = glitz_int_surface_create_similar (dst, GLITZ_STANDARD_A8,
-                                             1,
+    mask = glitz_int_surface_create_similar (dst, GLITZ_STANDARD_ARGB32, 1,
                                              bounds.x2 - bounds.x1,
                                              bounds.y2 - bounds.y1);
     

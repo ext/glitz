@@ -3,8 +3,6 @@
 
 * Copy area operation.
 
-* Support simultaneous transform and repeat.
-
 * Alpha scaling of source surface with polygon rendering.
 
 * Text support. Glyph set management, glyph and string compositing

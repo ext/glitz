@@ -395,6 +395,14 @@ glitz_mask_bounds (glitz_surface_t *src,
   }
 }
 
+typedef enum {
+  GLITZ_REPEAT_NONE = 0,
+  GLITZ_REPEAT_SOUTHEAST,
+  GLITZ_REPEAT_SOUTHWEST,
+  GLITZ_REPEAT_NORTHEAST,
+  GLITZ_REPEAT_NORTHWEST
+} glitz_repeat_direction_t;
+
 void
 glitz_composite (glitz_operator_t op,
                  glitz_surface_t *src,
@@ -639,117 +647,168 @@ glitz_composite (glitz_operator_t op,
   } else {
     /* CASE 2: Either none power of two sized texture or
        transformation is set. */
-    double save_tlx, save_trx, save_blx, save_brx;
+    glitz_point_t base_tl, base_bl, base_br, base_tr;
+    int x_dir, y_dir, continue_y, continue_x, x_is_ok, y_is_ok,
+      in_destination_area;
+    double save_base_x1, save_base_x2;
+    glitz_repeat_direction_t repeat_direction;
 
     glitz_texture_ensure_repeat (gl, texture, 0);
 
-    bl.x = tl.x = 0;
-    tr.y = tl.y = 0;
-    tr.x = br.x = src->width;
-    bl.y = br.y = src->height;
+    base_bl.x = base_tl.x = 0;
+    base_tr.y = base_tl.y = 0;
+    base_tr.x = base_br.x = src->width;
+    base_bl.y = base_br.y = src->height;
 
-    if (src->transform) {
+    /* Start repeating in southeast direction */
+    repeat_direction = GLITZ_REPEAT_SOUTHEAST;
+    x_dir = y_dir = 1;
+
+    if (src->transform)
       glitz_texture_ensure_filter (gl, texture, src->filter);
-      glitz_matrix_transform_point (src->transform, &tl);
-      glitz_matrix_transform_point (src->transform, &bl);
-      glitz_matrix_transform_point (src->transform, &tr);
-      glitz_matrix_transform_point (src->transform, &br);
-    } else
+    else
       glitz_texture_ensure_filter (gl, texture, GLITZ_FILTER_NEAREST);
-    
-    /* Shift all coordinates with destination offset */
-    if (x_dst) {
-      tl.x += x_dst;
-      bl.x += x_dst;
-      tr.x += x_dst;
-      br.x += x_dst;
-    }
-    if (y_dst) {
-      tl.y += y_dst;
-      bl.y += y_dst;
-      tr.y += y_dst;
-      br.y += y_dst;
-    }
 
-    /* Shift all coordinates with source offset */
-    if (x_src) {
-      x_src = abs (x_src);
-      if (SURFACE_REPEAT (src))
-        x_src = (x_src % src->width);
-      tl.x -= x_src;
-      bl.x -= x_src;
-      tr.x -= x_src;
-      br.x -= x_src;
-    }
-    if (y_src) {
-      y_src = abs (y_src);
-      if (SURFACE_REPEAT (src))
-        y_src = (y_src % src->height);
-      tl.y -= y_src;
-      bl.y -= y_src;
-      tr.y -= y_src;
-      br.y -= y_src;
-    }
-
-    save_tlx = tl.x;
-    save_blx = bl.x;
-    save_trx = tr.x;
-    save_brx = br.x;
-
-    do {
+    while (repeat_direction) {
+      save_base_x1 = base_tl.x;
+      save_base_x2 = base_tr.x;
+      
       do {
-        /* Clip to original source area if repeat and transform are both
-           used. */
-        if (src->transform && SURFACE_REPEAT (src)) {
-          glitz_region_box_t src_clip, intersect_clip;
-          
-          src_clip.x1 = tl.x;
-          src_clip.y1 = tl.y;
-          src_clip.x2 = src_clip.x1 + src->width;
-          src_clip.y2 = src_clip.y1 + src->height;
-
-          glitz_intersect_region (&clip, &src_clip, &intersect_clip);
-
-          gl->scissor (intersect_clip.x1,
-                       dst->height - (intersect_clip.y1 +
-                                      (intersect_clip.y2 - intersect_clip.y1)),
-                       intersect_clip.x2 - intersect_clip.x1,
-                       intersect_clip.y2 - intersect_clip.y1);
-        }
+        continue_y = continue_x = in_destination_area = 0;
+        do {
+          bl = base_bl;
+          br = base_br;
+          tl = base_tl;
+          tr = base_tr;
         
-        gl->begin (GLITZ_GL_QUADS);
-        gl->tex_coord_2d (0.0, texture->texcoord_height);
-        gl->vertex_2d (tl.x, tl.y);
-        gl->tex_coord_2d (texture->texcoord_width, texture->texcoord_height);
-        gl->vertex_2d (tr.x, tr.y);
-        gl->tex_coord_2d (texture->texcoord_width, 0.0);
-        gl->vertex_2d (br.x, br.y);
-        gl->tex_coord_2d (0.0, 0.0);
-        gl->vertex_2d (bl.x, bl.y);
-        gl->end ();
+          if (src->transform) {
+            glitz_matrix_transform_point (src->transform, &tl);
+            glitz_matrix_transform_point (src->transform, &bl);
+            glitz_matrix_transform_point (src->transform, &tr);
+            glitz_matrix_transform_point (src->transform, &br);
+          }
+    
+          /* Shift all coordinates with destination offset */
+          if (x_dst) {
+            tl.x += x_dst;
+            bl.x += x_dst;
+            tr.x += x_dst;
+            br.x += x_dst;
+          }
+          if (y_dst) {
+            tl.y += y_dst;
+            bl.y += y_dst;
+            tr.y += y_dst;
+            br.y += y_dst;
+          }
+
+          /* Shift all coordinates with source offset */
+          if (x_src) {
+            x_src = abs (x_src);
+            if (SURFACE_REPEAT (src))
+              x_src = (x_src % src->width);
+            tl.x -= x_src;
+            bl.x -= x_src;
+            tr.x -= x_src;
+            br.x -= x_src;
+          }
+          if (y_src) {
+            y_src = abs (y_src);
+            if (SURFACE_REPEAT (src))
+              y_src = (y_src % src->height);
+            tl.y -= y_src;
+            bl.y -= y_src;
+            tr.y -= y_src;
+            br.y -= y_src;
+          }
+
+          if ((tl.x > (x_dst + width) && bl.x > (x_dst + width)) ||
+              (tr.x < x_dst && br.x < x_dst))
+            x_is_ok = 0;
+          else
+            x_is_ok = 1;
+
+          if ((tl.y > (y_dst + height) && tr.y > (y_dst + height)) ||
+              (bl.y < y_dst && br.y < y_dst))
+            y_is_ok = 0;
+          else
+            y_is_ok = 1;
+        
+          if (x_is_ok && y_is_ok) {
+            gl->begin (GLITZ_GL_QUADS);
+            gl->tex_coord_2d (0.0, texture->texcoord_height);
+            gl->vertex_2d (tl.x, tl.y);
+            gl->tex_coord_2d (texture->texcoord_width,
+                              texture->texcoord_height);
+            gl->vertex_2d (tr.x, tr.y);
+            gl->tex_coord_2d (texture->texcoord_width, 0.0);
+            gl->vertex_2d (br.x, br.y);
+            gl->tex_coord_2d (0.0, 0.0);
+            gl->vertex_2d (bl.x, bl.y);
+            gl->end ();
+            in_destination_area = 1;
+          }
+
+          if (SURFACE_REPEAT (src)) {
+            base_bl.x += src->width * x_dir;
+            base_tl.x += src->width * x_dir;
+            base_tr.x += src->width * x_dir;
+            base_br.x += src->width * x_dir;
+
+            if (y_is_ok)
+              continue_y = 1;
+
+            if (in_destination_area)
+              continue_x = (x_is_ok && y_is_ok);
+            else
+              continue_x = (x_is_ok || y_is_ok);
+          }
+        } while (SURFACE_REPEAT (src) && continue_x);
 
         if (SURFACE_REPEAT (src)) {
-          bl.x += src->width;
-          tl.x += src->width;
-          tr.x += src->width;
-          br.x += src->width;
+          base_bl.y += src->height * y_dir;
+          base_tl.y += src->height * y_dir;
+          base_tr.y += src->height * y_dir;
+          base_br.y += src->height * y_dir;
+
+          base_tl.x = base_bl.x = save_base_x1;
+          base_tr.x = base_br.x = save_base_x2;
         }
-        
-      } while (SURFACE_REPEAT (src) && (tl.x < (x_dst + width)));
-
-      if (SURFACE_REPEAT (src)) {
-        bl.y += src->height;
-        tl.y += src->height;
-        tr.y += src->height;
-        br.y += src->height;
-
-        tl.x = save_tlx;
-        bl.x = save_blx;
-        tr.x = save_trx;
-        br.x = save_brx;
-      }
-      
-    } while (SURFACE_REPEAT (src) && (tl.y < (y_dst + height)));  
+      } while (SURFACE_REPEAT (src) && continue_y);
+    
+      if (src->transform && SURFACE_REPEAT (src)) {
+        switch (repeat_direction) {
+        case GLITZ_REPEAT_SOUTHEAST:
+          y_dir = -1;
+          base_tl.y = base_tr.y = -src->height;
+          base_bl.y = base_br.y = 0.0;
+          repeat_direction = GLITZ_REPEAT_SOUTHWEST;
+          break;
+        case GLITZ_REPEAT_SOUTHWEST:
+          x_dir = -1;
+          base_tl.y = base_tr.y = -src->height;
+          base_bl.y = base_br.y = 0.0;
+          base_tl.x = base_bl.x = -src->width;
+          base_tr.x = base_br.x = 0.0;
+          repeat_direction = GLITZ_REPEAT_NORTHEAST;
+          break;
+        case GLITZ_REPEAT_NORTHEAST:
+          y_dir = 1;
+          base_tl.y = base_tr.y = 0.0;
+          base_bl.y = base_br.y = src->height;
+          base_tl.x = base_bl.x = -src->width;
+          base_tr.x = base_br.x = 0.0;
+          repeat_direction = GLITZ_REPEAT_NORTHWEST;
+          break;
+        case GLITZ_REPEAT_NORTHWEST:
+          repeat_direction = GLITZ_REPEAT_NONE;
+          break;
+        case GLITZ_REPEAT_NONE:
+          break;
+        }
+      } else
+        repeat_direction = GLITZ_REPEAT_NONE;
+    }
   }
 
   if (src->convolution || SURFACE_PROGRAMMATIC (src))

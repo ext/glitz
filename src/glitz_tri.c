@@ -180,8 +180,7 @@ glitz_int_composite_triangles (glitz_operator_t op,
     if ((bounds.x2 - bounds.x1) <= 0 || (bounds.y2 - bounds.y1) <= 0)
       return;
   
-    mask = glitz_int_surface_create_similar (dst, GLITZ_STANDARD_A8,
-                                             1,
+    mask = glitz_int_surface_create_similar (dst, GLITZ_STANDARD_ARGB32, 1,
                                              bounds.x2 - bounds.x1,
                                              bounds.y2 - bounds.y1);
   
@@ -192,7 +191,8 @@ glitz_int_composite_triangles (glitz_operator_t op,
     
     mask->hint_mask |= GLITZ_INT_HINT_IMPLICIT_MASK_MASK;
 
-    if (!glitz_surface_push_current (mask, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    if (!glitz_surface_push_current (mask,
+                                     GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
       glitz_surface_pop_current (mask);
       return;
     }
