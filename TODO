@@ -1,0 +1,24 @@
+* Improve status handling. Operations on surfaces with status other than
+  "Success" should be ignored.
+
+* Add library cleanup function.
+
+* Copy area operation.
+
+* Support simultaneous transform and repeat.
+
+* Alpha scaling of source surface with polygon rendering.
+
+* Add filter type GLITZ_FILTER_ANISOTROPIC.
+
+* Text support. Glyph set management, glyph and string compositing
+  operations. Some ideas: Multi-texturing for compositing multiple glyphs 
+  per render pass, Sub-pixel rendering, vector text; glyphs loaded into 
+  display lists.
+
+* Projective transformations.
+
+* A programmable surface type which can store a set of rendering operations
+  in a display list.
+
+* WGL (Windows GL) backend.

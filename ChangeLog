@@ -1,3 +1,7 @@
+2004-05-02  David Reveman  <c99drn@cs.umu.se>
+
+	* TODO: Added planned features and some ideas.
+
 2004-05-01  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_agl_format.c (glitz_agl_query_formats): Cleaned up 
