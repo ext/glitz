@@ -1,3 +1,8 @@
+2004-09-16  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz.c (glitz_composite): Don't set texture wrap mode to
+	GL_CLAMP_TO_BORDER when extension is missing.
+
 2004-09-15  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_agl_extension.c:

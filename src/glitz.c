@@ -202,7 +202,9 @@ glitz_composite (glitz_operator_t op,
       else
         glitz_texture_ensure_wrap (gl, mtexture, GLITZ_GL_REPEAT);
     } else {
-      if (SURFACE_PAD (mask))
+      if ((!(dst->backend->feature_mask &
+             GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK)) ||
+          SURFACE_PAD (mask))
         glitz_texture_ensure_wrap (gl, mtexture, GLITZ_GL_CLAMP_TO_EDGE);
       else
         glitz_texture_ensure_wrap (gl, mtexture, GLITZ_GL_CLAMP_TO_BORDER);
@@ -247,7 +249,9 @@ glitz_composite (glitz_operator_t op,
       else
         glitz_texture_ensure_wrap (gl, stexture, GLITZ_GL_REPEAT);
     } else {
-      if (SURFACE_PAD (src))
+      if ((!(dst->backend->feature_mask &
+             GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK)) ||
+          SURFACE_PAD (src))
         glitz_texture_ensure_wrap (gl, stexture, GLITZ_GL_CLAMP_TO_EDGE);
       else
         glitz_texture_ensure_wrap (gl, stexture, GLITZ_GL_CLAMP_TO_BORDER);
@@ -260,7 +264,7 @@ glitz_composite (glitz_operator_t op,
                rect.y2 - rect.y1);
 
   gl->push_matrix ();
-  
+
   glitz_geometry_enable (gl, dst, &primitive, &first, &count);
 
   if (dst->indirect) {
