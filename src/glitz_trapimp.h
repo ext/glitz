@@ -138,8 +138,10 @@
   intersect a rectangle in any direction, can be represented
   accurately and consistently with a set of one-dimensional texture
   coordinates in a fixed size texture. By using linear texture
-  filtering this allow us two render perfectly anti-aliased
-  geometry on a wide range of hardware.
+  filtering this allows us to render perfectly anti-aliased
+  geometry on a wide range of hardware. It could also be a Nx1 surface
+  containing a pre-computed gamma curve with resolution N for gamma
+  corrected anti-aliasing.
 
   Each trapezoid needs to be slit up into a set of rectangles along
   with appropriate horizontal texture coordinates for the specified
