@@ -185,8 +185,8 @@ glitz_composite (glitz_operator_t op,
     if (mask->transform) {
       textures[0].transform = 1;
       gl->matrix_mode (GLITZ_GL_TEXTURE);
-      gl->load_matrix_f (SURFACE_TEXTURE_COORDS (mask)?
-                         mask->transform->t: mask->transform->m);
+      gl->load_matrix_f (SURFACE_EYE_COORDS (mask)?
+                         mask->transform->m: mask->transform->t);
       gl->matrix_mode (GLITZ_GL_MODELVIEW);
       
       if (SURFACE_LINEAR_TRANSFORM_FILTER (mask))
@@ -230,8 +230,8 @@ glitz_composite (glitz_operator_t op,
     if (src->transform) {
       textures[texture_nr].transform = 1;
       gl->matrix_mode (GLITZ_GL_TEXTURE);
-      gl->load_matrix_f (SURFACE_TEXTURE_COORDS (src)?
-                         src->transform->t: src->transform->m);
+      gl->load_matrix_f (SURFACE_EYE_COORDS (src)?
+                         src->transform->m: src->transform->t);
       gl->matrix_mode (GLITZ_GL_MODELVIEW);
       
       if (SURFACE_LINEAR_TRANSFORM_FILTER (src))
@@ -467,7 +467,7 @@ glitz_copy_area (glitz_surface_t *src,
       if (texture) {
         glitz_texture_bind (gl, texture);
 
-        glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, ~0); 
+        glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, 0); 
 
         gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                        GLITZ_GL_REPLACE);

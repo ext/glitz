@@ -70,9 +70,6 @@ glitz_surface_init (glitz_surface_t *surface,
     surface->solid.alpha = 0xffff;
   }
 
-  surface->flags |= GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
-  surface->flags |= GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK;
-
   glitz_texture_init (&surface->texture,
                       width, height,
                       glitz_format_get_best_texture_format (backend->formats,
@@ -338,18 +335,22 @@ glitz_surface_set_transform (glitz_surface_t *surface,
     t[13] -= t[5] * height;
     t[15] -= t[7] * height;
 
-    if (t[0] == 1.0 && t[4] == 0.0 &&
-        t[1] == 0.0 && t[5] == 1.0 &&
-        t[3] == 0.0 && t[7] == 0.0 && t[15] == 1.0)
-      surface->flags |= GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK;
-    else
-      surface->flags &= ~GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK;
+    height = surface->texture.texcoord_height_unit * surface->texture.box.y1;
+    
+    /* translate coordinates into texture. this only makes a difference when
+       GL_ARB_texture_border_clamp is missing as box.x1 and box.y1 are
+       otherwise always zero. hmm, does this break projective
+       transformations? affine transformations should be fine */
+    t[12] += surface->texture.texcoord_width_unit * surface->texture.box.x1;
+    t[13] += surface->texture.texcoord_height_unit * surface->texture.box.y1;
+
+    surface->flags |= GLITZ_SURFACE_FLAG_TRANSFORM_MASK;
   } else {
     if (surface->transform)
       free (surface->transform);
     
     surface->transform = NULL;
-    surface->flags |= GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_TRANSFORM_MASK;
   }
 }
 slim_hidden_def(glitz_surface_set_transform);
@@ -412,28 +413,28 @@ glitz_surface_set_filter (glitz_surface_t *surface,
     case GLITZ_FILTER_NEAREST:
       surface->flags &= ~GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
       surface->flags &= ~GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
-      surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK;
-      surface->flags |= GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_EYE_COORDS_MASK;
       break;
     case GLITZ_FILTER_BILINEAR:
       surface->flags &= ~GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
       surface->flags |= GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
-      surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK;
-      surface->flags |= GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_EYE_COORDS_MASK;
       break;
     case GLITZ_FILTER_CONVOLUTION:
     case GLITZ_FILTER_GAUSSIAN:
       surface->flags |= GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
       surface->flags |= GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
-      surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK;
-      surface->flags |= GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_EYE_COORDS_MASK;
       break;
     case GLITZ_FILTER_LINEAR_GRADIENT:
     case GLITZ_FILTER_RADIAL_GRADIENT:
       surface->flags |= GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
       surface->flags &= ~GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
-      surface->flags |= GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK;
-      surface->flags &= ~GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_EYE_COORDS_MASK;
       break;
     }
     surface->filter = filter;

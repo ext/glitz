@@ -527,7 +527,7 @@ glitz_set_pixels (glitz_surface_t *dst,
                         pixels);
 
   if (to_drawable) {
-    glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, ~0); 
+    glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, 0); 
 
     gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                    GLITZ_GL_REPLACE);

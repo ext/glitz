@@ -50,6 +50,9 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_FALSE 0x0
 #define GLITZ_GL_TRUE  0x1
 
+#define GLITZ_GL_NO_ERROR          0x0
+#define GLITZ_GL_INVALID_OPERATION 0x0502
+
 #define GLITZ_GL_UNSIGNED_BYTE               0x1401
 #define GLITZ_GL_FLOAT                       0x1406
 #define GLITZ_GL_UNSIGNED_BYTE_3_3_2         0x8032
@@ -233,12 +236,13 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 
 #define GLITZ_GL_MULTISAMPLE_FILTER_HINT 0x8534
 
-#define GLITZ_GL_FRAGMENT_PROGRAM            0x8804
-#define GLITZ_GL_PROGRAM_STRING              0x8628
-#define GLITZ_GL_PROGRAM_FORMAT_ASCII        0x8875
-#define GLITZ_GL_PROGRAM_ERROR_POSITION      0x864B
-#define GLITZ_GL_PROGRAM_UNDER_NATIVE_LIMITS 0x88B6
-#define GLITZ_GL_PROGRAM_NATIVE_INSTRUCTIONS 0x88A2
+#define GLITZ_GL_FRAGMENT_PROGRAM             0x8804
+#define GLITZ_GL_PROGRAM_STRING               0x8628
+#define GLITZ_GL_PROGRAM_FORMAT_ASCII         0x8875
+#define GLITZ_GL_PROGRAM_ERROR_POSITION       0x864B
+#define GLITZ_GL_MAX_PROGRAM_LOCAL_PARAMETERS 0x88B4
+#define GLITZ_GL_PROGRAM_UNDER_NATIVE_LIMITS  0x88B6
+#define GLITZ_GL_PROGRAM_NATIVE_INSTRUCTIONS  0x88A2
 
 #define GLITZ_GL_ARRAY_BUFFER        0x8892
 #define GLITZ_GL_PIXEL_PACK_BUFFER   0x88EB
@@ -263,6 +267,8 @@ typedef glitz_gl_void_t (* glitz_gl_enable_t)
      (glitz_gl_enum_t cap);
 typedef glitz_gl_void_t (* glitz_gl_disable_t)
      (glitz_gl_enum_t cap);
+typedef glitz_gl_enum_t (* glitz_gl_get_error_t)
+     (glitz_gl_void_t);
 typedef glitz_gl_void_t (* glitz_gl_enable_client_state_t)
      (glitz_gl_enum_t cap);
 typedef glitz_gl_void_t (* glitz_gl_disable_client_state_t)
@@ -420,7 +426,7 @@ typedef glitz_gl_void_t (* glitz_gl_bind_program_t)
 typedef glitz_gl_void_t (* glitz_gl_program_local_param_4fv_t)
      (glitz_gl_enum_t, glitz_gl_uint_t, const glitz_gl_float_t *);
 typedef glitz_gl_void_t (* glitz_gl_get_program_iv_t)
-     (glitz_gl_enum_t, glitz_gl_enum_t, glitz_gl_uint_t *);
+     (glitz_gl_enum_t, glitz_gl_enum_t, glitz_gl_int_t *);
 typedef glitz_gl_void_t (* glitz_gl_gen_buffers_t)
      (glitz_gl_sizei_t, glitz_gl_uint_t *buffers);
 typedef glitz_gl_void_t (* glitz_gl_delete_buffers_t)

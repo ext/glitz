@@ -1,3 +1,67 @@
+2004-09-09  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: IGNORE_REPEAT flag replaced by IGNORE_WRAP flag.
+	TEXTURE_COORDS flag replaced by EYE_COORDS flag.
+
+	* src/glitz_texture.c (glitz_texture_set_tex_gen): Only shift
+	coordinates for texture border when it's not done by the
+	transformation matrix.
+
+	* src/glitz_surface.c (glitz_surface_init): No surface flags
+	set by default.
+	(glitz_surface_set_transform): Added transformation
+	support for hardware without GL_ARB_texture_clamp_to_border.
+	(glitz_surface_set_transform): Set new SURFACE_FLAG_TRANSFORM.
+	(glitz_surface_set_filter): IGNORE_REPEAT flag replaced by
+	IGNORE_WRAP flag. TEXTURE_COORDS flag replaced by EYE_COORDS flag.
+
+	* src/glitz_program.c: Program type should not be part of
+	convolution program headers or gradient program headers.
+	(_glitz_compile_arb_fragment_program): Improved failure checking.
+	(_glitz_create_fragment_program): Program type is now added here.
+	(_glitz_create_fragment_program): Pass number of parameters that
+	will be required to _glitz_compile_arb_fragment_program.
+
+	* src/glitz_pixel.c (glitz_set_pixels): 0 as flags to
+	glitz_texture_set_tex_gen is what we want here.
+
+	* src/glitz_glx_info.c: Added glGetError to gl_proc_address.
+
+	* src/glitz_glx_extension.c: GL_ARB_texture_non_power_of_two has
+	been promoted as a core feature to OpenGL 2.0.
+	GL_ENV_texture_combine_env is not really a OpenGL 1.3 feature,
+	GL_ARB_texture_combine_env is.
+
+	* src/glitz_gl.h: Added glGetError prototype and error tokens.
+	Added GLITZ_GL_MAX_PROGRAM_LOCAL_PARAMETERS token.
+	Fixed glGetProgramiv prototype.
+
+	* src/glitz_filter.c (glitz_filter_set_params): Fixed gradient
+	filter coordinate generation.
+	(glitz_filter_set_type): Don't use SURFACE_PAD macro to check for
+	padded gradient here.
+
+	* src/glitz_compose.c (SURFACE_WRAP): Added transformation
+	support for hardware without GL_ARB_texture_clamp_to_border.
+
+	* src/glitz_agl_surface.c: Fixed so that AGL backend actually
+	compiles.
+
+	* src/glitz_agl_info.c: Added glGetError to gl_proc_address.
+
+	* src/glitz_agl_extension.c (glitz_agl_query_extensions): Fixed so
+	that AGL backend actually compiles.
+
+	* src/glitz.c (glitz_composite): replaced TEXTURE_COORDS flag with
+	EYE_COORDS flag, which is obviously the other way around.
+	(glitz_copy_area): 0 as flags to glitz_texture_set_tex_gen is
+	what we want here.
+
+2004-09-08  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_format.c (glitz_format_for_each_texture_format): Use
+	default GLITZ_GL_PROXY_TEXTURE_2D texture.
+
 2004-09-07  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: Allow use of a version number to check presence of

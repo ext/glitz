@@ -103,7 +103,6 @@ static const struct _glitz_program_expand_t {
  * produce correct results).
  */
 static const char *_convolution_header[] = {
-  "!!ARBfp1.0",
   "PARAM p[%d] = { program.local[0..%d] };",
   "ATTRIB pos = fragment.texcoord[%s];",
   "TEMP color, in, coord;",
@@ -133,7 +132,6 @@ static const char *_convolution_sample[] = {
  * gradient filters.
  */
 static const char *_gradient_header[] = {
-  "!!ARBfp1.0",
   "PARAM gradient = program.local[0];",
   "PARAM stops[%d] = { program.local[1..%d] };",
   "ATTRIB pos = fragment.texcoord[%s];",
@@ -223,11 +221,15 @@ static const char *_gradient_fetch_and_interpolate[] = {
 
 static glitz_gl_int_t
 _glitz_compile_arb_fragment_program (glitz_gl_proc_address_list_t *gl,
-                                     char *program_string)
+                                     char *program_string,
+                                     int n_parameters)
 {
   glitz_gl_int_t error, pid = -1;
-  glitz_gl_uint_t value, program;
+  glitz_gl_uint_t program;
 
+  /* clear error flags */
+  while (gl->get_error () != GLITZ_GL_NO_ERROR);
+  
   gl->enable (GLITZ_GL_FRAGMENT_PROGRAM);
 
   gl->gen_programs (1, &program);
@@ -236,27 +238,31 @@ _glitz_compile_arb_fragment_program (glitz_gl_proc_address_list_t *gl,
                       GLITZ_GL_PROGRAM_FORMAT_ASCII,
                       strlen (program_string),
                       program_string);
+  if (gl->get_error () == GLITZ_GL_NO_ERROR) {
+    gl->get_integer_v (GLITZ_GL_PROGRAM_ERROR_POSITION, &error);
 
-  gl->get_integer_v (GLITZ_GL_PROGRAM_ERROR_POSITION, &error);
-  if (error == -1) {
-    gl->get_program_iv (GLITZ_GL_FRAGMENT_PROGRAM,
-                        GLITZ_GL_PROGRAM_NATIVE_INSTRUCTIONS,
-                        &value);
-    if (value > 0) {
+    if (error == -1) {
+      glitz_gl_int_t value;
+      
       gl->get_program_iv (GLITZ_GL_FRAGMENT_PROGRAM,
-                          GLITZ_GL_PROGRAM_UNDER_NATIVE_LIMITS,
+                          GLITZ_GL_PROGRAM_NATIVE_INSTRUCTIONS,
                           &value);
-      if (value == GLITZ_GL_TRUE)
-        pid = program;
+      if (value > 0) {
+        gl->get_program_iv (GLITZ_GL_FRAGMENT_PROGRAM,
+                            GLITZ_GL_MAX_PROGRAM_LOCAL_PARAMETERS,
+                            &value);
+        if (value >= n_parameters)
+          pid = program;
+      }
     }
   }
+  
+  gl->disable (GLITZ_GL_FRAGMENT_PROGRAM);
   
   if (pid == -1) {
     gl->bind_program (GLITZ_GL_FRAGMENT_PROGRAM, 0);
     gl->delete_programs (1, &program);
   }
-
-  gl->disable (GLITZ_GL_FRAGMENT_PROGRAM);
   
   return pid;
 }
@@ -313,6 +319,8 @@ _glitz_create_fragment_program (glitz_composite_op_t *op,
 
     p = program;
     
+    p += sprintf (p, "!!ARBfp1.0");
+    
     _string_array_to_char_array (buffer, _convolution_header);
     p += sprintf (p, buffer, id, id - 1, tex, expand->declarations);
     
@@ -339,6 +347,8 @@ _glitz_create_fragment_program (glitz_composite_op_t *op,
       return 0;
 
     p = program;
+    
+    p += sprintf (p, "!!ARBfp1.0");
     
     _string_array_to_char_array (buffer, _gradient_header);
     p += sprintf (p, buffer, id, id, tex, expand->declarations);
@@ -385,6 +395,8 @@ _glitz_create_fragment_program (glitz_composite_op_t *op,
     
     _string_array_to_char_array (buffer, _gradient_fetch_and_interpolate);
     p += sprintf (p, buffer, tex, expand->texture, tex, expand->texture);
+    
+    id++;
     break;
   default:
     return 0;
@@ -396,7 +408,7 @@ _glitz_create_fragment_program (glitz_composite_op_t *op,
   p += sprintf (p, "%s", expand->in);
   sprintf (p, "END");
 
-  fp = _glitz_compile_arb_fragment_program (op->gl, program);
+  fp = _glitz_compile_arb_fragment_program (op->gl, program, id);
   
   free (program);
 

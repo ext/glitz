@@ -76,6 +76,7 @@
 typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_enable_t enable;
   glitz_gl_disable_t disable;
+  glitz_gl_get_error_t get_error;
   glitz_gl_enable_client_state_t enable_client_state;
   glitz_gl_disable_client_state_t disable_client_state;
   glitz_gl_vertex_pointer_t vertex_pointer;
@@ -331,9 +332,9 @@ typedef struct glitz_surface_backend {
 #define GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK         (1L << 11)
 #define GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK (1L << 12)
 #define GLITZ_SURFACE_FLAG_DRAWABLE_MASK                (1L << 13)
-#define GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK           (1L << 14)
-#define GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK          (1L << 15)
-#define GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK        (1L << 16)
+#define GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK             (1L << 14)
+#define GLITZ_SURFACE_FLAG_EYE_COORDS_MASK              (1L << 15)
+#define GLITZ_SURFACE_FLAG_TRANSFORM_MASK               (1L << 16)
 
 #define SURFACE_OFFSCREEN(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_OFFSCREEN_MASK)
@@ -343,13 +344,14 @@ typedef struct glitz_surface_backend {
 
 #define SURFACE_REPEAT(surface) \
   (((surface)->flags & GLITZ_SURFACE_FLAG_REPEAT_MASK) && \
-   (!((surface)->flags & GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK)))
+   (!((surface)->flags & GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK)))
 
 #define SURFACE_MIRRORED(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_MIRRORED_MASK)
 
 #define SURFACE_PAD(surface) \
-  ((surface)->flags & GLITZ_SURFACE_FLAG_PAD_MASK)
+  (((surface)->flags & GLITZ_SURFACE_FLAG_PAD_MASK) && \
+   (!((surface)->flags & GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK)))
 
 #define SURFACE_DIRTY(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_DIRTY_MASK)
@@ -378,11 +380,11 @@ typedef struct glitz_surface_backend {
 #define SURFACE_DRAWABLE(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_DRAWABLE_MASK)
 
-#define SURFACE_TEXTURE_COORDS(surface) \
-  ((surface)->flags & GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK)
+#define SURFACE_EYE_COORDS(surface) \
+  ((surface)->flags & GLITZ_SURFACE_FLAG_EYE_COORDS_MASK)
 
-#define SURFACE_SIMPLE_TRANSFORM(surface) \
-  ((surface)->flags & GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK)
+#define SURFACE_TRANSFORM(surface) \
+  ((surface)->flags & GLITZ_SURFACE_FLAG_TRANSFORM_MASK)
 
 typedef struct _glitz_sample_offset {
   glitz_float_t x;

@@ -281,10 +281,12 @@ glitz_filter_set_params (glitz_surface_t *surface,
       glitz_clamp_value (&vecs[i].v[0], 0.5f, surface->width - 0.5f);
       glitz_clamp_value (&vecs[i].v[1], 0.5f, surface->height - 0.5f);
 
+      vecs[i].v[0] += surface->texture.box.x1;
+      vecs[i].v[1] = surface->texture.box.y2 - vecs[i].v[1];
+
       vecs[i].v[0] *= surface->texture.texcoord_width_unit;
       vecs[i].v[1] *= surface->texture.texcoord_height_unit;
       
-      vecs[i].v[1] = surface->texture.box.y2 - vecs[i].v[1];
       vecs[i].v[3] = i;
     }
     
@@ -349,7 +351,7 @@ glitz_filter_set_type (glitz_surface_t *surface,
         surface->filter_params->fp_type = GLITZ_FP_LINEAR_GRADIENT_REFLECT;
       else
         surface->filter_params->fp_type = GLITZ_FP_LINEAR_GRADIENT_REPEAT;
-    } else if (SURFACE_PAD (surface)) {
+    } else if (surface->flags & GLITZ_SURFACE_FLAG_PAD_MASK) {
       surface->filter_params->fp_type = GLITZ_FP_LINEAR_GRADIENT_NEAREST;
     } else
       surface->filter_params->fp_type = GLITZ_FP_LINEAR_GRADIENT_TRANSPARENT;
@@ -360,7 +362,7 @@ glitz_filter_set_type (glitz_surface_t *surface,
         surface->filter_params->fp_type = GLITZ_FP_RADIAL_GRADIENT_REFLECT;
       else
         surface->filter_params->fp_type = GLITZ_FP_RADIAL_GRADIENT_REPEAT;
-    } else if (SURFACE_PAD (surface)) {
+    } else if (surface->flags & GLITZ_SURFACE_FLAG_PAD_MASK) {
       surface->filter_params->fp_type = GLITZ_FP_RADIAL_GRADIENT_NEAREST;
     } else
       surface->filter_params->fp_type = GLITZ_FP_RADIAL_GRADIENT_TRANSPARENT;

@@ -40,7 +40,7 @@ static glitz_extension_map gl_extensions[] = {
   { 0.0, "GL_EXT_texture_rectangle",
     GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK },
   { 0.0, "GL_NV_texture_rectangle", GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK },
-  { 0.0, "GL_ARB_texture_non_power_of_two",
+  { 2.0, "GL_ARB_texture_non_power_of_two",
     GLITZ_AGL_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK },
   { 1.4, "GL_ARB_texture_mirrored_repeat",
     GLITZ_AGL_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK },
@@ -48,7 +48,7 @@ static glitz_extension_map gl_extensions[] = {
     GLITZ_AGL_FEATURE_TEXTURE_BORDER_CLAMP_MASK },
   { 1.3, "GL_ARB_texture_env_combine",
     GLITZ_AGL_FEATURE_TEXTURE_ENV_COMBINE_MASK },
-  { 1.3, "GL_EXT_texture_env_combine",
+  { 0.0, "GL_EXT_texture_env_combine",
     GLITZ_AGL_FEATURE_TEXTURE_ENV_COMBINE_MASK },
   { 1.3, "GL_ARB_texture_env_dot3", GLITZ_AGL_FEATURE_TEXTURE_ENV_DOT3_MASK },
   { 1.3, "GL_ARB_multisample", GLITZ_AGL_FEATURE_MULTISAMPLE_MASK },
@@ -90,10 +90,9 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
   
   thread_info->agl_feature_mask = 0;
   
-  thread_info->agl_feature_mask |= _glitz_agl_extension_query_gl ();
+  thread_info->agl_feature_mask |= _glitz_agl_extension_query_gl (gl_version);
 
   thread_info->feature_mask = 0;
-  thread_info->texture_mask = GLITZ_TEXTURE_TARGET_2D_MASK;
 
   if (thread_info->agl_feature_mask & GLITZ_AGL_FEATURE_MULTISAMPLE_MASK) {
     thread_info->feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;

@@ -217,29 +217,37 @@ glitz_texture_set_tex_gen (glitz_gl_proc_address_list_t *gl,
 {
   glitz_vec4_t plane;
 
-  if (flags & GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK) {
-    plane.v[1] = plane.v[2] = 0.0f;
-    plane.v[0] = texture->texcoord_width_unit;
-    plane.v[3] = -(x_src - texture->box.x1) * texture->texcoord_width_unit;
-  } else {
-    plane.v[1] = plane.v[2] = 0.0f;
-    plane.v[0] = 1.0;
+  plane.v[1] = plane.v[2] = 0.0f;
+  
+  if (flags & GLITZ_SURFACE_FLAG_EYE_COORDS_MASK) {
+    plane.v[0] = 1.0f;
     plane.v[3] = -x_src;
-  }   
+  } else {
+    plane.v[0] = texture->texcoord_width_unit;
+    
+    if (flags & GLITZ_SURFACE_FLAG_TRANSFORM_MASK)
+      plane.v[3] = -(x_src) * texture->texcoord_width_unit;
+    else
+      plane.v[3] = -(x_src - texture->box.x1) * texture->texcoord_width_unit;
+  }  
   
   gl->tex_gen_i (GLITZ_GL_S, GLITZ_GL_TEXTURE_GEN_MODE,
                  GLITZ_GL_EYE_LINEAR);
   gl->tex_gen_fv (GLITZ_GL_S, GLITZ_GL_EYE_PLANE, plane.v);
   gl->enable (GLITZ_GL_TEXTURE_GEN_S);
 
-  if (flags & GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK) {
-    plane.v[0] = 0.0f;
-    plane.v[1] = -texture->texcoord_height_unit;
-    plane.v[3] = (y_src + texture->box.y2) * texture->texcoord_height_unit;
+  plane.v[0] = 0.0f;
+  if (flags & GLITZ_SURFACE_FLAG_EYE_COORDS_MASK) {
+    plane.v[1] = 1.0f;
+    plane.v[3] = -y_src;
   } else {
-    plane.v[0] = 0.0f;
-    plane.v[1] = 1.0;
-    plane.v[3] = y_src;
+    plane.v[1] = -texture->texcoord_height_unit;
+    
+    if (flags & GLITZ_SURFACE_FLAG_TRANSFORM_MASK)
+      plane.v[3] = (y_src + texture->box.y2 - texture->box.y1) *
+        texture->texcoord_height_unit;
+    else
+      plane.v[3] = (y_src + texture->box.y2) * texture->texcoord_height_unit;
   }
   
   gl->tex_gen_i (GLITZ_GL_T, GLITZ_GL_TEXTURE_GEN_MODE,

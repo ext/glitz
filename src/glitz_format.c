@@ -76,15 +76,10 @@ glitz_format_for_each_texture_format (glitz_format_call_back_t call_back,
 				      glitz_gl_proc_address_list_t *gl,
                                       void *ptr)
 {
-  glitz_gl_uint_t name;
   glitz_gl_int_t value;
   int i, n_texture_formats =
     sizeof (_texture_formats) / sizeof (glitz_format_t);
 
-  gl->gen_textures (1, &name);
-  gl->enable (GLITZ_GL_PROXY_TEXTURE_2D);
-  gl->bind_texture (GLITZ_GL_PROXY_TEXTURE_2D, name);
-  
   for (i = 0; i < n_texture_formats; i++) {
     gl->tex_image_2d (GLITZ_GL_PROXY_TEXTURE_2D, 0,
 		      _texture_formats[i].id, 1, 1,
@@ -111,10 +106,6 @@ glitz_format_for_each_texture_format (glitz_format_call_back_t call_back,
 
     call_back (&_texture_formats[i], ptr);
   }
-
-  gl->bind_texture (GLITZ_GL_PROXY_TEXTURE_2D, 0);
-  gl->disable (GLITZ_GL_PROXY_TEXTURE_2D);
-  gl->delete_textures (1, &name);
 }
 
 glitz_format_t *

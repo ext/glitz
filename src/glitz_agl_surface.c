@@ -80,7 +80,7 @@ _glitz_agl_surface_get_texture (void *abstract_surface,
                                 glitz_bool_t allocate) {
   glitz_agl_surface_t *surface = (glitz_agl_surface_t *) abstract_surface;
 
-  if (surface->base.flags & GLITZ_FLAG_DIRTY_MASK) {
+  if (surface->base.flags & GLITZ_SURFACE_FLAG_DIRTY_MASK) {
     glitz_bounding_box_t copy_box;
 
     copy_box.x1 = copy_box.y1 = 0;

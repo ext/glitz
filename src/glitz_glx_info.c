@@ -37,6 +37,7 @@
 glitz_gl_proc_address_list_t _glitz_glx_gl_proc_address = {
   (glitz_gl_enable_t) glEnable,
   (glitz_gl_disable_t) glDisable,
+  (glitz_gl_get_error_t) glGetError,
   (glitz_gl_enable_client_state_t) glEnableClientState,
   (glitz_gl_disable_client_state_t) glDisableClientState,
   (glitz_gl_vertex_pointer_t) glVertexPointer,
