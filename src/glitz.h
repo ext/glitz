@@ -1,4 +1,3 @@
-
 /*
  * Copyright © 2004 David Reveman, Peter Nilsson
  *
@@ -42,7 +41,7 @@
 /* NOTE: Must be manually synchronized with GLITZ_VERSION in configure.in */
 #define GLITZ_MAJOR 0
 #define GLITZ_MINOR 1
-#define GLITZ_REVISION 0
+#define GLITZ_REVISION 1
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {

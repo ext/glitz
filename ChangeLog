@@ -1,5 +1,9 @@
 2004-04-30  David Reveman  <c99drn@cs.umu.se>
 
+	* configure.in: Bump version to 0.1.1.
+
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.1.1.
+
 	* src/glitzint.h: Updated linear and radial surfaces.
 
 	* src/glitz_surface.c: Updated linear and radial surfaces.
