@@ -33,25 +33,28 @@
 
 static glitz_extension_map client_glx_extensions[] = {
   /* NYI: Don't know of any driver that supports GLX_ARB_render_texture 
-    { "GLX_ARB_render_texture", GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK },
+    { "GLX_ARB_render_texture", GLITZ_GLX_FEATURE_RENDER_TEXTURE_MASK },
    */
   { "GLX_ARB_multisample", GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK },
   { NULL, 0 }
 }, gl_extensions[] = {
   { "GL_EXT_texture_rectangle", GLITZ_GLX_FEATURE_TEXTURE_RECTANGLE_MASK },
   { "GL_NV_texture_rectangle", GLITZ_GLX_FEATURE_TEXTURE_RECTANGLE_MASK },
-  { "GL_ARB_texture_non_power_of_two", GLITZ_GLX_FEATURE_TEXTURE_NPOT_MASK },
+  { "GL_ARB_texture_non_power_of_two",
+    GLITZ_GLX_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK },
   { "GL_ARB_texture_mirrored_repeat",
     GLITZ_GLX_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK },
-  { "GL_ARB_texture_env_combine",
-    GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK },
-  { "GL_ARB_texture_env_dot3", GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK },
+  { "GL_ARB_texture_border_clamp",
+    GLITZ_GLX_FEATURE_TEXTURE_BORDER_CLAMP_MASK },
+  { "GL_ARB_texture_env_combine", GLITZ_GLX_FEATURE_TEXTURE_ENV_COMBINE_MASK },
+  { "GL_EXT_texture_env_combine", GLITZ_GLX_FEATURE_TEXTURE_ENV_COMBINE_MASK },
+  { "GL_ARB_texture_env_dot3", GLITZ_GLX_FEATURE_TEXTURE_ENV_DOT3_MASK },
   { "GL_ARB_multisample", GLITZ_GLX_FEATURE_MULTISAMPLE_MASK },
   { "GL_NV_multisample_filter_hint",
-    GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_MASK },
-  { "GL_ARB_multitexture", GLITZ_GLX_FEATURE_ARB_MULTITEXTURE_MASK },
-  { "GL_ARB_vertex_program", GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK },
-  { "GL_ARB_fragment_program", GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK },
+    GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_HINT_MASK },
+  { "GL_ARB_multitexture", GLITZ_GLX_FEATURE_MULTITEXTURE_MASK },
+  { "GL_ARB_vertex_program", GLITZ_GLX_FEATURE_VERTEX_PROGRAM_MASK },
+  { "GL_ARB_fragment_program", GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK },
   { "GL_EXT_pixel_buffer_object", GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
   { NULL, 0 }
 };
@@ -100,9 +103,13 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
   if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_MULTISAMPLE_MASK &&
       screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK) {
-    char *renderer = (char *) glGetString (GL_RENDERER);
+    const char *renderer = (char *) glGetString (GL_RENDERER);
     
     screen_info->feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;
+    
+    if (screen_info->glx_feature_mask &
+        GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_HINT_MASK)
+      screen_info->feature_mask |= GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK;
     
     if (renderer) {
       /* All geforce and quadro cards seems to support multisample with
@@ -114,9 +121,10 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
     }
   }
 
-  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_TEXTURE_NPOT_MASK) {
-    screen_info->texture_mask |= GLITZ_TEXTURE_TARGET_NPOT_MASK;
-    screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_NPOT_MASK;
+  if (screen_info->glx_feature_mask &
+      GLITZ_GLX_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK) {
+    screen_info->texture_mask |= GLITZ_TEXTURE_TARGET_NON_POWER_OF_TWO_MASK;
+    screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK;
   }
 
   if (screen_info->glx_feature_mask &
@@ -130,25 +138,25 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
     screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK;
 
   if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK)
-    screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK;
+      GLITZ_GLX_FEATURE_TEXTURE_BORDER_CLAMP_MASK)
+    screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK;
 
-  if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_ARB_MULTITEXTURE_MASK) {
-    screen_info->feature_mask |= GLITZ_FEATURE_ARB_MULTITEXTURE_MASK;
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_RENDER_TEXTURE_MASK)
+    screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_RENDER_TEXTURE_MASK;
+
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_MULTITEXTURE_MASK) {
+    screen_info->feature_mask |= GLITZ_FEATURE_MULTITEXTURE_MASK;
 
     if (screen_info->glx_feature_mask &
-        GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK)
-      screen_info->feature_mask |= GLITZ_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK;
+        GLITZ_GLX_FEATURE_TEXTURE_ENV_COMBINE_MASK)
+      screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK;
     
     if (screen_info->glx_feature_mask &
-        GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK)
-      screen_info->feature_mask |= GLITZ_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK;
+        GLITZ_GLX_FEATURE_TEXTURE_ENV_DOT3_MASK)
+      screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_ENV_DOT3_MASK;
       
-    if ((screen_info->feature_mask &
-         GLITZ_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK) &&
-        (screen_info->feature_mask &
-         GLITZ_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK)) {
+    if ((screen_info->feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK) &&
+        (screen_info->feature_mask & GLITZ_FEATURE_TEXTURE_ENV_DOT3_MASK)) {
       glitz_gl_int_t max_texture_units;
       
       glGetIntegerv (GLITZ_GL_MAX_TEXTURE_UNITS, &max_texture_units);
@@ -156,16 +164,15 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
         screen_info->feature_mask |= GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
     }
         
-    if (screen_info->glx_feature_mask &
-        GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK)
-      screen_info->feature_mask |= GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK;
+    if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_VERTEX_PROGRAM_MASK)
+      screen_info->feature_mask |= GLITZ_FEATURE_VERTEX_PROGRAM_MASK;
 
     if (screen_info->glx_feature_mask &
-        GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK)
-      screen_info->feature_mask |= GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
+        GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK)
+      screen_info->feature_mask |= GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
 
-    if ((screen_info->feature_mask & GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK) &&
-        (screen_info->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK))
+    if ((screen_info->feature_mask & GLITZ_FEATURE_VERTEX_PROGRAM_MASK) &&
+        (screen_info->feature_mask & GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK))
       screen_info->feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
   }
 

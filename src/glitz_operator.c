@@ -107,6 +107,7 @@ glitz_set_stencil_operator (glitz_gl_proc_address_list_t *gl,
   switch (op) {
   case GLITZ_STENCIL_OPERATOR_SET:
   case GLITZ_STENCIL_OPERATOR_UNION:
+  case GLITZ_STENCIL_OPERATOR_CLEAR:
     gl->stencil_func (GLITZ_GL_ALWAYS, mask, ~0x0);
     gl->stencil_op (GLITZ_GL_REPLACE, GLITZ_GL_REPLACE, GLITZ_GL_REPLACE);
     break;

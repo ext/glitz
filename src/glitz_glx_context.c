@@ -255,35 +255,15 @@ glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
     (glitz_gl_unmap_buffer_t)
     glitz_glx_get_proc_address (thread_info, "glUnmapBuffer");
 
-  if (screen_info->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
-    if (context->gl.get_program_iv) {
+  if (screen_info->feature_mask & GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK) {
+    if (context->gl.get_program_iv)
       context->gl.get_program_iv (GLITZ_GL_FRAGMENT_PROGRAM,
                                   GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS,
                                   &context->texture_indirections);
-    }
   }
   
   context->gl.need_lookup = 0;
   context->glx.need_lookup = 0;
-}
-
-static void
-glitz_glx_context_set_surface_anti_aliasing (glitz_glx_surface_t *surface)
-{
-  if (surface->base.format->multisample.supported) {
-    if (surface->base.polyedge == GLITZ_POLYEDGE_SMOOTH) {
-      glEnable (GLITZ_GL_MULTISAMPLE);
-      if (surface->screen_info->glx_feature_mask &
-          GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_MASK) {
-        if (surface->base.polyedge_smooth_hint ==
-            GLITZ_POLYEDGE_SMOOTH_HINT_FAST)
-          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_FASTEST);
-        else
-          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_NICEST);
-      }
-    } else
-      glDisable (GLITZ_GL_MULTISAMPLE);
-  }
 }
 
 void
@@ -302,6 +282,7 @@ glitz_glx_context_make_current (glitz_glx_surface_t *surface,
   } else {
     context = surface->context->context;
     drawable = surface->drawable;
+    surface->base.update_mask |= GLITZ_UPDATE_ALL_MASK;
   }
   
   glXMakeCurrent (surface->screen_info->display_info->display,
@@ -333,8 +314,6 @@ glitz_glx_context_update (glitz_glx_surface_t *surface,
     if ((context != surface->context->context) ||
         (glXGetCurrentDrawable () != surface->drawable))
       glitz_glx_context_make_current (surface, (context)? 1: 0);
-    
-    glitz_glx_context_set_surface_anti_aliasing (surface);
     break;
   }
 }
@@ -350,11 +329,6 @@ glitz_glx_context_push_current (glitz_glx_surface_t *surface,
   screen_info = surface->screen_info;
 
   index = screen_info->context_stack_size++;
-
-  screen_info->context_stack =
-    realloc (screen_info->context_stack,
-             sizeof (glitz_glx_context_info_t) *
-             screen_info->context_stack_size);
 
   context_info = &screen_info->context_stack[index];
   context_info->surface = surface;
@@ -380,11 +354,6 @@ glitz_glx_context_pop_current (glitz_glx_surface_t *surface)
   screen_info->context_stack_size--;
   index = screen_info->context_stack_size - 1;
 
-  screen_info->context_stack =
-    realloc (screen_info->context_stack,
-             sizeof (glitz_glx_context_info_t) *
-             screen_info->context_stack_size);
-  
   context_info = &screen_info->context_stack[index];
 
   if (context_info->surface)

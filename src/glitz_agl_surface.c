@@ -43,7 +43,8 @@ static void
 _glitz_agl_surface_destroy (void *abstract_surface);
 
 static glitz_texture_t *
-_glitz_agl_surface_get_texture (void *abstract_surface);
+_glitz_agl_surface_get_texture (void *abstract_surface,
+                                glitz_bool_t allocate);
 
 static void
 _glitz_agl_surface_update_size (void *abstract_surface);
@@ -59,15 +60,19 @@ _glitz_agl_surface_push_current (void *abstract_surface,
   glitz_bool_t success = 1;
   
   if (constraint == GLITZ_CN_SURFACE_DRAWABLE_CURRENT &&
-      ((!surface->pbuffer) && (!surface->drawable))) {
-    constraint = GLITZ_CN_ANY_CONTEXT_CURRENT;
-    success = 0;
+      (!surface->pbuffer) && (!surface->drawable)) {
+    if (surface->base.format->draw.offscreen) {
+      surface->pbuffer = glitz_agl_pbuffer_create (&surface->base.texture);
+    } else {
+      constraint = GLITZ_CN_ANY_CONTEXT_CURRENT;
+      success = 0;
+    }
   }
   
   surface = glitz_agl_context_push_current (surface, constraint);
 
   if (surface) {
-    glitz_surface_setup_environment (&surface->base);
+    glitz_surface_update_state (&surface->base);
     return 1;
   }
 
@@ -82,7 +87,7 @@ _glitz_agl_surface_pop_current (void *abstract_surface)
   surface = glitz_agl_context_pop_current (surface);
   
   if (surface)
-    glitz_surface_setup_environment (&surface->base);
+    glitz_surface_update_state (&surface->base);
 }
 
 static glitz_bool_t
@@ -103,7 +108,8 @@ static const struct glitz_surface_backend glitz_agl_surface_backend = {
 };
 
 static glitz_texture_t *
-_glitz_agl_surface_get_texture (void *abstract_surface) {
+_glitz_agl_surface_get_texture (void *abstract_surface,
+                                glitz_bool_t allocate) {
   glitz_agl_surface_t *surface = (glitz_agl_surface_t *) abstract_surface;
 
   if (surface->base.hint_mask & GLITZ_INT_HINT_DIRTY_MASK) {
@@ -111,11 +117,14 @@ _glitz_agl_surface_get_texture (void *abstract_surface) {
       surface->base.hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
 
       if (surface->base.read_buffer != surface->bound_buffer) {
+        glitz_surface_push_current (&surface->base,
+                                    GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
         glitz_agl_pbuffer_bind (surface->pbuffer,
                                 surface->context->context,
                                 &surface->base.texture,
                                 surface->base.read_buffer);
         surface->bound_buffer = surface->base.read_buffer;
+        glitz_surface_pop_current (&surface->base);
       }
 
       return &surface->base.texture;
@@ -127,6 +136,10 @@ _glitz_agl_surface_get_texture (void *abstract_surface) {
       copy_box.y2 = surface->base.height;
       glitz_intersect_bounding_box (&surface->base.dirty_box,
                                     &copy_box, &copy_box);
+      
+      if (!surface->base.texture.allocated)
+        glitz_texture_allocate (surface->base.gl, &surface->base.texture);
+      
       glitz_texture_copy_surface (&surface->base.texture, &surface->base,
                                   copy_box.x1,
                                   copy_box.y1,
@@ -137,6 +150,25 @@ _glitz_agl_surface_get_texture (void *abstract_surface) {
     }
     
     surface->base.hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
+  }
+
+  if (allocate) {
+    if (!surface->base.texture.allocated) {
+      if (SURFACE_RENDER_TEXTURE (&surface->base)) {
+        if (!surface->pbuffer)
+          surface->pbuffer = glitz_agl_pbuffer_create (&surface->base.texture);
+
+        glitz_surface_push_current (&surface->base,
+                                    GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
+        glitz_agl_pbuffer_bind (surface->pbuffer,
+                                surface->context->context,
+                                &surface->base.texture,
+                                surface->base.read_buffer);
+        surface->bound_buffer = surface->base.read_buffer;
+        glitz_surface_pop_current (&surface->base);
+      } else
+        glitz_texture_allocate (surface->base.gl, &surface->base.texture);
+    }
   }
 
   if (surface->base.texture.allocated)
@@ -162,21 +194,6 @@ static void
 _glitz_agl_set_features (glitz_agl_surface_t *surface)
 {
   surface->base.feature_mask = surface->thread_info->feature_mask;
-
-  surface->base.feature_mask &= ~GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
-  surface->base.feature_mask &= ~GLITZ_FEATURE_MULTISAMPLE_MASK;
-  surface->base.feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK;
-
-  if (surface->thread_info->feature_mask &
-      GLITZ_FEATURE_CONVOLUTION_FILTER_MASK)
-    surface->base.feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
-
-  if (surface->thread_info->feature_mask & GLITZ_FEATURE_MULTISAMPLE_MASK)
-    surface->base.feature_mask |= GLITZ_FEATURE_MULTISAMPLE_MASK;
-  
-  if (surface->thread_info->feature_mask &
-      GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK)
-    surface->base.feature_mask |= GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK;
 }
 
 static glitz_surface_t *
@@ -223,21 +240,12 @@ _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
 
   surface->base.hint_mask |= GLITZ_HINT_OFFSCREEN_MASK;
 
-  _glitz_agl_set_features (surface);
-
-  if (surface->base.format->draw.offscreen) {
-    surface->pbuffer = glitz_agl_pbuffer_create (&surface->base.texture);
-    if (surface->pbuffer) {
-      glitz_surface_push_current (&surface->base,
-                                  GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
-      glitz_agl_pbuffer_bind (surface->pbuffer,
-                              surface->context->context,
-                              &surface->base.texture,
-                              surface->base.read_buffer);
-      surface->bound_buffer = surface->base.read_buffer;
-      glitz_surface_pop_current (&surface->base);
-    }
+  if (format->draw.offscreen) {
+    surface->base.hint_mask |= GLITZ_INT_HINT_DRAWABLE_MASK;
+    surface->base.hint_mask |= GLITZ_INT_HINT_RENDER_TEXTURE_MASK;
   }
+
+  _glitz_agl_set_features (surface);
 
   return &surface->base;
 }
@@ -286,6 +294,8 @@ glitz_agl_surface_create_for_window (glitz_format_t *format,
   surface->context = context;
   surface->window = window;
   surface->drawable = GetWindowPort (window);
+
+  surface->base.hint_mask |= GLITZ_INT_HINT_DRAWABLE_MASK;
 
   _glitz_agl_set_features (surface);
   
@@ -383,11 +393,8 @@ _glitz_agl_surface_swap_buffers (void *abstract_surface)
 {
   glitz_agl_surface_t *surface = (glitz_agl_surface_t *) abstract_surface;
   
-  if (!surface->window)
-    return;
-
   glitz_agl_context_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
-  
+
   aglSwapBuffers (surface->context->context);
   
   glitz_agl_context_pop_current (surface);

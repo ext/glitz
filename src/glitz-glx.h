@@ -58,7 +58,6 @@ glitz_glx_find_format (Display *display,
 glitz_format_t *
 glitz_glx_find_standard_format (Display *display,
                                 int screen,
-                                unsigned long option_mask,
                                 glitz_format_name_t format_name);
 
 XVisualInfo *

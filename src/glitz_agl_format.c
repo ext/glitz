@@ -367,13 +367,12 @@ glitz_agl_find_format (unsigned long mask,
 slim_hidden_def(glitz_agl_find_format);
 
 glitz_format_t *
-glitz_agl_find_standard_format (unsigned long option_mask,
-                                glitz_format_name_t format_name)
+glitz_agl_find_standard_format (glitz_format_name_t format_name)
 {
   glitz_agl_thread_info_t *thread_info = glitz_agl_thread_info_get ();
   
   return
     glitz_format_find_standard (thread_info->formats, thread_info->n_formats,
-                                option_mask, format_name);
+                                format_name);
 }
 slim_hidden_def(glitz_agl_find_standard_format);

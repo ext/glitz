@@ -38,11 +38,10 @@ libglitz_la_SOURCES = \
 	glitz_util.c \
 	glitz_format.c \
 	glitz_program.c \
-	glitz_programmatic.c \
-	glitz_color_range.c \
-	glitz_render.c \
+	glitz_compose.c \
 	glitz_stencil.c \
 	glitz_pixel.c \
+	glitz_filter.c \
 	glitz_gl.h \
 	glitzint.h
 

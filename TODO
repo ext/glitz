@@ -1,28 +1,19 @@
-* Remove the solid surface type from the API. 1x1 surfaces should
-  internally work in sort of the same way as solid surfaces do now. So
-  a solid surface type will no longer be needed.
+* Switch to new trapezoid type. Add x_offset and y_offset to
+  glitz_composite_trapezoids, glitz_composite_triangles and similars.
 
-* Remove linear and radial surface types and the color range type. Linear
-  and radial gradients should just be another set of filters.
+* Add glitz_add_trapezoids, glitz_add_triangles...
+
+* Fix so that projective transformations actually work.
+
+* Implement the new convolution and the new gradient filters.
+  (Current filters are broken!)
 
 * Add low-pass sub-pixel filters for HW accelerated color balancing 
-  of per-component alpha masks.
+  of per-component alpha masks (possibly with gamma correction).
 
 * GL_MESA_pack_invert support.
 
-* Projective transformations.
-
 * Retained-mode rendering.
-
-* Internal composite interface version 2. This will replace pretty much
-  all of the code in the glitz_composite function. This new interface
-  will be really simple, transformations will be accomplished by just setting
-  texture matrices and repeat will always be handled by HW. However, the
-  GL_ARB_none_power_of_two_texture extension will be required (I don't know
-  any hardware that actually support this yet). This is the perfect solution
-  and definitely the future. (Possible problem with render_texture as we need
-  to be able to set the texture border color and I'm not sure the existing
-  render_texture interfaces allow this.)
 
 * WGL (Windows GL) backend.
 

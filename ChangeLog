@@ -1,3 +1,160 @@
+2004-08-10  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz.h: Added glitz_surface_finish.
+
+	* src/glitzint.h: Added allocate parameter to get_texture backend
+	function.
+
+	* src/glitz_surface.c: Removed glitz_surface_try_push_current.
+
+	* src/glitz_format.c: Removed option from find_standard_format and
+	made standard format names match exactly.
+
+	Switch name of glitz_render data types, functions and source
+	code to glitz_combine_, glitz_composite_ and glitz_compose.c.
+
+2004-08-05  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: New composite interface.
+	New filter system.
+	Improved OpenGL state updating. 
+	Removed programmatic surface.
+
+	* src/glitz_util.c: Removed glitz_intersect_bounding_box_double.
+	(glitz_uint_to_power_of_two): Faster.
+	Removed glitz_uint_is_power_of_two in favor of the POWER_OF_TWO
+	macro, thanks to Roman Pozlevich for the tip.
+
+	* src/glitz_tri.c (glitz_int_composite_triangles): Smarter way for
+	doing polygon opacity.
+
+	* src/glitz_trap.c (glitz_composite_trapezoids): Smarter way for doing
+	polygon opacity.
+
+	* src/glitz_texture.c: Use POWER_OF_TWO macro.
+	(_glitz_texture_allocate): Clear unused texels.
+	New filter and wrap handling.
+	Added glitz_texture_tex_coord.
+
+	* src/glitz_surface.c (glitz_surface_init): Detect solid surface type.
+	Removed glitz_surface_create_intermediate.
+	Removed programmatic surfaces.
+	Added _glitz_surface_solid_store and glitz_surface_ensure_solid
+	functions for solid color handling.
+	(glitz_surface_set_transform): New filter system.
+	(glitz_surface_get_affine_transform): Added 
+	glitz_surface_get_affine_transform so that affine transform is only
+	computed when actually needed.
+	Added glitz_surface_set_fill.
+	Added glitz_surface_set_correctness_hint.
+	(glitz_surface_set_filter): New filter system.
+	(glitz_surface_update_state): Added glitz_surface_update_state for much
+	more efficient OpenGL state updating.
+	(glitz_surface_update_state): Multisample handling is now done here.
+
+	* src/glitz_stencil.c: Write update mask.
+
+	* src/glitz_status.c: Added glitz_status_to_status_mask.
+
+	* src/glitz_render.c: Added support for component alpha with solid 
+	surfaces.
+	Filters moved into glitz_filter.c.
+	Updated all of the render interface to match the new composite
+	interface.
+
+	* src/glitz_rect.c: Added STORE_16 macro.
+	(glitz_int_fill_rectangles): Don't compute bounds here.
+	Added _glitz_fill_solid for filling solid surfaces with SRC operator.
+
+	* src/glitz_program.c: Updated fragment programs to use texture matrix
+	for projective transformations.
+	(_glitz_create_vertex_program): Filter type determines vertex program
+	creation parameters.
+	(_glitz_create_fragment_program): Filter type determines fragment
+	program creation parameters.
+	(glitz_program_map_fini): Update to reflect changes to program map.
+
+	* src/glitz_pixel.c: Use new tex_coord functions.
+
+	* src/glitz_matrix.c: Removed glitz_matrix_transform_bounding_box.
+
+	* src/glitz_glxint.h: Removed ARB from feature names.
+	Switched to static context stack allocation.
+
+	* src/glitz_glx_surface.c (_glitz_glx_surface_push_current): Lazy
+	allocation of pbuffers.
+	(_glitz_glx_surface_create): Lazy allocation of pbuffers.
+
+	* src/glitz_glx_info.c: Added glLoadMatrixd and glMultMatrixd.
+	(glitz_glx_screen_info_get): Switched to static context stack
+	allocation.
+
+	* src/glitz_glx_extension.c: New extensions
+	GL_ARB_texture_border_clamp, GL_EXT_texture_env_combine.
+
+	* src/glitz_glx_context.c: Multisample control is moved into glitz
+	core library.
+	(glitz_glx_context_make_current): Write the update mask.
+	(glitz_glx_context_push_current): Switched to static context stack
+	allocation.
+	(glitz_glx_context_pop_current): Switched to static context stack
+	allocation.
+
+	* src/glitz_gl.h: Added GLITZ_GL_FLOAT and GLITZ_GL_CLAMP_TO_BORDER
+	tokens.
+	Added glitz_gl_load_matrix_d_t and glitz_gl_mult_matrix_d_t prototypes.
+
+	* src/glitz_filter.c: Added new filter interface, which matches the 
+	X Render extensions filter interface.
+
+	* src/glitz_aglint.h: Removed ARB from feature names.
+	Switched to static context stack allocation.
+	
+
+	* src/glitz_agl_surface.c (_glitz_agl_surface_push_current): Lazy
+	allocation of pbuffers.
+	(_glitz_agl_set_features): Stupid code goes away.
+	(_glitz_agl_surface_create): Lazy allocation of pbuffers.
+
+	* src/glitz_agl_info.c: Added glLoadMatrixd and glMultMatrixd.
+	(glitz_agl_thread_info_init): Switched to static context stack
+	allocation.
+
+	* src/glitz_agl_extension.c: New extensions
+	GL_ARB_texture_border_clamp, GL_EXT_texture_env_combine.
+
+	* src/glitz_agl_context.c: Multisample control is moved into glitz
+	core library.
+	(glitz_agl_context_make_current): Write the update mask.
+	(glitz_agl_context_push_current): Switched to static context stack
+	allocation.
+	(glitz_agl_context_pop_current): Switched to static context stack
+	allocation.
+
+	* src/glitz.man: Added new manual page with a short description.
+
+	* src/glitz.h: New filter types.
+	Removed ARB from feature names.
+	Color ranges and programmatic surfaces, get out of here!
+	Added fill types.
+	glitz_surface_set_repeat replaced by glitz_surface_set_fill.
+	Added glitz_surface_set_correctness_hint, which makes it possible
+	to turn off the software repeat fall-back that produces slightly
+	incorrect results.
+	Added filter parameters to glitz_surface_set_filter.
+
+	* src/glitz.c: New internal composite interface. This new interface
+	almost completely replaces the old way to do composite. Only some
+	parts of the old interface are left as fall-back for cases where
+	hardware is not capable of using this new much improved interface.
+	New interface is simpler and much more correct then the old one.
+	Different fill types and projective transformations are now supported.
+
+	* src/Makefile.am (libglitz_la_SOURCES): glitz_programmatic.c,
+	glitz_color_range.c goes away and in comes glitz_filter.c.
+
+	* TODO: Updated TODO list.
+
 2004-07-24  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_agl_info.c:

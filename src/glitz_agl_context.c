@@ -83,25 +83,6 @@ glitz_agl_context_destroy (glitz_agl_thread_info_t *thread_info,
   free (context);
 }
 
-static void
-glitz_agl_context_set_surface_anti_aliasing (glitz_agl_surface_t *surface)
-{
-  if (surface->base.format->multisample.supported) {
-    if (surface->base.polyedge == GLITZ_POLYEDGE_SMOOTH) {
-      glEnable (GLITZ_GL_MULTISAMPLE);
-      if (surface->thread_info->agl_feature_mask &
-          GLITZ_AGL_FEATURE_MULTISAMPLE_FILTER_MASK) {
-        if (surface->base.polyedge_smooth_hint ==
-            GLITZ_POLYEDGE_SMOOTH_HINT_FAST)
-          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_FASTEST);
-        else
-          glHint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_NICEST);
-      }
-    } else
-      glDisable (GLITZ_GL_MULTISAMPLE);
-  }
-}
-
 void
 glitz_agl_context_make_current (glitz_agl_surface_t *surface,
                                 glitz_bool_t flush)
@@ -119,10 +100,11 @@ glitz_agl_context_make_current (glitz_agl_surface_t *surface,
     context = surface->context->context;
     pbuffer = surface->pbuffer;
     drawable = surface->drawable;
+    surface->base.update_mask |= GLITZ_UPDATE_ALL_MASK;
   }
 
   if (pbuffer)
-    aglSetPBuffer (context, pbuffer, 0, 0, 0);
+    aglSetPBuffer (context, pbuffer, 0, 0, aglGetVirtualScreen (context));
   else
     aglSetDrawable (context, drawable);
 
@@ -165,8 +147,6 @@ glitz_agl_context_update (glitz_agl_surface_t *surface,
           glitz_agl_context_make_current (surface, (context)? 1: 0);
       }
     }
-    
-    glitz_agl_context_set_surface_anti_aliasing (surface);
     break;
   }
 }
@@ -182,12 +162,7 @@ glitz_agl_context_push_current (glitz_agl_surface_t *surface,
   thread_info = surface->thread_info;
 
   index = thread_info->context_stack_size++;
-
-  thread_info->context_stack =
-    realloc (thread_info->context_stack,
-             sizeof (glitz_agl_context_info_t) *
-             thread_info->context_stack_size);
-
+  
   context_info = &thread_info->context_stack[index];
   context_info->surface = surface;
   context_info->constraint = constraint;
@@ -212,11 +187,6 @@ glitz_agl_context_pop_current (glitz_agl_surface_t *surface)
   thread_info->context_stack_size--;
   index = thread_info->context_stack_size - 1;
 
-  thread_info->context_stack =
-    realloc (thread_info->context_stack,
-             sizeof (glitz_agl_context_info_t) *
-             thread_info->context_stack_size);
-  
   context_info = &thread_info->context_stack[index];
 
   if (context_info->surface)

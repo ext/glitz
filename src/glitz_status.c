@@ -31,6 +31,27 @@
 
 #include "glitzint.h"
 
+unsigned long
+glitz_status_to_status_mask (glitz_status_t status)
+{
+  switch (status) {
+  case GLITZ_STATUS_NO_MEMORY:
+    return GLITZ_STATUS_NO_MEMORY_MASK;
+  case GLITZ_STATUS_NULL_POINTER:
+    return GLITZ_STATUS_NULL_POINTER_MASK;
+  case GLITZ_STATUS_BAD_COORDINATE:
+    return GLITZ_STATUS_BAD_COORDINATE_MASK;
+  case GLITZ_STATUS_NOT_SUPPORTED:
+    return GLITZ_STATUS_NOT_SUPPORTED_MASK;
+  case GLITZ_STATUS_INVALID_MATRIX:
+    return GLITZ_STATUS_INVALID_MATRIX_MASK;
+  case GLITZ_STATUS_SUCCESS:
+    break;
+  }
+  
+  return 0;
+}
+
 glitz_status_t
 glitz_status_pop_from_mask (unsigned long *mask)
 {

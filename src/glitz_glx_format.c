@@ -313,7 +313,6 @@ slim_hidden_def(glitz_glx_find_format);
 glitz_format_t *
 glitz_glx_find_standard_format (Display *display,
                                 int screen,
-                                unsigned long option_mask,
                                 glitz_format_name_t format_name)
 {
   glitz_glx_screen_info_t *screen_info =
@@ -321,7 +320,7 @@ glitz_glx_find_standard_format (Display *display,
 
   return
     glitz_format_find_standard (screen_info->formats, screen_info->n_formats,
-                                option_mask, format_name);
+                                format_name);
 }
 slim_hidden_def(glitz_glx_find_standard_format);
 

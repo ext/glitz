@@ -31,6 +31,12 @@
 
 #include "glitzint.h"
 
+#define STORE_16(dst, size, src) \
+  dst = ((size) ? \
+         ((((((1L << (size)) - 1L) * (src)) / 0xffff) * 0xffff) / \
+          ((1L << (size)) - 1L)) : \
+         dst)
+
 static void
 glitz_rectangle_bounds (int n_rects,
                         const glitz_rectangle_t *rects,
@@ -63,24 +69,18 @@ glitz_int_fill_rectangles (glitz_operator_t op,
                            const glitz_rectangle_t *rects,
                            int n_rects)
 {
-  glitz_bounding_box_t bounds;
-  glitz_gl_vertex_2i_t vertex_2i;
+  glitz_gl_proc_address_list_t *gl = dst->gl;
   glitz_gl_bitfield_t clear_mask;
   
-  glitz_rectangle_bounds (n_rects, rects, &bounds);
-  if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
-      bounds.x2 < 0 || bounds.y2 < 0)
-    return;
-
   if (op == GLITZ_OPERATOR_SRC && (!*dst->stencil_mask)) {
     clear_mask = GLITZ_GL_COLOR_BUFFER_BIT;
-    dst->gl->clear_color (color->red / (glitz_gl_clampf_t) 0xffff,
-                          color->green / (glitz_gl_clampf_t) 0xffff,
-                          color->blue / (glitz_gl_clampf_t) 0xffff,
-                          color->alpha / (glitz_gl_clampf_t) 0xffff);
+    gl->clear_color (color->red / (glitz_gl_clampf_t) 0xffff,
+                     color->green / (glitz_gl_clampf_t) 0xffff,
+                     color->blue / (glitz_gl_clampf_t) 0xffff,
+                     color->alpha / (glitz_gl_clampf_t) 0xffff);
   } else if (op == (glitz_operator_t) GLITZ_INT_OPERATOR_STENCIL_RECT_SET) {
     clear_mask = GLITZ_GL_STENCIL_BUFFER_BIT;
-    dst->gl->clear_stencil (*dst->stencil_mask);
+    gl->clear_stencil (*dst->stencil_mask);
   } else {
     if (op == (glitz_operator_t) GLITZ_INT_OPERATOR_STENCIL_RECT_SRC)
       op = GLITZ_OPERATOR_SRC;
@@ -90,20 +90,23 @@ glitz_int_fill_rectangles (glitz_operator_t op,
   
   if (clear_mask) {
     for (; n_rects; n_rects--, rects++) {
-      dst->gl->scissor (rects->x,
-                        dst->height - (rects->y + rects->height),
-                        rects->width,
-                        rects->height);
-      dst->gl->clear (clear_mask);
+      gl->enable (GLITZ_GL_SCISSOR_TEST);
+      gl->scissor (rects->x,
+                   dst->height - (rects->y + rects->height),
+                   rects->width,
+                   rects->height);
+      gl->clear (clear_mask);
     }
+    dst->update_mask |= GLITZ_UPDATE_SCISSOR_MASK;
   } else {
-    dst->gl->color_4us (color->red, color->green, color->blue, color->alpha);
+    glitz_gl_vertex_2i_t vertex_2i = gl->vertex_2i;
+    
+    gl->color_4us (color->red, color->green, color->blue, color->alpha);
       
-    glitz_set_operator (dst->gl, op);
+    glitz_set_operator (gl, op);
       
-    dst->gl->begin (GLITZ_GL_QUADS);
+    gl->begin (GLITZ_GL_QUADS);
       
-    vertex_2i = dst->gl->vertex_2i;
     for (; n_rects; n_rects--, rects++) {
       vertex_2i (rects->x, rects->y);
       vertex_2i (rects->x + rects->width, rects->y);
@@ -111,8 +114,24 @@ glitz_int_fill_rectangles (glitz_operator_t op,
       vertex_2i (rects->x, rects->y + rects->height);
     }
   
-    dst->gl->end ();
+    gl->end ();
   }
+}
+
+/* This is a hack that allows drawing with GLITZ_OPERATOR_SRC
+   to all solid surfaces (1x1 surfaces) just by scaling the color
+   to the appropriate format and storing it in the surface's solid
+   color. */
+static void
+_glitz_fill_solid (glitz_surface_t *dst,
+                   const glitz_color_t *color)
+{  
+  STORE_16 (dst->solid.red, dst->format->red_size, color->red);
+  STORE_16 (dst->solid.green, dst->format->green_size, color->green);
+  STORE_16 (dst->solid.blue, dst->format->blue_size, color->blue);
+  STORE_16 (dst->solid.alpha, dst->format->alpha_size, color->alpha);
+  
+  dst->hint_mask |= GLITZ_INT_HINT_DRAWABLE_DIRTY_MASK;
 }
 
 void
@@ -135,12 +154,19 @@ glitz_fill_rectangle (glitz_operator_t op,
       bounds.x2 < 0 || bounds.y2 < 0)
     return;
 
+  if (SURFACE_SOLID (dst) && SURFACE_OFFSCREEN (dst) &&
+      op == GLITZ_OPERATOR_SRC && width > 0 && height > 0) {
+    _glitz_fill_solid (dst, color);
+    return;
+  }
+
   rect.x = x;
   rect.y = y;
   rect.width = width;
   rect.height = height;
 
   if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
     glitz_surface_pop_current (dst);
     return;
   }
@@ -166,7 +192,15 @@ glitz_fill_rectangles (glitz_operator_t op,
       bounds.x2 < 0 || bounds.y2 < 0)
     return;
 
+  if (SURFACE_SOLID (dst) && SURFACE_OFFSCREEN (dst) &&
+      op == GLITZ_OPERATOR_SRC &&
+      (bounds.x2 - bounds.x1) > 0 && (bounds.y2 - bounds.y1) > 0) {
+    _glitz_fill_solid (dst, color);
+    return;
+  }
+
   if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
     glitz_surface_pop_current (dst);
     return;
   }

@@ -42,41 +42,25 @@ glitz_stencil_rectangles (glitz_surface_t *dst,
   if (n_rects == 0)
     return;
 
-  if ((op == GLITZ_STENCIL_OPERATOR_SET ||
-       op == GLITZ_STENCIL_OPERATOR_UNION) &&
-      (n_rects == 1 &&
-       rects->x <= 0 && rects->y <= 0 &&
-       rects->width >= dst->width &&
-       rects->height >= dst->height)) {
-    *dst->stencil_mask = 0x0;
-    return;
-  }
-
   if (dst->format->stencil_size < 1)
     return;
 
-  if (op == GLITZ_STENCIL_OPERATOR_INTERSECT && *dst->stencil_mask == 0x0)
-    op = GLITZ_STENCIL_OPERATOR_SET;
-
-  if (op == GLITZ_STENCIL_OPERATOR_DECR_LESS) {
-    *dst->stencil_mask &= (1 << (dst->format->stencil_size - 1));
-    if (*dst->stencil_mask == 0x0)
-      return;
-  }
-
   if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
     glitz_surface_pop_current (dst);
     return;
-  }
-
-  if (*dst->stencil_mask == 0x0 || op == GLITZ_STENCIL_OPERATOR_SET) {
-    dst->gl->clear_stencil (0x0);    
-    dst->gl->clear (GLITZ_GL_STENCIL_BUFFER_BIT);
   }
 
   rect_op = (glitz_operator_t) GLITZ_INT_OPERATOR_STENCIL_RECT_SRC;
 
   switch (op) {
+  case GLITZ_STENCIL_OPERATOR_CLEAR:
+    rect_op = (glitz_operator_t) GLITZ_INT_OPERATOR_STENCIL_RECT_SET;
+    break;
+  case GLITZ_STENCIL_OPERATOR_DECR_LESS:
+    *dst->stencil_mask &= (1 << (dst->format->stencil_size - 1));
+    glitz_set_stencil_operator (dst->gl, op, *dst->stencil_mask);
+    break;
   case GLITZ_STENCIL_OPERATOR_INTERSECT:
     glitz_set_stencil_operator (dst->gl, GLITZ_STENCIL_OPERATOR_INCR_EQUAL,
                                 *dst->stencil_mask);
@@ -90,9 +74,8 @@ glitz_stencil_rectangles (glitz_surface_t *dst,
     glitz_set_stencil_operator (dst->gl, op, *dst->stencil_mask);
     break;
   }
-  
-  dst->gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE,
-                       GLITZ_GL_FALSE, GLITZ_GL_FALSE);
+
+  dst->gl->color_mask (0, 0, 0, 0);
 
   glitz_int_fill_rectangles (rect_op,
                              dst,
@@ -114,6 +97,10 @@ glitz_stencil_rectangles (glitz_surface_t *dst,
   } else if (op == GLITZ_STENCIL_OPERATOR_INCR_EQUAL)
     *dst->stencil_mask |= 0x1;
 
+  dst->gl->color_mask (1, 1, 1, 1);
+  
+  dst->update_mask |= GLITZ_UPDATE_STENCIL_OP_MASK;
+
   glitz_surface_pop_current (dst);
 }
 
@@ -131,20 +118,17 @@ glitz_stencil_trapezoids (glitz_surface_t *dst,
   if (dst->format->stencil_size < 1)
     return;
 
-  if (op == GLITZ_STENCIL_OPERATOR_INTERSECT && *dst->stencil_mask == 0x0)
-    op = GLITZ_STENCIL_OPERATOR_SET;
-
   if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
     glitz_surface_pop_current (dst);
     return;
   }
 
-  if (*dst->stencil_mask == 0x0 || op == GLITZ_STENCIL_OPERATOR_SET) {
-    dst->gl->clear_stencil (0x0);
-    dst->gl->clear (GLITZ_GL_STENCIL_BUFFER_BIT);
-  }
-  
   switch (op) {
+  case GLITZ_STENCIL_OPERATOR_DECR_LESS:
+    *dst->stencil_mask &= (1 << (dst->format->stencil_size - 1));
+    glitz_set_stencil_operator (dst->gl, op, *dst->stencil_mask);
+    break;
   case GLITZ_STENCIL_OPERATOR_INTERSECT:
     glitz_set_stencil_operator (dst->gl, GLITZ_STENCIL_OPERATOR_INCR_EQUAL,
                                 *dst->stencil_mask);
@@ -158,8 +142,7 @@ glitz_stencil_trapezoids (glitz_surface_t *dst,
     break;
   }
   
-  dst->gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE,
-                       GLITZ_GL_FALSE, GLITZ_GL_FALSE);
+  dst->gl->color_mask (0, 0, 0, 0);
 
   glitz_int_fill_trapezoids (GLITZ_OPERATOR_SRC,
                              dst,
@@ -182,6 +165,10 @@ glitz_stencil_trapezoids (glitz_surface_t *dst,
   } else if (op == GLITZ_STENCIL_OPERATOR_INCR_EQUAL)
     *dst->stencil_mask |= 0x1;
 
+  dst->gl->color_mask (1, 1, 1, 1);
+  
+  dst->update_mask |= GLITZ_UPDATE_STENCIL_OP_MASK;
+
   glitz_surface_pop_current (dst);
 }
 
@@ -200,20 +187,17 @@ glitz_stencil_triangles (glitz_surface_t *dst,
   if (dst->format->stencil_size < 1)
     return;
   
-  if (op == GLITZ_STENCIL_OPERATOR_INTERSECT && *dst->stencil_mask == 0x0)
-    op = GLITZ_STENCIL_OPERATOR_SET;
-
   if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
     glitz_surface_pop_current (dst);
     return;
   }
   
-  if (*dst->stencil_mask == 0x0 || op == GLITZ_STENCIL_OPERATOR_SET) {
-    dst->gl->clear_stencil (0x0);
-    dst->gl->clear (GLITZ_GL_STENCIL_BUFFER_BIT);
-  }
-
   switch (op) {
+  case GLITZ_STENCIL_OPERATOR_DECR_LESS:
+    *dst->stencil_mask &= (1 << (dst->format->stencil_size - 1));
+    glitz_set_stencil_operator (dst->gl, op, *dst->stencil_mask);
+    break;
   case GLITZ_STENCIL_OPERATOR_INTERSECT:
     glitz_set_stencil_operator (dst->gl, GLITZ_STENCIL_OPERATOR_INCR_EQUAL,
                                 *dst->stencil_mask);
@@ -226,9 +210,8 @@ glitz_stencil_triangles (glitz_surface_t *dst,
     glitz_set_stencil_operator (dst->gl, op, *dst->stencil_mask);
     break;
   }
-  
-  dst->gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE,
-                       GLITZ_GL_FALSE, GLITZ_GL_FALSE);
+
+  dst->gl->color_mask (0, 0, 0, 0);
 
   glitz_int_fill_triangles (GLITZ_OPERATOR_SRC,
                             dst,
@@ -251,6 +234,10 @@ glitz_stencil_triangles (glitz_surface_t *dst,
                                dst, &color, &rect, 1);
   } else if (op == GLITZ_STENCIL_OPERATOR_INCR_EQUAL)
     *dst->stencil_mask |= 0x1;
+
+  dst->gl->color_mask (1, 1, 1, 1);
+
+  dst->update_mask |= GLITZ_UPDATE_STENCIL_OP_MASK;
 
   glitz_surface_pop_current (dst);
 }

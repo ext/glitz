@@ -46,53 +46,6 @@ glitz_matrix_transform_point (glitz_matrix_t *matrix,
   *y = _y;
 }
 
-void
-glitz_matrix_transform_bounding_box (glitz_matrix_t *matrix,
-                                     double *x1, double *y1,
-                                     double *x2, double *y2)
-{
-  int i;
-  double quad_x[4], quad_y[4];
-  double min_x, max_x;
-  double min_y, max_y;
-
-  quad_x[0] = *x1;
-  quad_y[0] = *y1;
-  glitz_matrix_transform_point (matrix, &quad_x[0], &quad_y[0]);
-
-  quad_x[1] = *x2;
-  quad_y[1] = *y1;
-  glitz_matrix_transform_point (matrix, &quad_x[1], &quad_y[1]);
-
-  quad_x[2] = *x2;
-  quad_y[2] = *y2;
-  glitz_matrix_transform_point (matrix, &quad_x[2], &quad_y[2]);
-
-  quad_x[3] = *x1;
-  quad_y[3] = *y2;
-  glitz_matrix_transform_point (matrix, &quad_x[3], &quad_y[3]);
-
-  min_x = max_x = quad_x[0];
-  min_y = max_y = quad_y[0];
-
-  for (i = 1; i < 4; i++) {
-    if (quad_x[i] < min_x)
-      min_x = quad_x[i];
-    if (quad_x[i] > max_x)
-      max_x = quad_x[i];
-    
-    if (quad_y[i] < min_y)
-      min_y = quad_y[i];
-    if (quad_y[i] > max_y)
-      max_y = quad_y[i];
-  }
-  
-  *x1 = min_x;
-  *y1 = min_y;
-  *x2 = max_x;
-  *y2 = max_y;
-}
-
 static void
 _glitz_matrix_set_affine (glitz_matrix_t *matrix,
                           double a, double b,

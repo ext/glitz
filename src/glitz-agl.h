@@ -53,8 +53,7 @@ glitz_agl_find_format (unsigned long mask,
                        int count);
   
 glitz_format_t *
-glitz_agl_find_standard_format (unsigned long option_mask,
-                                glitz_format_name_t format_name);
+glitz_agl_find_standard_format (glitz_format_name_t format_name);
 
   
 /* glitz_agl_surface.c */

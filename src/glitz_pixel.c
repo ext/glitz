@@ -653,14 +653,12 @@ glitz_put_pixels (glitz_surface_t *dst,
                   glitz_pixel_buffer_t *buffer)
 {
   glitz_gl_proc_address_list_t *gl;
-  glitz_bool_t drawable;
+  glitz_bool_t to_drawable;
+  glitz_texture_t *texture;
   char *pixels, *data = NULL;
   glitz_gl_pixel_format_t *format = NULL;
   unsigned long transform = 0;
   int xoffset, bytes_per_line;
-  
-  if (SURFACE_PROGRAMMATIC (dst))
-    return;
 
   if (x_dst < 0 || x_dst > (dst->width - width) ||
       y_dst < 0 || y_dst > (dst->height - height)) {
@@ -680,10 +678,18 @@ glitz_put_pixels (glitz_surface_t *dst,
     format = _glitz_best_gl_pixel_format (dst->format);
   }
 
-  if (glitz_surface_try_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT))
-    drawable = 1;
+  if (SURFACE_RENDER_TEXTURE (dst))
+    to_drawable = 0;
+  else if (SURFACE_DRAWABLE (dst))
+    to_drawable = 1;
   else
-    drawable = 0;
+    to_drawable = 0;
+
+  if (to_drawable) {
+    if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT))
+      to_drawable = 0;
+  } else
+    glitz_surface_push_current (dst, GLITZ_CN_ANY_CONTEXT_CURRENT);
   
   if (transform) {
     glitz_image_t src_image, dst_image;
@@ -693,6 +699,7 @@ glitz_put_pixels (glitz_surface_t *dst,
     
     data = malloc (stride * height);
     if (!data) {
+      glitz_surface_pop_current (dst);
       glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
       return;
     }
@@ -730,7 +737,13 @@ glitz_put_pixels (glitz_surface_t *dst,
     pixels += buffer->format.skip_lines * bytes_per_line;
   }
 
-  glitz_texture_bind (gl, &dst->texture);
+  texture = glitz_surface_get_texture (dst, 1);
+  if (!texture) {
+    glitz_surface_pop_current (dst);
+    return;
+  }
+  
+  glitz_texture_bind (gl, texture);
 
   gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, 0);
   gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_ROWS, 0);
@@ -748,35 +761,34 @@ glitz_put_pixels (glitz_surface_t *dst,
   } else
     gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 1);    
 
-  gl->tex_sub_image_2d (dst->texture.target, 0,
+  gl->tex_sub_image_2d (texture->target, 0,
                         x_dst, dst->height - y_dst - height,
                         width, height,
                         format->format, format->type,
                         pixels);
 
-  if (drawable) {
+  if (to_drawable) {
     glitz_point_t tl, br;
+
+    gl->matrix_mode (GLITZ_GL_TEXTURE);
+    gl->load_identity ();
     
     gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                    GLITZ_GL_REPLACE);
-    dst->gl->color_4us (0x0, 0x0, 0x0, 0xffff);
+    gl->color_4us (0x0, 0x0, 0x0, 0xffff);
     
     glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
     
-    glitz_texture_ensure_repeat (gl, &dst->texture, 0);
-    glitz_texture_ensure_filter (gl, &dst->texture, GLITZ_FILTER_NEAREST);
-    
-    tl.x = (x_dst / (double) dst->width) * dst->texture.texcoord_width;
-    tl.y = (y_dst / (double) dst->height) * dst->texture.texcoord_height;
-    
-    br.x = ((x_dst + width) / (double) dst->width) *
-      dst->texture.texcoord_width;
-    br.y = ((y_dst + height) / (double) dst->height) *
-      dst->texture.texcoord_height;
-    
-    tl.y = dst->texture.texcoord_height - tl.y;
-    br.y = dst->texture.texcoord_height - br.y;
+    glitz_texture_ensure_wrap (gl, texture, GLITZ_GL_CLAMP_TO_EDGE);
+    glitz_texture_ensure_filter (gl, texture, GLITZ_GL_NEAREST);
 
+    glitz_texture_tex_coord (texture, x_dst, y_dst, &tl.x, &tl.y);
+    glitz_texture_tex_coord (texture,
+                             x_dst + width, y_dst + height, &br.x, &br.y);
+
+    tl.y = texture->texcoord_height - tl.y;
+    br.y = texture->texcoord_height - br.y;
+    
     gl->begin (GLITZ_GL_QUADS);
     gl->tex_coord_2d (tl.x, tl.y);
     gl->vertex_2d (x_dst, y_dst);
@@ -793,7 +805,9 @@ glitz_put_pixels (glitz_surface_t *dst,
       dst->hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
   }
   
-  glitz_texture_unbind (dst->gl, &dst->texture);
+  glitz_texture_unbind (gl, texture);
+
+  dst->hint_mask |= GLITZ_INT_HINT_SOLID_DIRTY_MASK;
 
   if (transform == 0)
     glitz_pixel_buffer_unbind (buffer);
@@ -813,16 +827,13 @@ glitz_get_pixels (glitz_surface_t *src,
                   glitz_pixel_buffer_t *buffer)
 {
   glitz_gl_proc_address_list_t *gl;
-  glitz_bool_t drawable;
+  glitz_bool_t from_drawable;
   glitz_texture_t *texture = NULL;
   char *pixels, *data = NULL;
   glitz_gl_pixel_format_t *format = NULL;
   unsigned long transform = 0;
   int src_x = 0, src_y = 0, src_w = width, src_h = height;
   int xoffset, bytes_per_line;
-  
-  if (SURFACE_PROGRAMMATIC (src))
-    return;
   
   if (x_src < 0 || x_src > (src->width - width) ||
       y_src < 0 || y_src > (src->height - height)) {
@@ -832,16 +843,16 @@ glitz_get_pixels (glitz_surface_t *src,
 
   gl = src->gl;
 
-  if (glitz_surface_try_push_current (src, GLITZ_CN_SURFACE_DRAWABLE_CURRENT))
-    drawable = 1;
-  else {
-    drawable = 0;
-    texture = glitz_surface_get_texture (src);
-  
-    /* Texture has not been allocated, hence source and the result of this
-       operation is undefined. So lets do nothing. */
-    if (!texture)
+  if (glitz_surface_push_current (src, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    from_drawable = 1;
+  } else {
+    from_drawable = 0;
+    
+    texture = glitz_surface_get_texture (src, 0);
+    if (!texture) {
+      glitz_surface_pop_current (src);
       return;
+    }
 
     transform |= GLITZ_TRANSFORM_COPY_REGION_MASK;
   }
@@ -899,7 +910,7 @@ glitz_get_pixels (glitz_surface_t *src,
   } else
     gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 1);
 
-  if (drawable) {
+  if (from_drawable) {
     gl->read_pixels (x_src, src->height - y_src - height,
                      width, height,
                      format->format, format->type,

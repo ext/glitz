@@ -58,6 +58,8 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_push_matrix_t) glPushMatrix,
   (glitz_gl_pop_matrix_t) glPopMatrix,
   (glitz_gl_load_identity_t) glLoadIdentity,
+  (glitz_gl_load_matrix_d_t) glLoadMatrixd,
+  (glitz_gl_mult_matrix_d_t) glMultMatrixd,
   (glitz_gl_depth_range_t) glDepthRange,
   (glitz_gl_viewport_t) glViewport,
   (glitz_gl_raster_pos_2d_t) glRasterPos2d,
@@ -66,6 +68,7 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_draw_buffer_t) glDrawBuffer,
   (glitz_gl_copy_pixels_t) glCopyPixels,
   (glitz_gl_flush_t) glFlush,
+  (glitz_gl_finish_t) glFinish,
   (glitz_gl_pixel_store_i_t) glPixelStorei,
   (glitz_gl_ortho_t) glOrtho,
   (glitz_gl_scale_d_t) glScaled,
@@ -178,14 +181,14 @@ static glitz_agl_thread_info_t _thread_info = {
   0,
   NULL,
   0,
-  NULL,
+  { 0 },
   0,
-  { (AGLITZontext) 0, (AGLPixelFormat) 0, 0 },
-  0,
-  0,
+  { 0 },
   0,
   0,
-  { 0, 0, 0, 0 }
+  0,
+  0,
+  { 0 }
 };
 
 static void
@@ -198,7 +201,7 @@ glitz_agl_thread_info_destroy (glitz_agl_thread_info_t *thread_info)
 glitz_agl_thread_info_t *
 glitz_agl_thread_info_get (void)
 {
-  if (_thread_info.context_stack == NULL)
+  if (_thread_info.context_stack_size == 0)
     glitz_agl_thread_info_init (&_thread_info);
       
   return &_thread_info;
@@ -225,32 +228,18 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
   
   thread_info->root_context.pixel_format =
     aglChoosePixelFormat (NULL, 0, attrib);
-  thread_info->root_context.context =
-    aglCreateContext (thread_info->root_context.pixel_format, NULL);
+  if (thread_info->root_context.pixel_format) {
+    thread_info->root_context.context =
+      aglCreateContext (thread_info->root_context.pixel_format, NULL);
+    if (thread_info->root_context.context) {
 
-  aglSetCurrentContext (thread_info->root_context.context);
+      aglSetCurrentContext (thread_info->root_context.context);
   
-  glitz_agl_query_extensions (thread_info);
-
-  if ((thread_info->feature_mask & GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK) &&
-      (thread_info->feature_mask &
-       GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK)) {
-    glitz_gl_uint_t texture_indirections;
-    
-     _glitz_agl_gl_proc_address.get_program_iv
-       (GLITZ_GL_FRAGMENT_PROGRAM,
-        GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS,
-        &texture_indirections);
-
-    /* Convolution filter programs require support for at least nine
-       texture indirections. */
-    if (texture_indirections >= 9)
-      thread_info->feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
+      glitz_agl_query_extensions (thread_info);  
+      glitz_agl_query_formats (thread_info);
+    }
   }
-  
-  glitz_agl_query_formats (thread_info);
 
-  thread_info->context_stack = malloc (sizeof (glitz_agl_context_info_t));
   thread_info->context_stack_size = 1;
   thread_info->context_stack->surface = NULL;
   thread_info->context_stack->constraint = GLITZ_CN_NONE;
@@ -260,14 +249,13 @@ static void
 glitz_agl_thread_info_fini (glitz_agl_thread_info_t *thread_info)
 {
   int i;
-  
-  aglSetCurrentContext (thread_info->root_context.context);
-  glitz_program_map_fini (&_glitz_agl_gl_proc_address,
-                          &thread_info->program_map);
-  aglSetCurrentContext (NULL);
 
-  if (thread_info->context_stack)
-    free (thread_info->context_stack);
+  if (thread_info->root_context.context) {
+    aglSetCurrentContext (thread_info->root_context.context);
+    glitz_program_map_fini (&_glitz_agl_gl_proc_address,
+                            &thread_info->program_map);
+    aglSetCurrentContext (NULL);
+  }
 
   for (i = 0; i < thread_info->n_contexts; i++)
     glitz_agl_context_destroy (thread_info, thread_info->contexts[i]);
@@ -281,7 +269,8 @@ glitz_agl_thread_info_fini (glitz_agl_thread_info_t *thread_info)
   if (thread_info->format_ids)
     free (thread_info->format_ids);
 
-  aglDestroyContext (thread_info->root_context.context);
+  if (thread_info->root_context.context)
+    aglDestroyContext (thread_info->root_context.context);
 }
 
 void

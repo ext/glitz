@@ -62,23 +62,6 @@ glitz_union_bounding_box (glitz_bounding_box_t *box1,
   return_box->y2 = (box1->y2 >= box2->y2)? box1->y2: box2->y2;
 }
 
-void
-glitz_intersect_bounding_box_double (glitz_bounding_box_double_t *box1,
-                                     glitz_bounding_box_double_t *box2,
-                                     glitz_bounding_box_double_t *return_box)
-{
-  return_box->x1 = (box1->x1 >= box2->x1)? box1->x1: box2->x1;
-  return_box->x2 = (box1->x2 <= box2->x2)? box1->x2: box2->x2;
-  return_box->y1 = (box1->y1 >= box2->y1)? box1->y1: box2->y1;
-  return_box->y2 = (box1->y2 <= box2->y2)? box1->y2: box2->y2;
-
-  if (return_box->x1 >= return_box->x2)
-    return_box->x1 = return_box->x2 = 0.0;
-  
-  if (return_box->y1 >= return_box->y2)
-    return_box->y1 = return_box->y2 = 0.0;
-}
-
 static glitz_bool_t
 _glitz_extension_check (const char *extensions,
                         const char *ext_name)
@@ -117,26 +100,16 @@ glitz_extensions_query (const char *extensions_string,
   return mask;
 }
 
-glitz_bool_t
-glitz_uint_is_power_of_two (unsigned int value)
+unsigned int
+glitz_uint_to_power_of_two (unsigned int x)
 {
-  unsigned int x = 1;
+  x |= (x >> 1);
+  x |= (x >> 2);
+  x |= (x >> 4);
+  x |= (x >> 8);
+  x |= (x >> 16);
   
-  while (x < value)
-    x <<= 1;
-
-  return (x == value);
-}
-
-void
-glitz_uint_to_power_of_two (unsigned int *value)
-{
-  unsigned int x = 1;
-  
-  while (x < *value)
-    x <<= 1;
-
-  *value = x;
+  return (x + 1);
 }
 
 void

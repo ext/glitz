@@ -37,20 +37,21 @@
 
 #include "glitz_glxext.h"
 
-#define GLITZ_GLX_FEATURE_TEXTURE_RECTANGLE_MASK       (1L <<  0)
-#define GLITZ_GLX_FEATURE_TEXTURE_NPOT_MASK            (1L <<  1)
-#define GLITZ_GLX_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK (1L <<  2)
-#define GLITZ_GLX_FEATURE_MULTISAMPLE_MASK             (1L <<  3)
-#define GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK      (1L <<  4)
-#define GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_MASK      (1L <<  5)
-#define GLITZ_GLX_FEATURE_ARB_MULTITEXTURE_MASK        (1L <<  6)
-#define GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_COMBINE_MASK (1L <<  7)
-#define GLITZ_GLX_FEATURE_ARB_TEXTURE_ENV_DOT3_MASK    (1L <<  8)
-#define GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK      (1L <<  9)
-#define GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK    (1L << 10)
-#define GLITZ_GLX_FEATURE_GLX13_MASK                   (1L << 11)
-#define GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK      (1L << 12)
-#define GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK     (1L << 13)
+#define GLITZ_GLX_FEATURE_TEXTURE_RECTANGLE_MASK        (1L <<  0)
+#define GLITZ_GLX_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK (1L <<  1)
+#define GLITZ_GLX_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK  (1L <<  2)
+#define GLITZ_GLX_FEATURE_TEXTURE_BORDER_CLAMP_MASK     (1L <<  3)
+#define GLITZ_GLX_FEATURE_MULTISAMPLE_MASK              (1L <<  4)
+#define GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK       (1L <<  5)
+#define GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_HINT_MASK  (1L <<  6)
+#define GLITZ_GLX_FEATURE_MULTITEXTURE_MASK             (1L <<  7)
+#define GLITZ_GLX_FEATURE_TEXTURE_ENV_COMBINE_MASK      (1L <<  8)
+#define GLITZ_GLX_FEATURE_TEXTURE_ENV_DOT3_MASK         (1L <<  9)
+#define GLITZ_GLX_FEATURE_VERTEX_PROGRAM_MASK           (1L << 10)
+#define GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 11)
+#define GLITZ_GLX_FEATURE_GLX13_MASK                    (1L << 12)
+#define GLITZ_GLX_FEATURE_RENDER_TEXTURE_MASK           (1L << 13)
+#define GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 14)
 
 typedef struct _glitz_glx_surface glitz_glx_surface_t;
 typedef struct _glitz_glx_screen_info_t glitz_glx_screen_info_t;
@@ -113,7 +114,7 @@ struct _glitz_glx_screen_info_t {
   glitz_glx_context_t **contexts;
   int n_contexts;
   
-  glitz_glx_context_info_t *context_stack;
+  glitz_glx_context_info_t context_stack[GLITZ_CONTEXT_STACK_SIZE];
   int context_stack_size;
   
   glitz_glx_context_t root_context;

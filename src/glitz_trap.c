@@ -148,6 +148,8 @@ glitz_int_fill_trapezoids (glitz_operator_t op,
     int i;
     
     dst->gl->end_list ();
+    
+    dst->gl->matrix_mode (GLITZ_GL_MODELVIEW);
 
     for (i = 0; i < dst->multi_sample->n_samples; i++) {
       dst->gl->translate_d (dst->multi_sample->offsets[i].x,
@@ -176,6 +178,7 @@ glitz_fill_trapezoids (glitz_operator_t op,
     return;
 
   if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
     glitz_surface_pop_current (dst);
     return;
   }
@@ -196,7 +199,6 @@ glitz_composite_trapezoids (glitz_operator_t op,
                             const glitz_trapezoid_t *traps,
                             int n_traps)
 {
-  glitz_surface_t *mask;
   glitz_bounding_box_t trap_bounds;
   int x_dst, y_dst;
   glitz_rectangle_t rect;
@@ -217,28 +219,27 @@ glitz_composite_trapezoids (glitz_operator_t op,
       trap_bounds.x2 < 0 || trap_bounds.y2 < 0)
     return;
 
+  rect.x = trap_bounds.x1;
+  rect.y = trap_bounds.y1;
+  rect.width = trap_bounds.x2 - trap_bounds.x1;
+  rect.height = trap_bounds.y2 - trap_bounds.y1;
+
   glitz_surface_enable_anti_aliasing (dst);
+
+  if (*dst->stencil_mask == 0x0)
+    glitz_stencil_rectangles (dst,
+                              GLITZ_STENCIL_OPERATOR_CLEAR,
+                              &rect, 1);
   
   glitz_stencil_trapezoids (dst,
                             GLITZ_STENCIL_OPERATOR_INCR_EQUAL,
                             traps, n_traps);
   
-  rect.x = trap_bounds.x1;
-  rect.y = trap_bounds.y1;
-  rect.width = trap_bounds.x2 - trap_bounds.x1;
-  rect.height = trap_bounds.y2 - trap_bounds.y1;
-  
-  if (dst->polyopacity != 0xffff) {
-    glitz_color_t color;
-    
-    color.red = color.green = color.blue = color.alpha = dst->polyopacity;
-    mask = glitz_surface_create_solid (&color);
-  } else
-    mask = NULL;
+  dst->hint_mask |= GLITZ_INT_HINT_POLYGON_OP_MASK;
 
   glitz_composite (op,
                    src,
-                   mask,
+                   NULL,
                    dst,
                    x_src + trap_bounds.x1 - x_dst,
                    y_src + trap_bounds.y1 - y_dst,
@@ -246,14 +247,18 @@ glitz_composite_trapezoids (glitz_operator_t op,
                    rect.x, rect.y,
                    rect.width, rect.height);
 
-  if (mask)
-    glitz_surface_destroy (mask);
+  dst->hint_mask &= ~GLITZ_INT_HINT_POLYGON_OP_MASK;
 
   glitz_surface_disable_anti_aliasing (dst);
+  
+  if (*dst->stencil_mask != 0x1)
+    glitz_stencil_rectangles (dst,
+                              GLITZ_STENCIL_OPERATOR_DECR_LESS,
+                              &rect, 1);
+  else
+    *dst->stencil_mask = 0x0;
 
-  glitz_stencil_rectangles (dst,
-                            GLITZ_STENCIL_OPERATOR_DECR_LESS,
-                            &rect, 1);
+  dst->update_mask |= GLITZ_UPDATE_STENCIL_OP_MASK;
 }
 slim_hidden_def(glitz_composite_trapezoids);
 
@@ -312,6 +317,7 @@ glitz_color_trapezoids (glitz_operator_t op,
     return;
   
   if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
     glitz_surface_pop_current (dst);
     return;
   }

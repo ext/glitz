@@ -108,6 +108,8 @@ glitz_int_fill_triangles (glitz_operator_t op,
     
     dst->gl->end_list ();
 
+    dst->gl->matrix_mode (GLITZ_GL_MODELVIEW);
+
     for (i = 0; i < dst->multi_sample->n_samples; i++) {
       dst->gl->translate_d (dst->multi_sample->offsets[i].x,
                             -dst->multi_sample->offsets[i].y, 0.0);
@@ -162,7 +164,6 @@ glitz_int_composite_triangles (glitz_operator_t op,
                                const glitz_point_fixed_t *points,
                                int n_points)
 {
-  glitz_surface_t *mask;
   glitz_bounding_box_t tri_bounds;
   int x_dst, y_dst;
   glitz_rectangle_t rect;
@@ -181,7 +182,17 @@ glitz_int_composite_triangles (glitz_operator_t op,
       tri_bounds.x2 < 0 || tri_bounds.y2 < 0)
     return;
 
+  rect.x = tri_bounds.x1;
+  rect.y = tri_bounds.y1;
+  rect.width = tri_bounds.x2 - tri_bounds.x1;
+  rect.height = tri_bounds.y2 - tri_bounds.y1;
+  
   glitz_surface_enable_anti_aliasing (dst);
+
+  if (*dst->stencil_mask == 0x0)
+    glitz_stencil_rectangles (dst,
+                              GLITZ_STENCIL_OPERATOR_CLEAR,
+                              &rect, 1);
   
   glitz_stencil_triangles (dst,
                            GLITZ_STENCIL_OPERATOR_INCR_EQUAL,
@@ -189,22 +200,11 @@ glitz_int_composite_triangles (glitz_operator_t op,
                            points,
                            n_points);
     
-  rect.x = tri_bounds.x1;
-  rect.y = tri_bounds.y1;
-  rect.width = tri_bounds.x2 - tri_bounds.x1;
-  rect.height = tri_bounds.y2 - tri_bounds.y1;
-  
-  if (dst->polyopacity != 0xffff) {
-    glitz_color_t color;
-    
-    color.red = color.green = color.blue = color.alpha = dst->polyopacity;
-    mask = glitz_surface_create_solid (&color);
-  } else
-    mask = NULL;
+  dst->hint_mask |= GLITZ_INT_HINT_POLYGON_OP_MASK;
 
   glitz_composite (op,
                    src,
-                   mask,
+                   NULL,
                    dst,
                    x_src + tri_bounds.x1 - x_dst,
                    y_src + tri_bounds.y1 - y_dst,
@@ -212,14 +212,18 @@ glitz_int_composite_triangles (glitz_operator_t op,
                    rect.x, rect.y,
                    rect.width, rect.height);
 
-  if (mask)
-    glitz_surface_destroy (mask);
+  dst->hint_mask &= ~GLITZ_INT_HINT_POLYGON_OP_MASK;
 
   glitz_surface_disable_anti_aliasing (dst);
     
-  glitz_stencil_rectangles (dst,
-                            GLITZ_STENCIL_OPERATOR_DECR_LESS,
-                            &rect, 1);
+  if (*dst->stencil_mask != 0x1)
+    glitz_stencil_rectangles (dst,
+                              GLITZ_STENCIL_OPERATOR_DECR_LESS,
+                              &rect, 1);
+  else
+    *dst->stencil_mask = 0x0;
+
+  dst->update_mask |= GLITZ_UPDATE_STENCIL_OP_MASK;
 }
 
 void

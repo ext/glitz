@@ -59,6 +59,8 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_push_matrix_t) glPushMatrix,
   (glitz_gl_pop_matrix_t) glPopMatrix,
   (glitz_gl_load_identity_t) glLoadIdentity,
+  (glitz_gl_load_matrix_d_t) glLoadMatrixd,
+  (glitz_gl_mult_matrix_d_t) glMultMatrixd,
   (glitz_gl_depth_range_t) glDepthRange,
   (glitz_gl_viewport_t) glViewport,
   (glitz_gl_raster_pos_2d_t) glRasterPos2d,
@@ -67,6 +69,7 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_draw_buffer_t) glDrawBuffer,
   (glitz_gl_copy_pixels_t) glCopyPixels,
   (glitz_gl_flush_t) glFlush,
+  (glitz_gl_finish_t) glFinish,
   (glitz_gl_pixel_store_i_t) glPixelStorei,
   (glitz_gl_ortho_t) glOrtho,
   (glitz_gl_scale_d_t) glScaled,
@@ -184,9 +187,6 @@ glitz_glx_thread_info_fini (glitz_glx_thread_info_t *thread_info)
   
   thread_info->displays = NULL;
   thread_info->n_displays = 0;
-
-  memset (&thread_info->glx, 0, sizeof (glitz_glx_static_proc_address_list_t));
-  thread_info->glx.need_lookup = 1;
 
   if (thread_info->gl_library) {
     free (thread_info->gl_library);
@@ -461,14 +461,12 @@ glitz_glx_screen_info_get (Display *display,
       glXMakeCurrent (screen_info->display_info->display,
                       screen_info->root_drawable,
                       screen_info->root_context.context)) {
+    glitz_glx_query_extensions (screen_info);
     glitz_glx_context_proc_address_lookup (screen_info,
                                            &screen_info->root_context);
-    
-    glitz_glx_query_extensions (screen_info);
     glitz_glx_query_formats (screen_info);
   }
   
-  screen_info->context_stack = malloc (sizeof (glitz_glx_context_info_t));
   screen_info->context_stack_size = 1;
   screen_info->context_stack->surface = NULL;
   screen_info->context_stack->constraint = GLITZ_CN_NONE;
@@ -488,13 +486,9 @@ glitz_glx_screen_destroy (glitz_glx_screen_info_t *screen_info)
                       screen_info->root_context.context)) {
     glitz_program_map_fini (&screen_info->root_context.gl,
                             &screen_info->program_map);
+    glXMakeCurrent (display, None, NULL);
   }
-
-  glXMakeCurrent (display, None, NULL);
   
-  if (screen_info->context_stack)
-    free (screen_info->context_stack);
-
   for (i = 0; i < screen_info->n_contexts; i++)
     glitz_glx_context_destroy (screen_info, screen_info->contexts[i]);
 
