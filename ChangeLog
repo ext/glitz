@@ -1,3 +1,7 @@
+2004-05-27  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz.c (glitz_copy_area): Coordinate calculation fix.
+
 2004-05-26  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_rect.c (glitz_int_fill_rectangles): Don't use glClear

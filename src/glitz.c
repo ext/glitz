@@ -841,47 +841,51 @@ glitz_copy_area (glitz_surface_t *src,
                  int y_dst)
 {
   glitz_gl_proc_address_list_t *gl;
-  glitz_bounding_box_t box, src_box, dst_box;
+  glitz_bounding_box_t box;
   int status;
   
   if (SURFACE_PROGRAMMATIC (dst) || SURFACE_PROGRAMMATIC (src))
     return;
 
-  gl = dst->gl;
+  if (x_src < 0) {
+    x_dst -= x_src;
+    width += x_src;
+    x_src = 0;
+  }
 
-  box.x1 = x_src;
-  box.y1 = y_src;
+  if (y_src < 0) {
+    y_dst -= y_src;
+    height += y_src;
+    y_src = 0;
+  }
+
+  width = MIN (src->width - x_src, width);
+  height = MIN (src->height - y_src, height);
+
+  if (x_dst < 0) {
+    x_src -= x_dst;
+    width += x_dst;
+    x_dst = 0;
+  }
+
+  if (y_dst < 0) {
+    y_src -= y_dst;
+    height += y_dst;
+    y_dst = 0;
+  }
+  
+  width = MIN (dst->width - x_dst, width);
+  height = MIN (dst->height - y_dst, height);
+
+  if (width <= 0 || height <= 0)
+    return;
+
+  box.x1 = x_dst;
+  box.x1 = x_dst;
   box.x2 = box.x1 + width;
   box.y2 = box.y1 + height;
 
-  src_box.x1 = src_box.y1 = 0;
-  src_box.x2 = src->width;
-  src_box.y2 = src->height;
-
-  glitz_intersect_bounding_box (&box, &src_box, &src_box);
-
-  box.x1 = x_dst;
-  box.y1 = y_dst;
-  box.x2 = box.x1 + (src_box.x2 - src_box.x1);
-  box.y2 = box.y1 + (src_box.y2 - src_box.y1);
-
-  dst_box.x1 = dst_box.y1 = 0;
-  dst_box.x2 = dst->width;
-  dst_box.y2 = dst->height;
-
-  glitz_intersect_bounding_box (&box, &dst_box, &dst_box);
-
-  x_src = src_box.x1;
-  y_src = src_box.y1;
-  width = dst_box.x2 - dst_box.x1;
-  height = dst_box.y2 - dst_box.y1;
-  x_dst = dst_box.x1;
-  y_dst = dst_box.y1;
-
-  if (width <= 0 || height <= 0) {
-    glitz_surface_status_add (dst, GLITZ_STATUS_BAD_COORDINATE_MASK);
-    return;
-  }
+  gl = dst->gl;
 
   status = 0;
   if (glitz_surface_try_push_current (dst,
@@ -899,7 +903,7 @@ glitz_copy_area (glitz_surface_t *src,
       gl->disable (GLITZ_GL_DITHER);
       gl->disable (GLITZ_GL_STENCIL_TEST);
       glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
-      
+
       gl->pixel_zoom (1.0, 1.0);
       glitz_set_raster_pos (gl, x_dst, dst->height - (y_dst + height));
       gl->copy_pixels (x_src, src->height - (y_src + height),
@@ -948,16 +952,17 @@ glitz_copy_area (glitz_surface_t *src,
         glitz_texture_unbind (gl, texture);
       }
     }
-    status = 1;
-    glitz_surface_dirty (dst, &dst_box);
+
+    glitz_surface_dirty (dst, &box);
     glitz_surface_pop_current (dst);
+
+    status = 1;
   }
 
   if (!status) {
     if (glitz_surface_try_push_current (src,
                                         GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
-      glitz_texture_copy_surface (&dst->texture, src,
-                                  &dst_box, x_src, y_src);
+      glitz_texture_copy_surface (&dst->texture, src, &box, x_src, y_src);
       status = 1;
     }
     glitz_surface_pop_current (src);
