@@ -76,7 +76,7 @@ glitz_composite (glitz_operator_t op,
   if (width <= 0 || height <= 0)
     return;
   
-  glitz_composite_op_init (&comp_op, src, mask, dst);
+  glitz_composite_op_init (&comp_op, op, src, mask, dst);
   if (comp_op.type == GLITZ_COMBINE_TYPE_NA) {
     glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
     return;
@@ -132,7 +132,7 @@ glitz_composite (glitz_operator_t op,
     mask = NULL;
     x_src = y_src = 0;
 
-    glitz_composite_op_init (&comp_op, src, mask, dst);
+    glitz_composite_op_init (&comp_op, op, src, mask, dst);
     if (comp_op.type == GLITZ_COMBINE_TYPE_NA) {
       glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
       glitz_surface_destroy (intermediate);
@@ -173,7 +173,7 @@ glitz_composite (glitz_operator_t op,
     textures[0].unit = _texture_units[0];
     textures[0].transform = 0;
     texture_nr = 0;
-    
+
     glitz_texture_bind (gl, mtexture);
 
     glitz_texture_set_tex_gen (gl,
@@ -254,8 +254,6 @@ glitz_composite (glitz_operator_t op,
     }
   }
 
-  glitz_set_operator (gl, op);
-
   gl->scissor (rect.x1,
                dst->height - rect.y2,
                rect.x2 - rect.x1,
@@ -272,6 +270,7 @@ glitz_composite (glitz_operator_t op,
     offsets = dst->indirect->offsets;
 
     gl->enable (GLITZ_GL_STENCIL_TEST);
+    gl->disable (GLITZ_GL_BLEND);
     gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE, GLITZ_GL_FALSE,
                     GLITZ_GL_FALSE);
     gl->clear_stencil (0);
@@ -299,8 +298,8 @@ glitz_composite (glitz_operator_t op,
   } else
     passes = 1;
 
-  if (comp_op.component_alpha)
-    passes *= comp_op.component_alpha;
+  if (comp_op.per_component)
+    passes *= comp_op.per_component;
 
   alpha_mask = comp_op.alpha_mask;
 
@@ -308,8 +307,8 @@ glitz_composite (glitz_operator_t op,
     unsigned short weight, sample;
     
     if (dst->indirect) {
-      if (comp_op.component_alpha)
-        sample = i / comp_op.component_alpha;
+      if (comp_op.per_component)
+        sample = i / comp_op.per_component;
       else
         sample = i;
       
@@ -320,8 +319,8 @@ glitz_composite (glitz_operator_t op,
     } else
       weight = 0xffff;
     
-    if (comp_op.component_alpha) {
-      switch (i % comp_op.component_alpha) {
+    if (comp_op.per_component) {
+      switch (i % comp_op.per_component) {
       case 0:
         SET_COLOR (comp_op.alpha_mask,
                    SHORT_MULT (weight, alpha_mask.red), 0, 0, 0);
@@ -338,8 +337,7 @@ glitz_composite (glitz_operator_t op,
         SET_COLOR (comp_op.alpha_mask,
                    0, SHORT_MULT (weight, alpha_mask.green), 0, 0);
         gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_TRUE, GLITZ_GL_FALSE,
-                        (comp_op.component_alpha == 4)? GLITZ_GL_FALSE:
-                        GLITZ_GL_TRUE);
+                        GLITZ_GL_FALSE);
         break;
       case 3:
         SET_COLOR (comp_op.alpha_mask,
@@ -349,10 +347,13 @@ glitz_composite (glitz_operator_t op,
         break;
       }
     } else {
-      SET_COLOR (comp_op.alpha_mask, 0, 0, 0,
+      SET_COLOR (comp_op.alpha_mask,
+                 SHORT_MULT (weight, alpha_mask.red),
+                 SHORT_MULT (weight, alpha_mask.green),
+                 SHORT_MULT (weight, alpha_mask.blue),
                  SHORT_MULT (weight, alpha_mask.alpha));
     }
-    
+  
     glitz_composite_enable (&comp_op);
     
     gl->draw_arrays (primitive, first, count);
@@ -365,12 +366,12 @@ glitz_composite (glitz_operator_t op,
   if (dst->indirect)
     gl->disable (GLITZ_GL_STENCIL_TEST);
   
-  if (comp_op.component_alpha)
+  if (comp_op.per_component)
     gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE, GLITZ_GL_TRUE,
                     GLITZ_GL_TRUE);
   
   glitz_composite_disable (&comp_op);
-  
+
   for (i = texture_nr; i >= 0; i--) {
     glitz_texture_unbind (gl, textures[i].texture);
     if (textures[i].transform) {

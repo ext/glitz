@@ -1,3 +1,34 @@
+2004-09-13  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_glx_info.c:
+	* src/glitz_agl_info.c: Addedd glBlendColor.
+
+	* src/glitzint.h: Added glBlendColor glitz_gl_proc_address_list_t.
+	Added render_op to glitz_composite_op_t.
+	component_alpha -> per_component.
+	Render operator to glitz_composite_op_init.
+
+	* src/glitz_compose.c: Added support for component alpha in one single
+	pass when using a solid color as source.
+	Render operator is now set from here.
+
+	* src/glitz_gl.h: Added GLITZ_GL_ONE_MINUS_SRC_COLOR and
+	GLITZ_GL_CONSTANT_COLOR tokens.
+	Added glitz_gl_blend_color_t prototype.
+
+	* src/glitz_glx_context.c: 
+	* src/glitz_glx_extension.c:
+	* src/glitz_agl_extension.c:	
+	* src/glitz.h: GLITZ_FEATURE_COMPONENT_ALPHA_MASK ->
+	GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK.
+
+	* src/glitz.c (glitz_composite): Render operator is now set by
+	in composite_enable.
+	(glitz_composite): component_alpha -> per_component, as we can now
+	do component alpha without multiple passes in some cases.
+	(glitz_composite): Multiply all alpha_mask components by weight, so
+	that we get solidc surfaces right.
+
 2004-09-11  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.2.2.

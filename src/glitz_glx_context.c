@@ -295,7 +295,7 @@ glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
   context->backend.feature_mask = screen_info->feature_mask;
 
   context->backend.feature_mask &= ~GLITZ_FEATURE_MULTITEXTURE_MASK;
-  context->backend.feature_mask &= ~GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
+  context->backend.feature_mask &= ~GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
   context->backend.feature_mask &= ~GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
   context->backend.feature_mask &= ~GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK;
   context->backend.feature_mask &= ~GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
@@ -303,8 +303,9 @@ glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
   if (context->backend.gl.active_texture) {
     context->backend.feature_mask |= GLITZ_FEATURE_MULTITEXTURE_MASK;
 
-    if (screen_info->feature_mask & GLITZ_FEATURE_COMPONENT_ALPHA_MASK)
-      context->backend.feature_mask |= GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
+    if (screen_info->feature_mask & GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK)
+      context->backend.feature_mask |=
+        GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
     
     if (context->backend.gl.gen_programs &&
         context->backend.gl.delete_programs &&

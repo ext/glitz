@@ -201,11 +201,13 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_BLEND               0x0BE2
 #define GLITZ_GL_ZERO                0x0000
 #define GLITZ_GL_ONE                 0x0001
+#define GLITZ_GL_ONE_MINUS_SRC_COLOR 0x0301
 #define GLITZ_GL_SRC_ALPHA           0x0302
 #define GLITZ_GL_ONE_MINUS_SRC_ALPHA 0x0303
 #define GLITZ_GL_DST_ALPHA           0x0304
 #define GLITZ_GL_ONE_MINUS_DST_ALPHA 0x0305
 #define GLITZ_GL_SRC_ALPHA_SATURATE  0x0308
+#define GLITZ_GL_CONSTANT_COLOR      0x8001
 
 #define GLITZ_GL_PACK_ALIGNMENT      0x0D05
 #define GLITZ_GL_PACK_ROW_LENGTH     0x0D02
@@ -299,6 +301,9 @@ typedef glitz_gl_void_t (* glitz_gl_color_4f_t)
       glitz_gl_float_t alpha);
 typedef glitz_gl_void_t (* glitz_gl_blend_func_t)
      (glitz_gl_enum_t sfactor, glitz_gl_enum_t dfactor);
+typedef glitz_gl_void_t (* glitz_gl_blend_color_t)
+     (glitz_gl_clampf_t red, glitz_gl_clampf_t green, glitz_gl_clampf_t blue,
+      glitz_gl_clampf_t alpha);
 typedef glitz_gl_void_t (* glitz_gl_clear_t)
      (glitz_gl_bitfield_t mask);
 typedef glitz_gl_void_t (* glitz_gl_clear_color_t)

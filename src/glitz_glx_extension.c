@@ -164,7 +164,8 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
       
       glGetIntegerv (GLITZ_GL_MAX_TEXTURE_UNITS, &max_texture_units);
       if (max_texture_units >= 3)
-        screen_info->feature_mask |= GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
+        screen_info->feature_mask |=
+          GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
     }
         
     if (screen_info->glx_feature_mask &

@@ -49,6 +49,7 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_color_4f_t) glColor4f,
   (glitz_gl_scissor_t) glScissor,
   (glitz_gl_blend_func_t) glBlendFunc,
+  (glitz_gl_blend_color_t) glBlendColor,
   (glitz_gl_clear_t) glClear,
   (glitz_gl_clear_color_t) glClearColor,
   (glitz_gl_clear_stencil_t) glClearStencil,

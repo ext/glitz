@@ -89,6 +89,7 @@ typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_color_4f_t color_4f;
   glitz_gl_scissor_t scissor;
   glitz_gl_blend_func_t blend_func;
+  glitz_gl_blend_color_t blend_color;
   glitz_gl_clear_t clear;
   glitz_gl_clear_color_t clear_color;
   glitz_gl_clear_stencil_t clear_stencil;
@@ -445,22 +446,17 @@ typedef struct _glitz_combine_t {
   int fragment_processing;
 } glitz_combine_t;
 
-typedef enum {
-  GLITZ_COMPONENT_ALPHA_NONE = 0,
-  GLITZ_COMPONENT_ALPHA_RGB = 3,
-  GLITZ_COMPONENT_ALPHA_ARGB = 4
-} glitz_component_alpha_type_t;
-
 struct _glitz_composite_op_t {
   glitz_combine_type_t type;
   glitz_combine_t *combine;
   glitz_gl_proc_address_list_t *gl;
+  glitz_operator_t render_op;
   glitz_surface_t *src;
   glitz_surface_t *mask;
   glitz_surface_t *dst;
   glitz_color_t *solid;
   glitz_color_t alpha_mask;
-  glitz_component_alpha_type_t component_alpha;
+  int per_component;
   glitz_gl_uint_t fp;
   int count;
 };
@@ -632,6 +628,7 @@ glitz_get_fragment_program (glitz_composite_op_t *op,
 
 extern void __internal_linkage
 glitz_composite_op_init (glitz_composite_op_t *op,
+                         glitz_operator_t render_op,
                          glitz_surface_t *src,
                          glitz_surface_t *mask,
                          glitz_surface_t *dst);

@@ -141,7 +141,8 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
       
       glGetIntegerv (GLITZ_GL_MAX_TEXTURE_UNITS, &max_texture_units);
       if (max_texture_units >= 3)
-        thread_info->feature_mask |= GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
+        thread_info->feature_mask |=
+          GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
     }
     
     if (thread_info->agl_feature_mask &
