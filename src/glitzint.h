@@ -122,8 +122,6 @@ typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_color_mask_t color_mask;
   glitz_gl_read_pixels_t read_pixels;
   glitz_gl_get_tex_image_t get_tex_image;
-  glitz_gl_pixel_zoom_t pixel_zoom;
-  glitz_gl_draw_pixels_t draw_pixels;
   glitz_gl_tex_sub_image_2d_t tex_sub_image_2d;
   glitz_gl_gen_textures_t gen_textures;
   glitz_gl_delete_textures_t delete_textures;
@@ -131,6 +129,7 @@ typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_tex_image_1d_t tex_image_1d;
   glitz_gl_tex_image_2d_t tex_image_2d;
   glitz_gl_tex_parameter_i_t tex_parameter_i;
+  glitz_gl_get_tex_level_parameter_iv_t get_tex_level_parameter_iv;
   glitz_gl_copy_tex_sub_image_2d_t copy_tex_sub_image_2d;
   glitz_gl_get_integer_v_t get_integer_v;
   glitz_gl_delete_lists_t delete_lists;
@@ -238,7 +237,6 @@ typedef struct _glitz_texture {
   glitz_gl_uint_t name;
   glitz_gl_enum_t target;
   glitz_gl_enum_t format;
-  glitz_gl_enum_t internal_format;
   glitz_bool_t allocated;
   
   glitz_filter_t filter;
@@ -329,6 +327,7 @@ struct _glitz_surface {
   unsigned long feature_mask;
   glitz_filter_t filter;
   glitz_polyedge_t polyedge;
+  glitz_polyedge_smooth_hint_t polyedge_smooth_hint;
   glitz_matrix_t *transform;
   glitz_matrix_t *inverse_transform;
   int width, height;
@@ -364,7 +363,7 @@ struct _glitz_color_range {
 typedef struct _glitz_programmatic_surface_t {
   glitz_surface_t base;
   
-  glitz_matrix_t transform;
+  glitz_matrix_t matrix;
   
   glitz_programmatic_surface_type_t type;
   union {
@@ -452,12 +451,6 @@ glitz_union_box_double (glitz_bounding_box_double_t *box1,
                         glitz_bounding_box_double_t *box2,
                         glitz_bounding_box_double_t *return_box);
 
-glitz_gl_enum_t
-glitz_get_gl_format_from_bpp (unsigned short bpp);
-
-extern glitz_gl_enum_t __internal_linkage
-glitz_get_gl_data_type_from_bpp (unsigned short bpp);
-
 long int
 glitz_extensions_query (const char *extensions_string,
                         glitz_extension_map *extensions_map);
@@ -468,7 +461,7 @@ glitz_uint_is_power_of_two (unsigned int value);
 extern void __internal_linkage
 glitz_uint_to_power_of_two (unsigned int *value);
 
-void
+extern void __internal_linkage
 glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
                       int x,
                       int y);
@@ -527,11 +520,8 @@ glitz_surface_init (glitz_surface_t *surface,
 void
 glitz_surface_fini (glitz_surface_t *surface);
 
-extern void __internal_linkage
-glitz_surface_push_transform (glitz_surface_t *surface);
-
-extern void __internal_linkage
-glitz_surface_pop_transform (glitz_surface_t *surface);
+glitz_gl_int_t
+glitz_surface_texture_format (glitz_surface_t *surface);
 
 extern glitz_texture_t *__internal_linkage
 glitz_surface_get_texture (glitz_surface_t *surface);
@@ -584,6 +574,13 @@ glitz_surface_create_intermediate (glitz_surface_t *templ,
                                    int width,
                                    int height);
 
+typedef void (*glitz_format_call_back_t) (glitz_format_t *, void *ptr);
+
+void
+glitz_format_for_each_texture_format (glitz_format_call_back_t call_back,
+				      glitz_gl_proc_address_list_t *gl,
+                                      void *ptr);
+
 glitz_format_t *
 glitz_format_find (glitz_format_t *formats,
                    int n_formats,
@@ -597,8 +594,10 @@ glitz_format_find_standard (glitz_format_t *formats,
                             unsigned long options,
                             glitz_format_name_t format_name);
 
-void
-glitz_format_calculate_pixel_transfer_info (glitz_format_t *format);
+extern glitz_gl_int_t __internal_linkage
+glitz_format_get_best_texture_format (glitz_format_t *formats,
+				      int n_formats,
+				      glitz_format_t *format);
 
 void
 glitz_programs_fini (glitz_gl_proc_address_list_t *gl,
@@ -734,6 +733,17 @@ glitz_render_disable (glitz_render_type_t type,
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
+
+#define LSBFirst 0
+#define MSBFirst 1
+
+#ifdef WORDS_BIGENDIAN
+#  define IMAGE_BYTE_ORDER MSBFirst
+#  define BITMAP_BIT_ORDER MSBFirst
+#else
+#  define IMAGE_BYTE_ORDER LSBFirst
+#  define BITMAP_BIT_ORDER LSBFirst
+#endif
 
 /* Fixed point updates from Carl Worth, USC, Information Sciences Institute */
 

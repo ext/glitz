@@ -55,7 +55,10 @@ glitz_render_type (glitz_surface_t *src,
 
   if ((!src_conv) &&
       mask && (!SURFACE_PROGRAMMATIC (mask)) && (!mask_conv)) {
-    if ((mask->texture.internal_format == GLITZ_GL_LUMINANCE_ALPHA) &&
+    if ((mask->texture.format == GLITZ_GL_INTENSITY4 ||
+         mask->texture.format == GLITZ_GL_INTENSITY8 ||
+         mask->texture.format == GLITZ_GL_INTENSITY12 ||
+         mask->texture.format == GLITZ_GL_INTENSITY16) &&
         (dst->feature_mask & GLITZ_FEATURE_ARB_MULTITEXTURE_MASK)) {
       if (SURFACE_SOLID (src))
         return GLITZ_RENDER_TYPE_SOLID_A;
@@ -104,10 +107,12 @@ glitz_render_enable (glitz_render_type_t type,
                           GLITZ_GL_TEXTURE_ENV_MODE,
                           GLITZ_GL_MODULATE);
       dst->gl->color_4us (opacity, opacity, opacity, opacity);
-    } else
+    } else {
       dst->gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
                           GLITZ_GL_TEXTURE_ENV_MODE,
                           GLITZ_GL_REPLACE);
+      dst->gl->color_4us (0x0, 0x0, 0x0, 0xffff);
+    }
     break;
   case GLITZ_RENDER_TYPE_ARGB_ARGB:
     glitz_program_enable_argb_argb (dst->gl, dst->programs,

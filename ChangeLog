@@ -1,3 +1,85 @@
+2004-06-21  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Added new pixel interface and support for none
+	24bit visuals.
+	Added byte order and bit order defines.
+
+	* src/glitz_util.c: Removed big_endian, and format functions.
+
+	* src/glitz_texture.c (glitz_texture_init): LUMINANCE_ALPHA is no
+	longer used for A8 textures.
+
+	* src/glitz_surface.c (glitz_surface_init): Init polyedge_smooth_hint
+	to GLITZ_POLYEDGE_SMOOTH_HINT_GOOD.
+	(glitz_surface_init): Use glitz_surface_texture_format to get correct
+	texture format.
+	Added glitz_surface_texture_format.
+	(glitz_surface_create_similar): Inherit filter and polygon hints.
+	(glitz_surface_setup_environment): Don't set PACK/UNPACK alignment.
+	Added 2x and 8x software multisample patterns.
+	(glitz_surface_enable_anti_aliasing): Use new polyedge smooth hint
+	to choose anti-aliasing method.
+	Removed draw_pixels and read_pixels functions.
+
+	* src/glitz_render.c (glitz_render_type): GL_INTENSITY is now used
+	for alpha textures.
+	(glitz_render_enable): Set fragment color to correctly support
+	non ARGB textures.
+
+	* src/glitz_programmatic.c (_glitz_programmatic_surface_create):
+	transform -> matrix.
+	(glitz_programmatic_surface_set_transform): transform -> matrix.
+	(glitz_programmatic_surface_bind): transform -> matrix.
+
+	* src/glitz_pixel.c: Added new pixel interface.
+
+	* src/glitz_operator.c (glitz_set_stencil_operator): Fixed
+	stencil operators SET and UNION.
+
+	* src/glitz_glx_surface.c (_glitz_glx_surface_update_size): Use
+	texture format.
+
+	* src/glitz_glx_info.c: Updated GL proc address table.
+	(glitz_glx_screen_info_get): Don't set PACK/UNPACK alignment.
+
+	* src/glitz_glx_format.c: Use new texture format detection system.
+
+	* src/glitz_glx_context.c
+	(glitz_glx_context_set_surface_anti_aliasing): Support new
+	polyedge smooth hint.
+
+	* src/glitz_gl.h: Added a few new GL defines and function prototypes.
+
+	* src/glitz_format.c: Added new texture format detection system and
+	full support for non 24-bit formats.
+
+	* src/glitz_color_range.c (glitz_color_range_bind): Compile time 
+	byte-order check.
+
+	* src/glitz_agl_surface.c (_glitz_agl_surface_update_size): Use
+	texture format.
+
+	* src/glitz_agl_pbuffer.c (glitz_agl_pbuffer_create):
+	internal_format -> format.
+
+	* src/glitz_agl_info.c: Updated GL proc address table.
+	(glitz_agl_thread_info_init): Don't set PACK/UNPACK alignment.
+
+	* src/glitz_agl_format.c: Use new texture format detection system.
+
+	* src/glitz_agl_context.c 
+	(glitz_agl_context_set_surface_anti_aliasing): Support new
+	polyedge smooth hint.
+
+	* src/glitz.h: Added new pixel interface.
+	Added glitz_surface_set_polyedge_smooth_hint.
+
+	* src/glitz.c (glitz_copy_area): Updated to use new pixel interface.
+
+	* src/Makefile.am (libglitz_la_SOURCES): Added glitz_pixel.c.
+
+	* configure.in: Added bigendian check.
+
 2004-06-11  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.1.4.

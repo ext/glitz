@@ -140,7 +140,7 @@ _glitz_programmatic_surface_create (void)
   surface->base.texture.texcoord_width =
     surface->base.texture.texcoord_height = 1.0;
   surface->base.texture.repeatable = surface->base.texture.repeat = 1;
-  surface->transform = identity;
+  surface->matrix = identity;
   
   return surface;
 }
@@ -223,13 +223,13 @@ glitz_programmatic_surface_set_transform (glitz_surface_t *abstract_surface,
   glitz_programmatic_surface_t *surface =
     (glitz_programmatic_surface_t *) abstract_surface;
   
-  surface->transform.m[0][0] = FIXED_TO_DOUBLE (transform->matrix[0][0]);
-  surface->transform.m[1][0] = FIXED_TO_DOUBLE (transform->matrix[0][1]);
-  surface->transform.m[2][0] = FIXED_TO_DOUBLE (transform->matrix[0][2]);
+  surface->matrix.m[0][0] = FIXED_TO_DOUBLE (transform->matrix[0][0]);
+  surface->matrix.m[1][0] = FIXED_TO_DOUBLE (transform->matrix[0][1]);
+  surface->matrix.m[2][0] = FIXED_TO_DOUBLE (transform->matrix[0][2]);
   
-  surface->transform.m[0][1] = FIXED_TO_DOUBLE (transform->matrix[1][0]);
-  surface->transform.m[1][1] = FIXED_TO_DOUBLE (transform->matrix[1][1]);
-  surface->transform.m[2][1] = FIXED_TO_DOUBLE (transform->matrix[1][2]);
+  surface->matrix.m[0][1] = FIXED_TO_DOUBLE (transform->matrix[1][0]);
+  surface->matrix.m[1][1] = FIXED_TO_DOUBLE (transform->matrix[1][1]);
+  surface->matrix.m[2][1] = FIXED_TO_DOUBLE (transform->matrix[1][2]);
 }
 
 void
@@ -274,13 +274,13 @@ glitz_programmatic_surface_bind (glitz_gl_proc_address_list_t *gl,
                                     cos (angle),
                                     -sin (angle));
     gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 1,
-                                    surface->transform.m[0][0],
-                                    surface->transform.m[0][1],
-                                    surface->transform.m[1][0],
-                                    surface->transform.m[1][1]);
+                                    surface->matrix.m[0][0],
+                                    surface->matrix.m[0][1],
+                                    surface->matrix.m[1][0],
+                                    surface->matrix.m[1][1]);
     gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 2,
-                                    surface->transform.m[2][0],
-                                    surface->transform.m[2][1],
+                                    surface->matrix.m[2][0],
+                                    surface->matrix.m[2][1],
                                     surface->base.height, 0.0);
 
     gl->active_texture_arb (GLITZ_GL_TEXTURE2_ARB);
@@ -296,13 +296,13 @@ glitz_programmatic_surface_bind (glitz_gl_proc_address_list_t *gl,
               FIXED_TO_DOUBLE (surface->u.radial.radius0)),
        FIXED_TO_DOUBLE (surface->u.radial.radius0));
     gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 1,
-                                    surface->transform.m[0][0],
-                                    surface->transform.m[0][1],
-                                    surface->transform.m[1][0],
-                                    surface->transform.m[1][1]);
+                                    surface->matrix.m[0][0],
+                                    surface->matrix.m[0][1],
+                                    surface->matrix.m[1][0],
+                                    surface->matrix.m[1][1]);
     gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 2,
-                                    surface->transform.m[2][0],
-                                    surface->transform.m[2][1],
+                                    surface->matrix.m[2][0],
+                                    surface->matrix.m[2][1],
                                     surface->base.height, 0.0);
 
     gl->active_texture_arb (GLITZ_GL_TEXTURE2_ARB);

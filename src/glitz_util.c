@@ -79,47 +79,6 @@ glitz_intersect_bounding_box_double (glitz_bounding_box_double_t *box1,
     return_box->y1 = return_box->y2 = 0.0;
 }
 
-static int
-big_endian (void)
-{
-  int a = 1;
-  char *c;
-  
-  c = (char *) &a;
-  if (c[0])
-    return 0;
-  else
-    return 1;
-}
-
-glitz_gl_enum_t
-glitz_get_gl_format_from_bpp (unsigned short bpp)
-{
-  switch (bpp) {
-  case 8:
-    return GLITZ_GL_LUMINANCE_ALPHA;
-    break;
-  case 24:
-    if (big_endian ())
-      return GLITZ_GL_RGB;
-    else
-      return GLITZ_GL_BGR;
-    break;
-  default:
-    return GLITZ_GL_BGRA;
-    break;
-  }
-}
-
-glitz_gl_enum_t
-glitz_get_gl_data_type_from_bpp (unsigned short bpp)
-{
-  if (bpp == 32 && big_endian ())
-    return GLITZ_GL_UNSIGNED_INT_8_8_8_8_REV;
-  else
-    return GLITZ_GL_UNSIGNED_BYTE;
-}
-
 static glitz_bool_t
 _glitz_extension_check (const char *extensions,
                         const char *ext_name)

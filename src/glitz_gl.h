@@ -45,8 +45,18 @@ typedef unsigned char glitz_gl_ubyte_t;
 #define GLITZ_GL_FALSE 0x0
 #define GLITZ_GL_TRUE  0x1
 
-#define GLITZ_GL_UNSIGNED_BYTE            0x1401
-#define GLITZ_GL_UNSIGNED_INT_8_8_8_8_REV 0x8367
+#define GLITZ_GL_UNSIGNED_BYTE               0x1401
+#define GLITZ_GL_UNSIGNED_BYTE_3_3_2         0x8032
+#define GLITZ_GL_UNSIGNED_BYTE_2_3_3_REV     0x8362
+#define GLITZ_GL_UNSIGNED_SHORT_5_6_5        0x8363
+#define GLITZ_GL_UNSIGNED_SHORT_5_6_5_REV    0x8364
+#define GLITZ_GL_UNSIGNED_SHORT_4_4_4_4      0x8033
+#define GLITZ_GL_UNSIGNED_SHORT_4_4_4_4_REV  0x8365
+#define GLITZ_GL_UNSIGNED_SHORT_5_5_5_1      0x8034
+#define GLITZ_GL_UNSIGNED_SHORT_1_5_5_5_REV  0x8366
+#define GLITZ_GL_UNSIGNED_INT_8_8_8_8_REV    0x8367
+#define GLITZ_GL_UNSIGNED_INT_10_10_10_2     0x8036
+#define GLITZ_GL_UNSIGNED_INT_2_10_10_10_REV 0x8368
 
 #define GLITZ_GL_MODELVIEW  0x1700
 #define GLITZ_GL_PROJECTION 0x1701
@@ -64,19 +74,25 @@ typedef unsigned char glitz_gl_ubyte_t;
 
 #define GLITZ_GL_SCISSOR_TEST 0x0C11
 
-#define GLITZ_GL_TEXTURE_ENV        0x2300
-#define GLITZ_GL_TEXTURE_ENV_MODE   0x2200
-#define GLITZ_GL_TEXTURE_1D         0x0DE0
-#define GLITZ_GL_TEXTURE_2D         0x0DE1
-#define GLITZ_GL_TEXTURE_WRAP_S     0x2802
-#define GLITZ_GL_TEXTURE_WRAP_T     0x2803
-#define GLITZ_GL_TEXTURE_MAG_FILTER 0x2800
-#define GLITZ_GL_TEXTURE_MIN_FILTER 0x2801
-#define GLITZ_GL_MODULATE           0x2100
-#define GLITZ_GL_NEAREST            0x2600
-#define GLITZ_GL_LINEAR             0x2601
-#define GLITZ_GL_REPEAT             0x2901
-#define GLITZ_GL_CLAMP_TO_EDGE      0x812F
+#define GLITZ_GL_TEXTURE_ENV            0x2300
+#define GLITZ_GL_TEXTURE_ENV_MODE       0x2200
+#define GLITZ_GL_TEXTURE_1D             0x0DE0
+#define GLITZ_GL_TEXTURE_2D             0x0DE1
+#define GLITZ_GL_PROXY_TEXTURE_2D       0x8064
+#define GLITZ_GL_TEXTURE_WRAP_S         0x2802
+#define GLITZ_GL_TEXTURE_WRAP_T         0x2803
+#define GLITZ_GL_TEXTURE_MAG_FILTER     0x2800
+#define GLITZ_GL_TEXTURE_MIN_FILTER     0x2801
+#define GLITZ_GL_MODULATE               0x2100
+#define GLITZ_GL_NEAREST                0x2600
+#define GLITZ_GL_LINEAR                 0x2601
+#define GLITZ_GL_REPEAT                 0x2901
+#define GLITZ_GL_CLAMP_TO_EDGE          0x812F
+#define GLITZ_GL_TEXTURE_RED_SIZE       0x805C
+#define GLITZ_GL_TEXTURE_GREEN_SIZE     0x805D
+#define GLITZ_GL_TEXTURE_BLUE_SIZE      0x805E
+#define GLITZ_GL_TEXTURE_ALPHA_SIZE     0x805F
+#define GLITZ_GL_TEXTURE_INTENSITY_SIZE	0x8061
 
 #define GLITZ_GL_STENCIL_TEST 0x0B90
 #define GLITZ_GL_KEEP         0x1E00
@@ -95,14 +111,34 @@ typedef unsigned char glitz_gl_ubyte_t;
 #define GLITZ_GL_TRANSFORM_BIT      0x00001000
 #define GLITZ_GL_COLOR_BUFFER_BIT   0x00004000
 
-#define GLITZ_GL_ALPHA           0x1906
-#define GLITZ_GL_RGB             0x1907
-#define GLITZ_GL_LUMINANCE_ALPHA 0x190A
-#define GLITZ_GL_COLOR           0x1800
-#define GLITZ_GL_DITHER          0x0BD0
-#define GLITZ_GL_RGBA            0x1908
-#define GLITZ_GL_BGR             0x80E0
-#define GLITZ_GL_BGRA            0x80E1
+#define GLITZ_GL_ALPHA     0x1906
+#define GLITZ_GL_RGB       0x1907
+#define GLITZ_GL_LUMINANCE 0x1909
+#define GLITZ_GL_COLOR     0x1800
+#define GLITZ_GL_DITHER    0x0BD0
+#define GLITZ_GL_RGBA      0x1908
+#define GLITZ_GL_BGR       0x80E0
+#define GLITZ_GL_BGRA      0x80E1
+
+#define GLITZ_GL_INTENSITY   0x8049
+#define GLITZ_GL_INTENSITY4  0x804A
+#define GLITZ_GL_INTENSITY8  0x804B
+#define GLITZ_GL_INTENSITY12 0x804C
+#define GLITZ_GL_INTENSITY16 0x804D
+#define GLITZ_GL_R3_G3_B2    0x2A10
+#define GLITZ_GL_RGB4        0x804F
+#define GLITZ_GL_RGB5        0x8050
+#define GLITZ_GL_RGB8        0x8051
+#define GLITZ_GL_RGB10       0x8052
+#define GLITZ_GL_RGB12       0x8053
+#define GLITZ_GL_RGB16       0x8054
+#define GLITZ_GL_RGBA2       0x8055
+#define GLITZ_GL_RGBA4       0x8056
+#define GLITZ_GL_RGB5_A1     0x8057
+#define GLITZ_GL_RGBA8       0x8058
+#define GLITZ_GL_RGB10_A2    0x8059
+#define GLITZ_GL_RGBA12      0x805A
+#define GLITZ_GL_RGBA16      0x805B
 
 #define GLITZ_GL_FRONT_AND_BACK 0x0408
 #define GLITZ_GL_FLAT           0x1D00
@@ -117,14 +153,14 @@ typedef unsigned char glitz_gl_ubyte_t;
 #define GLITZ_GL_ONE_MINUS_DST_ALPHA 0x0305
 #define GLITZ_GL_SRC_ALPHA_SATURATE  0x0308
 
-#define GLITZ_GL_PACK_ALIGNMENT     0x0D05
-#define GLITZ_GL_PACK_ROW_LENGTH    0x0D02
-#define GLITZ_GL_PACK_SKIP_PIXELS   0x0D04
-#define GLITZ_GL_PACK_SKIP_ROWS     0x0D03
-#define GLITZ_GL_UNPACK_ALIGNMENT   0x0CF5
-#define GLITZ_GL_UNPACK_ROW_LENGTH  0x0CF2
-#define GLITZ_GL_UNPACK_SKIP_PIXELS 0x0CF4
-#define GLITZ_GL_UNPACK_SKIP_ROWS   0x0CF3
+#define GLITZ_GL_PACK_ALIGNMENT      0x0D05
+#define GLITZ_GL_PACK_ROW_LENGTH     0x0D02
+#define GLITZ_GL_PACK_SKIP_PIXELS    0x0D04
+#define GLITZ_GL_PACK_SKIP_ROWS      0x0D03
+#define GLITZ_GL_UNPACK_ALIGNMENT    0x0CF5
+#define GLITZ_GL_UNPACK_ROW_LENGTH   0x0CF2
+#define GLITZ_GL_UNPACK_SKIP_PIXELS  0x0CF4
+#define GLITZ_GL_UNPACK_SKIP_ROWS    0x0CF3
 
 #define GLITZ_GL_PERSPECTIVE_CORRECTION_HINT 0x0C50
 #define GLITZ_GL_FASTEST                     0x1101
@@ -254,12 +290,6 @@ typedef glitz_gl_void_t (* glitz_gl_get_tex_image_t)
      (glitz_gl_enum_t target, glitz_gl_int_t level,
       glitz_gl_enum_t format, glitz_gl_enum_t type,
       glitz_gl_void_t *pixels);
-typedef glitz_gl_void_t (* glitz_gl_pixel_zoom_t)
-     (glitz_gl_float_t xfactor, glitz_gl_float_t yfactor);
-typedef glitz_gl_void_t (* glitz_gl_draw_pixels_t)
-     (glitz_gl_sizei_t width, glitz_gl_sizei_t height,
-      glitz_gl_enum_t format, glitz_gl_enum_t type,
-      const glitz_gl_void_t *pixels);
 typedef glitz_gl_void_t (* glitz_gl_tex_sub_image_2d_t)
      (glitz_gl_enum_t target, glitz_gl_int_t level,
       glitz_gl_int_t xoffset, glitz_gl_int_t yoffset,
@@ -286,6 +316,9 @@ typedef glitz_gl_void_t (* glitz_gl_tex_image_2d_t)
       const glitz_gl_void_t *pixels);
 typedef glitz_gl_void_t (* glitz_gl_tex_parameter_i_t)
      (glitz_gl_enum_t target, glitz_gl_enum_t pname, glitz_gl_int_t param);
+typedef glitz_gl_void_t (* glitz_gl_get_tex_level_parameter_iv_t)
+     (glitz_gl_enum_t target, glitz_gl_int_t level,
+      glitz_gl_enum_t pname, glitz_gl_int_t *param);
 typedef glitz_gl_void_t (* glitz_gl_copy_tex_sub_image_2d_t)
      (glitz_gl_enum_t target, glitz_gl_int_t level,
       glitz_gl_int_t xoffset, glitz_gl_int_t yoffset,

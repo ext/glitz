@@ -50,6 +50,7 @@ glitz_surface_init (glitz_surface_t *surface,
 
   surface->filter = GLITZ_FILTER_NEAREST;
   surface->polyedge = GLITZ_POLYEDGE_SMOOTH;
+  surface->polyedge_smooth_hint = GLITZ_POLYEDGE_SMOOTH_HINT_GOOD;
   surface->polyopacity = 0xffff;
 
   surface->programs = programs;
@@ -68,7 +69,7 @@ glitz_surface_init (glitz_surface_t *surface,
                      
     glitz_texture_init (&surface->texture,
                         width, height,
-                        glitz_get_gl_format_from_bpp (format->bpp),
+                        glitz_surface_texture_format (surface),
                         texture_mask);
   }
 }
@@ -87,6 +88,15 @@ glitz_surface_fini (glitz_surface_t *surface)
 
   if (surface->convolution)
     free (surface->convolution);
+}
+
+glitz_gl_int_t
+glitz_surface_texture_format (glitz_surface_t *surface)
+{
+  return
+    glitz_format_get_best_texture_format (surface->formats,
+					  surface->n_formats,
+					  surface->format);
 }
 
 glitz_format_t *
@@ -116,10 +126,20 @@ glitz_surface_create_similar (glitz_surface_t *templ,
                               int width,
                               int height)
 {
+  glitz_surface_t *surface;
+  
   if (width < 1 || height < 1)
     return NULL;
   
-  return templ->backend->create_similar (templ, format, width, height);
+  surface = templ->backend->create_similar (templ, format, width, height);
+  if (surface) {
+    surface->filter = templ->filter;
+    surface->polyedge = templ->polyedge;
+    surface->polyedge_smooth_hint = templ->polyedge_smooth_hint;
+    surface->polyopacity = templ->polyopacity;
+  }
+  
+  return surface;
 }
 
 glitz_surface_t *
@@ -249,6 +269,7 @@ glitz_surface_set_transform (glitz_surface_t *surface,
   if (SURFACE_PROGRAMMATIC (surface)) {
     if (transform == NULL)
       transform = &identity;
+    
     glitz_programmatic_surface_set_transform (surface, transform);
     return;
   }
@@ -537,8 +558,6 @@ glitz_surface_setup_environment (glitz_surface_t *surface)
 {
   glitz_gl_proc_address_list_t *gl = surface->gl;
   
-  gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 4);
-  gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 4);
   gl->viewport (0, 0, surface->width, surface->height);
   gl->matrix_mode (GLITZ_GL_PROJECTION);
   gl->load_identity ();
@@ -568,11 +587,32 @@ glitz_surface_setup_environment (glitz_surface_t *surface)
     gl->disable (GLITZ_GL_STENCIL_TEST);
 }
 
-/* This is supposed to be a 4x rotated grid multi-sample pattern. I'm not
-   sure it's actually correct. */
+/* This is supposed to be 8x, 4x and 2x rotated grid multi-sample
+   patterns. I'm not sure they're actually correct. */
+static glitz_sample_offset_t _8x_multi_sample_offsets[] = {
+  { -0.375, -0.375 },
+  { -0.125, -0.125 },
+  {  0.375, -0.375 },
+  {  0.125, -0.125 },
+  {  0.375,  0.375 },
+  {  0.125,  0.125 },
+  { -0.375,  0.375 },
+  { -0.125,  0.125 }
+};
+
+static unsigned short _8x_multi_sample_weights[] = {
+  0x2000, 0x4000, 0x6000, 0x8000, 0xa000, 0xbfff, 0xdfff, 0xffff
+};
+
+static glitz_multi_sample_info_t _8x_multi_sample = {
+  _8x_multi_sample_offsets,
+  _8x_multi_sample_weights,
+  8
+};
+
 static glitz_sample_offset_t _4x_multi_sample_offsets[] = {
   { -0.125, -0.375 },
-  {  0.375, -0.124 },
+  {  0.375, -0.125 },
   {  0.125,  0.375 },
   { -0.375,  0.125 }
 };
@@ -587,6 +627,21 @@ static glitz_multi_sample_info_t _4x_multi_sample = {
   4
 };
 
+static glitz_sample_offset_t _2x_multi_sample_offsets[] = {
+  { -0.24, -0.24 },
+  {  0.24,  0.24 }
+};
+
+static unsigned short _2x_multi_sample_weights[] = {
+  0x8000, 0xffff
+};
+
+static glitz_multi_sample_info_t _2x_multi_sample = {
+  _2x_multi_sample_offsets,
+  _2x_multi_sample_weights,
+  2
+};
+
 void
 glitz_surface_enable_anti_aliasing (glitz_surface_t *surface)
 {
@@ -594,8 +649,22 @@ glitz_surface_enable_anti_aliasing (glitz_surface_t *surface)
     return;
 
   if (surface->polyedge == GLITZ_POLYEDGE_SMOOTH &&
-      surface->format->stencil_size >= 4)
-    surface->multi_sample = &_4x_multi_sample;
+      surface->format->stencil_size >= 4) {
+    switch (surface->polyedge_smooth_hint) {
+    case GLITZ_POLYEDGE_SMOOTH_HINT_BEST:
+      if (surface->format->stencil_size >= 8) {
+        surface->multi_sample = &_8x_multi_sample;
+        break;
+      }
+      /* fall-through */
+    case GLITZ_POLYEDGE_SMOOTH_HINT_GOOD:
+      surface->multi_sample = &_4x_multi_sample;
+      break;
+    case GLITZ_POLYEDGE_SMOOTH_HINT_FAST:
+      surface->multi_sample = &_2x_multi_sample;
+      break;
+    }
+  }
 }
 
 void
@@ -605,232 +674,10 @@ glitz_surface_disable_anti_aliasing (glitz_surface_t *surface)
 }
 
 void
-glitz_surface_read_pixels (glitz_surface_t *surface,
-                           int x,
-                           int y,
-                           unsigned int width,
-                           unsigned int height,
-                           char *pixels)
+glitz_surface_set_polyedge_smooth_hint (glitz_surface_t *surface,
+                                        glitz_polyedge_smooth_hint_t hint)
 {
-  unsigned char *pixel_buf = NULL;
-  int rowstride, area_rowstride, bytes_per_pixel;
-  glitz_gl_enum_t format, type;
-
-  if (SURFACE_PROGRAMMATIC (surface))
-    return;
-
-  if (x < 0 || x > (int) surface->width - (int) width ||
-      y < 0 || y > (int) surface->height - (int) height) {
-    glitz_surface_status_add (surface, GLITZ_STATUS_BAD_COORDINATE_MASK);
-    return;
-  }
-
-  bytes_per_pixel = (surface->format->bpp / 8);
-  format = glitz_get_gl_format_from_bpp (surface->format->bpp);
-  type = glitz_get_gl_data_type_from_bpp (surface->format->bpp);
-
-  /* We currently read the whole image to a temporary buffer and then
-     copy the part we want, not very efficient. We only want to read the
-     area requested. I think it can be fixed with glPixelStore parameters. */
-  if (glitz_surface_try_push_current (surface,
-                                      GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
-
-    if (format == GLITZ_GL_LUMINANCE_ALPHA)
-      rowstride = surface->width * 2;
-    else
-      rowstride = surface->width * bytes_per_pixel;
-    
-    rowstride = (rowstride + 3) & -4;
-    pixel_buf = malloc (surface->height * rowstride);
-    if (!pixel_buf) {
-      glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
-      glitz_surface_pop_current (surface);
-      return;
-    }
-    if (surface->format->doublebuffer)
-      surface->gl->read_buffer (surface->read_buffer);
-    
-    surface->gl->read_pixels (0, 0, surface->width, surface->height,
-                              format, type, pixel_buf);
-  } else {
-    glitz_texture_t *texture;
-
-    texture = glitz_surface_get_texture (surface);
-
-    /* Texture has not been allocated, hence pixel data of this surface
-       is undefined. */
-    if (!texture)
-      return;
-    
-    glitz_texture_bind (surface->gl, texture);
-
-    if (format == GLITZ_GL_LUMINANCE_ALPHA) {
-      rowstride = texture->width * 2;
-    } else
-      rowstride = texture->width * bytes_per_pixel;
-
-    rowstride = (rowstride + 3) & -4;
-    pixel_buf = malloc (texture->height * rowstride);
-    if (!pixel_buf) {
-      glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
-      glitz_surface_pop_current (surface);
-      return;
-    }
-
-    surface->gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, 0);
-    surface->gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_ROWS, 0);
-    surface->gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_PIXELS, 0);
-    
-    surface->gl->get_tex_image (texture->target, 0,
-                                format,
-                                type,
-                                pixel_buf);
-
-    glitz_texture_unbind (surface->gl, texture);
-  }
-
-  glitz_surface_pop_current (surface);
-
-  area_rowstride = (width * bytes_per_pixel + 3) & -4;
-
-  if (format == GLITZ_GL_LUMINANCE_ALPHA) {
-    int i, j, k;
-    
-    /* Unpad and flip A8 image data. */
-    for (i = 0; i < (int) height; i++) {
-      for (j = 0, k = 1; j < (int) width; j++, k += 2) {
-        pixels[(height - i - 1) * area_rowstride + j] =
-          pixel_buf[(surface->height - y - height + i) * rowstride + x + k];
-      }
-    }
-  } else {
-    int i;
-    
-    /* Flip image data. */
-    for (i = 0; i < (int) height; i++) {
-      memcpy (&pixels[(height - i - 1) * area_rowstride],
-              &pixel_buf[(surface->height - y - height + i) * rowstride + x],
-              area_rowstride);
-    }
-  }
-
-  if (pixel_buf)
-    free (pixel_buf);
-}
-
-void
-glitz_surface_draw_pixels (glitz_surface_t *surface,
-                           int x,
-                           int y,
-                           unsigned int width,
-                           unsigned int height,
-                           char *pixels)
-{
-  char *pixel_buf = NULL;
-  glitz_gl_enum_t format, type;
-  int bytes_per_pixel;
-  glitz_bool_t drawable = 0;
-
-  if (SURFACE_PROGRAMMATIC (surface))
-    return;
-
-  if (x < 0 || x > (surface->width - (int) width) ||
-      y < 0 || y > (surface->height - (int) height)) {
-    glitz_surface_status_add (surface, GLITZ_STATUS_BAD_COORDINATE_MASK);
-    return;
-  }
-
-  bytes_per_pixel = (surface->format->bpp / 8);
-  format = glitz_get_gl_format_from_bpp (surface->format->bpp);
-  type = glitz_get_gl_data_type_from_bpp (surface->format->bpp);
-
-  drawable =
-    glitz_surface_try_push_current (surface,
-                                    GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
-  
-  if (format == GLITZ_GL_LUMINANCE_ALPHA) {
-    int i, j, k, src_rowstride, dst_rowstride;
-
-    src_rowstride = (width + 3) & -4;
-    dst_rowstride = (width * 2 + 3) & -4;
-    pixel_buf = malloc (dst_rowstride * height);
-    if (!pixel_buf) {
-      glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
-      glitz_surface_pop_current (surface);
-      return;
-    }
-
-    /* Pad and flip A8 image data. */
-    for (i = 0; i < (int) height; i++) {
-      for (j = 0, k = 0; j < (int) width; j++, k += 2) {
-        pixel_buf[i * dst_rowstride + k] =
-          pixel_buf[i * dst_rowstride + k + 1] =
-          pixels[(height - i - 1) * src_rowstride + j];
-      }
-    }
-    pixels = pixel_buf;
-  } else if (!drawable) {
-    int i, rowstride;
-
-    rowstride = (width * bytes_per_pixel + 3) & -4;
-    pixel_buf = malloc (rowstride * height);
-    if (!pixel_buf) {
-      glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
-      glitz_surface_pop_current (surface);
-      return;
-    }
-    
-    /* Flip image data. */
-    for (i = 0; i < (int) height; i++)
-      memcpy (&pixel_buf[i * rowstride],
-              &pixels[(height - i - 1) * rowstride], rowstride);
-
-    pixels = pixel_buf;
-  }
-
-  if (drawable) {
-    glitz_bounding_box_t bounds;
-
-    bounds.x1 = x;
-    bounds.x2 = x + width;
-    bounds.y1 = y;
-    bounds.y2 = y + height;
-
-    surface->gl->disable (GLITZ_GL_SCISSOR_TEST);
-    surface->gl->disable (GLITZ_GL_DITHER);
-    glitz_set_operator (surface->gl, GLITZ_OPERATOR_SRC);
-
-    if (format == GLITZ_GL_LUMINANCE_ALPHA) {
-      surface->gl->pixel_zoom (1.0, 1.0);
-      glitz_set_raster_pos (surface->gl, x, surface->height - y - height);
-    } else {
-      surface->gl->pixel_zoom (1.0, -1.0);
-      glitz_set_raster_pos (surface->gl, x, surface->height - y);
-    }
-
-    surface->gl->draw_pixels (width, height, format, type, pixels);
-
-    glitz_surface_dirty (surface, &bounds);
-  } else {
-    glitz_texture_bind (surface->gl, &surface->texture);
-    
-    surface->gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, 0);
-    surface->gl->pixel_store_i (GLITZ_GL_PACK_SKIP_ROWS, 0);
-    surface->gl->pixel_store_i (GLITZ_GL_PACK_SKIP_PIXELS, 0);
-
-    surface->gl->tex_sub_image_2d (surface->texture.target, 0,
-                                   x, surface->height - y - height,
-                                   width, height,
-                                   format, type,
-                                   pixel_buf);
-
-    glitz_texture_unbind (surface->gl, &surface->texture);
-  }
-
-  glitz_surface_pop_current (surface);
-
-  if (pixel_buf)
-    free (pixel_buf);
+  surface->polyedge_smooth_hint = hint;
 }
 
 void

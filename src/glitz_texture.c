@@ -62,15 +62,6 @@ glitz_texture_init (glitz_texture_t *texture,
   texture->allocated = 0;
   texture->name = 0;
 
-  switch (texture->format) {
-  case GLITZ_GL_LUMINANCE_ALPHA:
-    texture->internal_format = GLITZ_GL_LUMINANCE_ALPHA;
-    break;
-  default:
-    texture->internal_format = GLITZ_GL_RGBA;
-    break;
-  }
-
   if (!(target_mask & GLITZ_TEXTURE_TARGET_NPOT_MASK)) {
     _glitz_texture_find_best_target (width, height,
                                      target_mask, &texture->target);
@@ -109,10 +100,9 @@ _glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
 
   glitz_texture_bind (gl, texture);
 
-  gl->tex_image_2d (texture->target, 0,
-                    texture->internal_format,
+  gl->tex_image_2d (texture->target, 0, texture->format,
                     texture->width, texture->height,
-                    0, texture->format, GLITZ_GL_UNSIGNED_BYTE, NULL);
+                    0, GLITZ_GL_RGB, GLITZ_GL_UNSIGNED_BYTE, NULL);
 
   glitz_texture_unbind (gl, texture);
 }

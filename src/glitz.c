@@ -529,7 +529,7 @@ glitz_composite (glitz_operator_t op,
   gl->scissor (clip.x1, dst->height - (clip.y1 + height), width, height);
   
   glitz_set_operator (gl, op);
-
+  
   glitz_render_enable (type, src, NULL, dst, texture, NULL, opacity);
   
   if ((!src->transform) && SURFACE_GLREPEAT (src, texture)) {
@@ -764,12 +764,10 @@ glitz_composite (glitz_operator_t op,
     gl->color_4us (0x0000, 0x0000, 0x0000, 0x0000);
     
     gl->begin (GLITZ_GL_QUADS);
-    
     gl->vertex_2d (0.0, 0.0);
     gl->vertex_2d (dst->width, 0.0);
     gl->vertex_2d (dst->width, dst->height);
     gl->vertex_2d (0.0, dst->height);
-    
     gl->end ();
   }
 
@@ -851,7 +849,6 @@ glitz_copy_area (glitz_surface_t *src,
       gl->disable (GLITZ_GL_STENCIL_TEST);
       glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
 
-      gl->pixel_zoom (1.0, 1.0);
       glitz_set_raster_pos (gl, x_dst, dst->height - (y_dst + height));
       gl->copy_pixels (x_src, src->height - (y_src + height),
                        width, height, GLITZ_GL_COLOR);
@@ -868,6 +865,7 @@ glitz_copy_area (glitz_surface_t *src,
         gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
                        GLITZ_GL_TEXTURE_ENV_MODE,
                        GLITZ_GL_REPLACE);
+        gl->color_4us (0x0, 0x0, 0x0, 0xffff);
 
         glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
         
@@ -922,20 +920,30 @@ glitz_copy_area (glitz_surface_t *src,
   }
 
   if (!status) {
-    int rowstride, bytes_per_pixel;
-    char *pixel_buf;
+    int rowstride = 1;
+    char *data;
+    static glitz_pixel_format_t pf = {
+      {
+        32,
+        0xff000000,
+        0x00ff0000,
+        0x0000ff00,
+        0x000000ff
+      },
+      0, 0,
+      GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
+    };
     
-    bytes_per_pixel = MAX (dst->format->bpp, src->format->bpp) / 8;
-    
-    rowstride = width * bytes_per_pixel;
     rowstride = (rowstride + 3) & -4;
-    pixel_buf = malloc (height * rowstride);
-    if (!pixel_buf) {
+    data = malloc (height * rowstride);
+    if (!data) {
       glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
       return;
     }
-    glitz_surface_read_pixels (src, x_src, y_src, width, height, pixel_buf);
-    glitz_surface_draw_pixels (dst, x_dst, y_dst, width, height, pixel_buf);
-    free (pixel_buf);
+    
+    glitz_get_pixels (src, x_src, y_src, width, height, &pf, data);
+    glitz_put_pixels (dst, x_dst, y_dst, width, height, &pf, data);
+    
+    free (data);
   }
 }

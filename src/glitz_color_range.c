@@ -124,8 +124,14 @@ glitz_color_range_bind (glitz_gl_proc_address_list_t *gl,
     
     gl->tex_image_1d (GLITZ_GL_TEXTURE_1D, 0, GLITZ_GL_RGBA,
                       color_range->size, 0,
-                      glitz_get_gl_format_from_bpp (32),
-                      glitz_get_gl_data_type_from_bpp (32),
+                      GLITZ_GL_BGRA,
+                      
+#if IMAGE_BYTE_ORDER == MSBFirst
+                      GLITZ_GL_UNSIGNED_INT_8_8_8_8_REV,
+#else
+                      GLITZ_GL_UNSIGNED_BYTE,
+#endif
+                      
                       color_range->data);
     
     color_range->update_mask &= ~GLITZ_COLOR_RANGE_UPDATE_TEXTURE_MASK;

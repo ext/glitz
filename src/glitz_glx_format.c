@@ -73,8 +73,6 @@ static void
 _glitz_add_format (glitz_glx_screen_info_t *screen_info,
                    glitz_format_t *format)
 {
-  glitz_format_calculate_pixel_transfer_info (format);
-  
   if (!glitz_format_find (screen_info->formats, screen_info->n_formats,
                           GLITZ_FORMAT_ALL_EXCEPT_ID_MASK, format, 0)) {
     int index = screen_info->n_formats++;
@@ -118,7 +116,7 @@ glitz_glx_query_formats_glx12 (glitz_glx_screen_info_t *screen_info)
                             &visual_templ, &num_visuals);
 
   /* Offscreen drawing never supported if GLX is older than 1.3 */
-  format.draw.offscreen = 0;
+  format.draw.offscreen = format.read.offscreen = 0;
   format.draw.onscreen = format.read.onscreen = 1;
 
   for (i = 0; i < num_visuals; i++) {
@@ -163,23 +161,10 @@ glitz_glx_query_formats_glx12 (glitz_glx_screen_info_t *screen_info)
       format.multisample.samples = 0;
     }
 
-    _glitz_add_format (screen_info, &format);
-
-    if (format.alpha_size &&
-        (format.red_size || format.green_size || format.blue_size)) {
-      unsigned short tmp;
-      
-      tmp = format.alpha_size;
-      format.alpha_size = 0;
+    if (format.red_size || format.green_size || format.blue_size ||
+        format.alpha_size)
       _glitz_add_format (screen_info, &format);
-      format.alpha_size = tmp;
-      format.red_size = format.green_size = format.blue_size = 0;
-      _glitz_add_format (screen_info, &format);
-    }
   }
-
-  qsort (screen_info->formats, screen_info->n_formats,
-         sizeof (glitz_format_t), _glitz_glx_format_compare);
   
   if (visuals)
     XFree (visuals);
@@ -191,7 +176,7 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
   Display *display;
   glitz_format_t format;
   GLXFBConfig *fbconfigs;
-  int i, num_configs;
+  int i, num_configs, pbuffer_check = 1, pbuffer_support = 1;
   glitz_glx_static_proc_address_list_t *glx =
     &screen_info->display_info->thread_info->glx;
   
@@ -226,10 +211,18 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
     format.read.onscreen = format.draw.onscreen =
       (value & GLX_WINDOW_BIT)? 1: 0;
     format.read.offscreen = format.draw.offscreen =
-      (value & GLX_PBUFFER_BIT)? 1: 0;
+      (pbuffer_support && (value & GLX_PBUFFER_BIT))? 1: 0;
     
     glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_FBCONFIG_ID, &value);
     format.id = (XID) value;
+
+    if (pbuffer_check && format.draw.offscreen) {
+      if (glitz_glx_ensure_pbuffer_support (screen_info, format.id)) {
+	pbuffer_support = 0;
+	format.draw.offscreen = 0;
+      }
+      pbuffer_check = 0;
+    }
     
     glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_RED_SIZE, &value);
     format.red_size = (unsigned short) value;
@@ -258,23 +251,10 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
       format.multisample.samples = 0;
     }
 
-    _glitz_add_format (screen_info, &format);
-
-    if (format.alpha_size &&
-        (format.red_size || format.green_size || format.blue_size)) {
-      unsigned short tmp;
-      
-      tmp = format.alpha_size;
-      format.alpha_size = 0;
+    if (format.red_size || format.green_size || format.blue_size ||
+        format.alpha_size)
       _glitz_add_format (screen_info, &format);
-      format.alpha_size = tmp;
-      format.red_size = format.green_size = format.blue_size = 0;
-      _glitz_add_format (screen_info, &format);
-    }    
   }
-
-  qsort (screen_info->formats, screen_info->n_formats,
-         sizeof (glitz_format_t), _glitz_glx_format_compare);
   
   if (fbconfigs)
     XFree (fbconfigs);
@@ -283,51 +263,34 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
 }
 
 static void
-glitz_glx_remove_offscreen_drawing (glitz_glx_screen_info_t *screen_info)
+_glitz_glx_add_texture_format (glitz_format_t *texture_format, void *ptr)
 {
-  glitz_format_t *formats = screen_info->formats;
-  int n_formats = screen_info->n_formats;
-  
-  screen_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
+  glitz_glx_screen_info_t *screen_info = (glitz_glx_screen_info_t *) ptr;
+  glitz_format_t format;
 
-  for (; n_formats; n_formats--, formats++)
-    formats->draw.offscreen = 0;
+  format = *texture_format;
+  format.id = 0;
+
+  _glitz_add_format (screen_info, &format);
 }
 
 void
 glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info)
 {
   glitz_bool_t status = 1;
-  glitz_format_t *formats;
-  glitz_format_t format;
 
   if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX13_MASK)
     status = glitz_glx_query_formats_glx13 (screen_info);
 
   if (status)
     glitz_glx_query_formats_glx12 (screen_info);
-  
-  formats = glitz_format_find_standard (screen_info->formats,
-                                        screen_info->n_formats,
-                                        GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
-                                        GLITZ_STANDARD_ARGB32);
 
-  if (formats == NULL ||
-      glitz_glx_ensure_pbuffer_support (screen_info, formats->id))
-    glitz_glx_remove_offscreen_drawing (screen_info);
-
-  /* Adding read only offscreen formats. Surfaces created with these format
-     can only be used with draw/read pixel functions and as source. */
-  memset (&format, 0, sizeof (glitz_format_t));
-  format.read.offscreen = 1;
-  format.alpha_size = format.red_size = format.green_size =
-    format.blue_size = 8;
-  _glitz_add_format (screen_info, &format);
-  format.alpha_size = 0;
-  _glitz_add_format (screen_info, &format);
-  format.alpha_size = 8;
-  format.red_size = format.green_size = format.blue_size = 0;
-  _glitz_add_format (screen_info, &format);
+  qsort (screen_info->formats, screen_info->n_formats, 
+         sizeof (glitz_format_t), _glitz_glx_format_compare);
+ 
+  glitz_format_for_each_texture_format (&_glitz_glx_add_texture_format,
+					&screen_info->root_context.gl,
+					(void *) screen_info);
   
   _glitz_move_out_ids (screen_info);
 }
@@ -355,7 +318,7 @@ glitz_glx_find_standard_format (Display *display,
 {
   glitz_glx_screen_info_t *screen_info =
     glitz_glx_screen_info_get (display, screen);
-  
+
   return
     glitz_format_find_standard (screen_info->formats, screen_info->n_formats,
                                 option_mask, format_name);

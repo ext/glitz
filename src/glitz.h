@@ -150,11 +150,6 @@ typedef enum {
 } glitz_format_name_t;
   
 #define GLITZ_FORMAT_ID_MASK                  (1L <<  0)
-#define GLITZ_FORMAT_BPP_MASK                 (1L <<  1)
-#define GLITZ_FORMAT_RED_MASK_MASK            (1L <<  2)
-#define GLITZ_FORMAT_GREEN_MASK_MASK          (1L <<  3)
-#define GLITZ_FORMAT_BLUE_MASK_MASK           (1L <<  4)
-#define GLITZ_FORMAT_ALPHA_MASK_MASK          (1L <<  5)
 #define GLITZ_FORMAT_RED_SIZE_MASK            (1L <<  6)
 #define GLITZ_FORMAT_GREEN_SIZE_MASK          (1L <<  7)
 #define GLITZ_FORMAT_BLUE_SIZE_MASK           (1L <<  8)
@@ -183,13 +178,6 @@ typedef struct _glitz_multisample_format_t {
 
 typedef struct _glitz_format_t {
   glitz_format_id_t id;
-
-  /* bpp and mask values specifies the pixel format for read/draw pixels */
-  int bpp;
-  unsigned long red_mask;
-  unsigned long green_mask;
-  unsigned long blue_mask;
-  unsigned long alpha_mask;
   
   unsigned short red_size;
   unsigned short green_size;
@@ -210,7 +198,8 @@ typedef struct _glitz_format_t {
 #define GLITZ_FORMAT_OPTION_OFFSCREEN_MASK      (1L << 3)
 #define GLITZ_FORMAT_OPTION_MULTISAMPLE_MASK    (1L << 4)
 #define GLITZ_FORMAT_OPTION_NO_MULTISAMPLE_MASK (1L << 5)
-#define GLITZ_FORMAT_OPTION_READONLY_MASK       (1L << 6)
+#define GLITZ_FORMAT_OPTION_READDRAW_MASK       (1L << 6)
+#define GLITZ_FORMAT_OPTION_READONLY_MASK       (1L << 7)
 
 /* glitz_status.c */
   
@@ -308,6 +297,16 @@ glitz_surface_set_polyopacity (glitz_surface_t *surface,
                                unsigned short polyopacity);
 
 typedef enum {
+  GLITZ_POLYEDGE_SMOOTH_HINT_FAST,
+  GLITZ_POLYEDGE_SMOOTH_HINT_GOOD,
+  GLITZ_POLYEDGE_SMOOTH_HINT_BEST
+} glitz_polyedge_smooth_hint_t;
+
+void
+glitz_surface_set_polyedge_smooth_hint (glitz_surface_t *surface,
+                                        glitz_polyedge_smooth_hint_t hint);
+
+typedef enum {
   GLITZ_CLIP_OPERATOR_SET,
   GLITZ_CLIP_OPERATOR_UNION,
   GLITZ_CLIP_OPERATOR_INTERSECT
@@ -360,22 +359,6 @@ void
 glitz_surface_swap_buffers (glitz_surface_t *surface);
 
 void
-glitz_surface_read_pixels (glitz_surface_t *surface,
-                           int x,
-                           int y,
-                           unsigned int width,
-                           unsigned int height,
-                           char *pixels);
-
-void
-glitz_surface_draw_pixels (glitz_surface_t *surface,
-                           int x,
-                           int y,
-                           unsigned int width,
-                           unsigned int height,
-                           char *pixels);
-
-void
 glitz_surface_get_gl_texture (glitz_surface_t *surface,
                               unsigned int *name,
                               unsigned int *target,
@@ -422,7 +405,48 @@ glitz_surface_create_similar (glitz_surface_t *templ,
 
 unsigned long
 glitz_surface_get_hints (glitz_surface_t *surface);
+
   
+/* glitz_pixel.c */
+  
+typedef enum {
+  GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN,
+  GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
+} glitz_pixel_scanline_order_t;
+
+typedef struct _glitz_pixel_masks {
+  int bpp;
+  unsigned long alpha_mask;
+  unsigned long red_mask;
+  unsigned long green_mask;
+  unsigned long blue_mask;
+} glitz_pixel_masks_t;
+
+typedef struct _glitz_pixel_format {
+  glitz_pixel_masks_t masks;
+  int xoffset;
+  int bytes_per_line;
+  glitz_pixel_scanline_order_t scanline_order;
+} glitz_pixel_format_t;
+
+void
+glitz_put_pixels (glitz_surface_t *dst,
+                  int x_dst,
+                  int y_dst,
+                  int width,
+                  int height,
+                  glitz_pixel_format_t *format,
+                  char *pixels);
+
+void
+glitz_get_pixels (glitz_surface_t *src,
+                  int x_src,
+                  int y_src,
+                  int width,
+                  int height,
+                  glitz_pixel_format_t *format,
+                  char *pixels);
+
   
 /* glitz_rect.c */
 

@@ -33,6 +33,8 @@
 
 #include <stdlib.h>
 
+extern glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address;
+
 static const struct _glx_pixel_format_attrib {
   GLint attrib[20];
 } pixel_format_attrib_map[] = {
@@ -224,8 +226,6 @@ static void
 _glitz_add_format (glitz_agl_thread_info_t *thread_info,
                    glitz_format_t *format)
 {
-  glitz_format_calculate_pixel_transfer_info (format);
-  
   if (!glitz_format_find (thread_info->formats, thread_info->n_formats,
                           GLITZ_FORMAT_ALL_EXCEPT_ID_MASK, format, 0)) {
     int index = thread_info->n_formats++;
@@ -251,6 +251,18 @@ _glitz_move_out_ids (glitz_agl_thread_info_t *thread_info)
     thread_info->format_ids[i] = (AGLPixelFormat) formats->id;
     formats->id = i++;
   }
+}
+
+static void
+_glitz_agl_add_texture_format (glitz_format_t *texture_format, void *ptr)
+{
+  glitz_agl_thread_info_t *thread_info = (glitz_agl_thread_info_t *) ptr;
+  glitz_format_t format;
+
+  format = *texture_format;
+  format.id = 0;
+
+  _glitz_add_format (thread_info, &format);
 }
 
 void
@@ -319,23 +331,10 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
       format.multisample.samples = 0;
     }
 
-    _glitz_add_format (thread_info, &format);
-
-    if (format.alpha_size &&
-        (format.red_size || format.green_size || format.blue_size)) {
-      unsigned short tmp;
-      
-      tmp = format.alpha_size;
-      format.alpha_size = 0;
+    if (format.red_size || format.green_size || format.blue_size ||
+        format.alpha_size)
       _glitz_add_format (thread_info, &format);
-      format.alpha_size = tmp;
-      format.red_size = format.green_size = format.blue_size = 0;
-      _glitz_add_format (thread_info, &format);
-    }
   }
-
-  qsort (thread_info->formats, thread_info->n_formats,
-         sizeof (glitz_format_t), _glitz_agl_format_compare);
 
   if (!glitz_format_find_standard (thread_info->formats,
                                    thread_info->n_formats,
@@ -345,18 +344,12 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
     thread_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
   }
 
-  /* Adding read only offscreen formats. Surfaces created with these format
-     can only be used with draw/read pixel functions and as source. */
-  memset (&format, 0, sizeof (glitz_format_t));
-  format.read.offscreen = 1;
-  format.alpha_size = format.red_size = format.green_size =
-    format.blue_size = 8;
-  _glitz_add_format (thread_info, &format);
-  format.alpha_size = 0;
-  _glitz_add_format (thread_info, &format);
-  format.alpha_size = 8;
-  format.red_size = format.green_size = format.blue_size = 0;
-  _glitz_add_format (thread_info, &format);
+  qsort (thread_info->formats, thread_info->n_formats,
+         sizeof (glitz_format_t), _glitz_agl_format_compare);
+
+  glitz_format_for_each_texture_format (&_glitz_agl_add_texture_format,
+					&_glitz_agl_gl_proc_address,
+					(void *) thread_info);
   
   _glitz_move_out_ids (thread_info);
 }

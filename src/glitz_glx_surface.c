@@ -385,8 +385,7 @@ _glitz_glx_surface_update_size (void *abstract_surface)
 
       glitz_texture_init (&texture,
                           width, height,
-                          glitz_get_gl_format_from_bpp
-                          (surface->base.format->bpp),
+                          surface->base.texture.format,
                           surface->screen_info->texture_mask);
       
       if (texture.width != surface->base.texture.width ||

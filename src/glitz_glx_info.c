@@ -76,8 +76,6 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_color_mask_t) glColorMask,
   (glitz_gl_read_pixels_t) glReadPixels,
   (glitz_gl_get_tex_image_t) glGetTexImage,
-  (glitz_gl_pixel_zoom_t) glPixelZoom,
-  (glitz_gl_draw_pixels_t) glDrawPixels,
   (glitz_gl_tex_sub_image_2d_t) glTexSubImage2D,
   (glitz_gl_gen_textures_t) glGenTextures,
   (glitz_gl_delete_textures_t) glDeleteTextures,
@@ -85,6 +83,7 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_tex_image_1d_t) glTexImage1D,
   (glitz_gl_tex_image_2d_t) glTexImage2D,
   (glitz_gl_tex_parameter_i_t) glTexParameteri,
+  (glitz_gl_get_tex_level_parameter_iv_t) glGetTexLevelParameteriv,
   (glitz_gl_copy_tex_sub_image_2d_t) glCopyTexSubImage2D,
   (glitz_gl_get_integer_v_t) glGetIntegerv,
   (glitz_gl_delete_lists_t) glDeleteLists,
@@ -415,10 +414,6 @@ glitz_glx_screen_info_get (Display *display,
       glXMakeCurrent (screen_info->display_info->display,
                       screen_info->root_drawable,
                       screen_info->root_context.context)) {
-    
-    glPixelStorei (GL_PACK_ALIGNMENT, 4);
-    glPixelStorei (GL_UNPACK_ALIGNMENT, 4);
-
     glitz_glx_context_proc_address_lookup (screen_info,
                                            &screen_info->root_context);
     
