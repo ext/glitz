@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libglitz
+Description: OpenGL compositing library
+Version: @VERSION@
+Libs: -L${libdir} -lglitz -lm
+Cflags: -I${includedir}

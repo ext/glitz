@@ -1,0 +1,21 @@
+.\"
+.\"
+.de TQ
+.br
+.ns
+.TP
+\\$1
+..
+.TH GLITZ 3 "Version 1.0"
+
+.SH NAME
+GLITZ \- OpenGL compositing library
+
+.SH SYNOPSIS
+.nf
+.B #include <glitz.h>
+.fi
+.SH DESCRIPTION
+
+.SH AUTHOR
+David Reveman, Peter Nilsson

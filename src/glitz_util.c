@@ -1,0 +1,192 @@
+/*
+ * Copyright © 2004 David Reveman, Peter Nilsson
+ *
+ * Permission to use, copy, modify, distribute, and sell this software
+ * and its documentation for any purpose is hereby granted without
+ * fee, provided that the above copyright notice appear in all copies
+ * and that both that copyright notice and this permission notice
+ * appear in supporting documentation, and that the names of
+ * David Reveman and Peter Nilsson not be used in advertising or
+ * publicity pertaining to distribution of the software without
+ * specific, written prior permission. David Reveman and Peter Nilsson
+ * makes no representations about the suitability of this software for
+ * any purpose. It is provided "as is" without express or implied warranty.
+ *
+ * DAVID REVEMAN AND PETER NILSSON DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL DAVID REVEMAN AND
+ * PETER NILSSON BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA
+ * OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Authors: David Reveman <c99drn@cs.umu.se>
+ *          Peter Nilsson <c99pnn@cs.umu.se>
+ */
+
+#ifdef HAVE_CONFIG_H
+#  include "../config.h"
+#endif
+
+#include "glitzint.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+void
+glitz_intersect_region (glitz_region_box_t *box1,
+                        glitz_region_box_t *box2,
+                        glitz_region_box_t *return_box)
+{
+  return_box->x1 = (box1->x1 >= box2->x1)? box1->x1: box2->x1;
+  return_box->x2 = (box1->x2 <= box2->x2)? box1->x2: box2->x2;
+  return_box->y1 = (box1->y1 >= box2->y1)? box1->y1: box2->y1;
+  return_box->y2 = (box1->y2 <= box2->y2)? box1->y2: box2->y2;
+
+  if (return_box->x1 >= return_box->x2)
+    return_box->x1 = return_box->x2 = 0;
+  
+  if (return_box->y1 >= return_box->y2)
+    return_box->y1 = return_box->y2 = 0;
+}
+
+void
+glitz_union_region (glitz_region_box_t *box1,
+                    glitz_region_box_t *box2,
+                    glitz_region_box_t *return_box)
+{
+  return_box->x1 = (box1->x1 <= box2->x1)? box1->x1: box2->x1;
+  return_box->x2 = (box1->x2 >= box2->x2)? box1->x2: box2->x2;
+  return_box->y1 = (box1->y1 <= box2->y1)? box1->y1: box2->y1;
+  return_box->y2 = (box1->y2 >= box2->y2)? box1->y2: box2->y2;
+}
+
+void
+glitz_intersect_sub_pixel_region (glitz_sub_pixel_region_box_t *box1,
+                                  glitz_sub_pixel_region_box_t *box2,
+                                  glitz_sub_pixel_region_box_t *return_box)
+{
+  return_box->x1 = (box1->x1 >= box2->x1)? box1->x1: box2->x1;
+  return_box->x2 = (box1->x2 <= box2->x2)? box1->x2: box2->x2;
+  return_box->y1 = (box1->y1 >= box2->y1)? box1->y1: box2->y1;
+  return_box->y2 = (box1->y2 <= box2->y2)? box1->y2: box2->y2;
+
+  if (return_box->x1 >= return_box->x2)
+    return_box->x1 = return_box->x2 = 0.0;
+  
+  if (return_box->y1 >= return_box->y2)
+    return_box->y1 = return_box->y2 = 0.0;
+}
+
+void
+glitz_union_sub_pixel_region (glitz_sub_pixel_region_box_t *box1,
+                              glitz_sub_pixel_region_box_t *box2,
+                              glitz_sub_pixel_region_box_t *return_box)
+{
+  return_box->x1 = (box1->x1 <= box2->x1)? box1->x1: box2->x1;
+  return_box->x2 = (box1->x2 >= box2->x2)? box1->x2: box2->x2;
+  return_box->y1 = (box1->y1 <= box2->y1)? box1->y1: box2->y1;
+  return_box->y2 = (box1->y2 >= box2->y2)? box1->y2: box2->y2;
+}
+
+static int
+big_endian (void)
+{
+  int a = 1;
+  char *c;
+  
+  c = (char *) &a;
+  if (c[0])
+    return 0;
+  else
+    return 1;
+}
+
+glitz_gl_enum_t
+glitz_get_gl_format_from_bpp (unsigned short bpp)
+{
+  switch (bpp) {
+  case 8:
+    return GLITZ_GL_ALPHA;
+    break;
+  case 24:
+    if (big_endian ())
+      return GLITZ_GL_RGB;
+    else
+      return GLITZ_GL_BGR;
+    break;
+  default:
+    return GLITZ_GL_BGRA;
+    break;
+  }
+}
+
+glitz_gl_enum_t
+glitz_get_gl_data_type_from_bpp (unsigned short bpp)
+{
+  if (bpp == 32 && big_endian ())
+    return GLITZ_GL_UNSIGNED_INT_8_8_8_8_REV;
+  else
+    return GLITZ_GL_UNSIGNED_BYTE;
+}
+
+static glitz_bool_t
+_glitz_extension_check (const char *extensions,
+                        const char *ext_name)
+{
+  char *end;
+  char *p = (char *) extensions;
+  int ext_name_len = strlen (ext_name);
+
+  if (! p)
+    return 0;
+
+  end = p + strlen (p);
+
+  while (p < end) {
+    int n = strcspn (p, " ");
+
+    if ((ext_name_len == n) && (strncmp (ext_name, p, n) == 0)) {
+      return 1;
+    }
+    p += (n + 1);
+  }
+  return 0;
+}
+
+long int
+glitz_extensions_query (const char *extensions_string,
+                        glitz_extension_map *extensions_map)
+{
+  long int mask = 0;
+  int i;
+
+  for (i = 0; extensions_map[i].name; i++)
+    if (_glitz_extension_check (extensions_string, extensions_map[i].name))
+      mask |= extensions_map[i].mask;
+
+  return mask;
+}
+
+glitz_bool_t
+glitz_uint_is_power_of_two (unsigned int value)
+{
+  unsigned int x = 1;
+  
+  while (x < value)
+    x <<= 1;
+
+  return (x == value);
+}
+
+void
+glitz_uint_to_power_of_two (unsigned int *value)
+{
+  unsigned int x = 1;
+  
+  while (x < *value)
+    x <<= 1;
+
+  *value = x;
+}

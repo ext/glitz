@@ -1,0 +1,340 @@
+2004-03-30    <c99drn@cs.umu.se>
+
+	Name change (libglc -> libglitz)
+
+2004-03-27    <c99drn@cs.umu.se>
+
+	Added clipping support.
+	Added new polygon drawing code.
+
+2004-03-20    <c99drn@cs.umu.se>
+
+	Added color range interface.
+	New fragment program for radial gradient.
+
+2004-03-15    <c99drn@cs.umu.se>
+
+	* src/glc_programmatic.c: Divide by zero fix.
+
+2004-03-14    <c99drn@cs.umu.se>
+
+	* src/Makefile.am: Don't install GL extension headers. 
+
+	Fixed polygon bounds.
+
+2004-03-13    <c99drn@cs.umu.se>
+
+	* src/glc_glx_format.c: Use GLX13 to find visual info if GLX13 is 
+	present.
+
+2004-03-12    <c99drn@cs.umu.se>
+
+	* src/glc_trap.c: Removed ugly trapezoid hack.
+
+2004-03-08    <c99drn@cs.umu.se>
+
+	Fragment program updates. Added support for combined 
+	convolution and solid programmatic surface operation.
+
+2004-03-06    <c99drn@cs.umu.se>
+
+	Included our own GL extension definitions.
+
+2004-03-05    <c99drn@cs.umu.se>
+
+	Added solid programmatic surfaces.
+
+2004-02-28    <c99drn@cs.umu.se>
+
+	* src/glc_agl_extension.c: Added NPOT texture support.
+
+	* src/glc_glx_extension.c: Added NPOT texture support.
+
+	* src/glcint.h: Added NPOT texture support.
+
+	* src/glc_texture.c: Added NPOT texture support.
+
+2004-02-27    <c99drn@cs.umu.se>
+
+	* src/glc.c (_glc_composite_direct): Texture coordinate fix.
+
+	* src/glc_tri.c: Important fix for source offset bug.
+
+	* src/glc_trap.c (glc_composite_trapezoids): Important fix for
+	source offset bug.
+
+	* src/glc.c (glc_composite): Reduced programmatic surface size.
+
+	* src/glc_program.c: Corrected some values in the expand map.
+
+2004-02-26    <c99drn@cs.umu.se>
+
+	Added programmatic surface support. Two types on programmatic
+	surfaces are currently supported, linear and radial gradients.
+	I also like to have a function based gradient and linear and
+	radial guassian shadings.
+
+2004-02-23    <c99drn@cs.umu.se>
+
+	* src/glc_glx_format.c (glc_glx_query_formats_glx13): 
+	Use GLC_GLX_FEATURE_GLX13_MASK.
+
+	* src/glc_glx_context.c (glc_glx_context_get): Check
+	GLC_GLX_FEATURE_GLX13_MASK instead of 
+	GLC_FEATURE_OFFSCREEN_DRAWING_MASK.
+
+	* src/glc_glx_extension.c (glc_glx_query_extensions): 
+	Added GLC_GLX_FEATURE_GLX13_MASK.
+
+	* src/glcint.h: Added GLC_GLX_FEATURE_GLX13_MASK.
+
+2004-02-21    <c99drn@cs.umu.se>
+
+	* src/glc_matrix.c: Added glc_matrix_transform_region function.
+
+	* src/glcint.h: Added push/pop functionality for transform
+	matrix. Added glc_matrix_transform_region function.
+
+	* src/glc_surface.c: Added push/pop functionality for transform
+	matrix.
+
+	* src/glc.c: Only one intermediate surface is now needed when
+	doing none direct compositing with mask and the area of that
+	intermediate surface is now also minimized.
+
+2004-02-20    <c99drn@cs.umu.se>
+
+	Added convolution filter support.
+
+2004-02-18    <c99drn@cs.umu.se>
+
+	Fixed dynamic lookup handling and texture rectangle support.
+
+2004-02-16    <c99drn@cs.umu.se>
+
+	* configure.in: Check version of GL headers.
+
+	Dynamic lookup of all GL and GLX extension symbols.
+
+2004-02-12    <c99drn@cs.umu.se>
+
+	Added pixel read/draw format info.
+
+2004-02-11    <c99drn@cs.umu.se>
+
+	* src/glc.c: Sub-pixel positioning fixes.
+
+	* src/glc_glx_surface.c: Tracking changes of format pointer location.
+
+	Merged fragment program code. 
+
+2004-02-06    <c99drn@cs.umu.se>
+
+	* src/glc_glx_extension.c (glc_glx_query_extensions): Add offscreen
+	multisample support for geforce fx cards.
+
+	* src/glc_tri.c (glc_color_triangles): Removed component masking.
+
+	* src/glc_trap.c (glc_color_trapezoids): Removed component masking.
+
+	* src/glc_rect.c: Removed component masking.
+
+	* src/glc.c (glc_composite): Removed component masking.
+
+	* src/glc_glx_format.c: Add a few more fake
+	offscreen formats.
+
+	* src/glc_agl_format.c (glc_agl_query_formats): Add a few more fake
+	offscreen formats.
+
+	* src/glc_surface.c (glc_surface_create_similar): Force all channels
+	on for intermediates.
+
+	* src/glc_format.c (glc_format_find_standard): All componenets must
+	match exactly when searching for standard formats.
+
+	* src/glc_glx_format.c (glc_glx_query_formats_glx12): 
+	Fixed so that the correct visual IDs are retrieved.
+
+2004-02-05    <c99drn@cs.umu.se>
+
+	Merged new format handling code.
+
+2004-02-03    <c99drn@cs.umu.se>
+
+	* src/glc_glx_format.c (glc_glx_find_visual_format): Don't add options
+	when searching for specific visual.
+	(glc_glx_find_standard_format): Remove doublebuffer flag from standard
+	formats.
+
+	* src/glc_agl_surface.c (_glc_agl_surface_swap_buffers): When surface
+	is single buffered, call glFlush instead of swapping buffers.
+
+	* src/glc_glx_surface.c (_glc_glx_surface_swap_buffers): When surface
+	is single buffered, call glFlush instead of swapping buffers.
+
+	* src/glc_agl_format.c (_glc_add_options): Force single buffering
+	when double buffering is not specified.
+
+	* src/glc_glx_format.c (_glc_add_options): Force single buffering
+	when double buffering is not specified.
+
+	Restructuring of internal rendering model. 
+	AGL backend added.
+
+2003-12-13    <c99drn@cs.umu.se>
+
+	* configure.in: Added --disable-glx switch.
+
+	* configure.in: External slim package is no longer required.
+
+	* src/glc.h: Directly fold in slim stuff rather than
+	depending on it from an external package.
+
+	* src/glcint.h: Directly fold in slim stuff rather than
+	depending on it from an external package.
+
+2003-12-09    <c99drn@cs.umu.se>
+
+	* src/glc_tri.c: Always turn off polygon smooth after rendering.
+
+	* src/glc_trap.c: Always turn off polygon smooth after rendering.
+
+	* src/glc_util.c: Added extension check functions.
+
+	* src/glcint.h: Moved out extension check functions from glx backend.
+
+	* src/glc_glx_extension.c: Check for client glx extensions and 
+	validate fbconfig and pbuffer support.
+
+	* src/glc_surface.c (glc_surface_draw_pixels): Do not draw to both
+	back and front buffer.
+
+2003-12-09    <c99pnn@cs.umu.se>
+
+	* src/glc.h: Moved read/draw pixels from glx backend to glc 
+	core.  
+	
+	* src/glc_glx_surface.c: Moved read/draw pixels from glx backend to glc 
+	core.  
+
+	* src/glc_surface.c: Moved read/draw pixels from glx backend to glc 
+	core. 
+	
+2003-12-08    <c99drn@cs.umu.se>
+
+	Texture format fixes. Linux and MacOSX ATI drivers should now work.
+
+2003-12-07    <c99drn@cs.umu.se>
+
+	New system for handling texture coordinates.
+
+	* src/glc_glx_surface.c (_glc_glx_surface_destroy): Make sure drawable
+	is not current when destroying it.
+
+	* src/glc_glx_context.c (glc_glx_context_release): Make sure context
+	is not current when destroying it.
+
+2003-12-05    <c99drn@cs.umu.se>
+
+	* configure.in: Keeping up with cairo.
+
+	* src/glcint.h: Added glc_intersect_region function.
+
+	* src/glc_util.c: Added glc_intersect_region function. 
+
+	* src/glc.c (glc_composite): Added support for combined repeat and 
+	transformations.
+
+	* Added conditional backend building.
+
+2003-12-04    <c99drn@cs.umu.se>
+
+	* src/glc.c (glc_composite): Use GLC_OPERATOR_IN instead of
+	GLC_OPERATOR_MASK.
+
+	* src/glc_operator.c: Removed GLC_OPERATOR_MASK.
+
+	* src/glcint.h: Removed GLC_OPERATOR_MASK. 
+
+	* src/glc_texture.c (glc_texture_create): Use GL_RGBA as internal 
+	texture format instead of GL_RGBA8.
+
+	* src/glc_glx_surface.c (glc_glx_surface_draw_pixels): Added glFlush
+	after glTexSubImage2D.
+
+	* src/glc_tri.c (glc_color_triangles): Added glFlush after 
+	glCopyTexSubImage2D.
+
+	* src/glc_trap.c (glc_color_trapezoids): Added glFlush after 
+	glCopyTexSubImage2D.
+
+	* src/glc_rect.c: Added glFlush after glCopyTexSubImage2D.
+
+	* src/glc.c (glc_composite): Repeat for none power of two textures
+	implemented.
+	(glc_composite): Added glFlush after glCopyTexSubImage2D.
+
+2003-12-04    <c99drn@cs.umu.se>
+
+	* src/glc_surface.c (glc_surface_setup_environment): Set pack/unpack
+	alignment.
+
+	* src/glc_glx_info.c (glc_glx_screen_info_get): Set pack/unpack
+	alignment.
+
+	* src/glc_glx_surface.c (glc_glx_surface_swap_buffers): Added
+	glFlush before glXSwapBuffers.
+
+2003-12-03    <c99drn@cs.umu.se>
+
+	* src/glc_texture.c: Internal texture format fixed.
+
+	* src/glc_util.c: New transformation model.
+
+	* src/glcint.h: New transformation model.
+
+	* src/glc.c (glc_composite): New transformation model.
+	(glc_composite): Set color mask.
+	(glc_composite): glCopyTexSubImage Y offset fix.
+	(glc_composite): Render to offscreen fix.
+
+	* src/glc_surface.c (glc_surface_setup_environment): Set polygon mode.
+	(glc_surface_set_transform): New transformation model.
+	
+	* src/glc_tri.c (glc_color_triangles): glCopyTexSubImage Y offset fix.
+
+	* src/glc_trap.c (glc_color_trapezoids): glCopyTexSubImage Y offset
+	fix.
+
+	* src/glc_glx_surface.c (glc_glx_surface_draw_pixels): Texture Y 
+	offset fix.
+
+2003-12-01    <c99drn@cs.umu.se>
+
+	* src/glc.c (glc_composite): Only pop matrix if transformations has
+	been used.
+
+	* src/glc_tri.c (glc_color_triangles): Removed unwanted 
+	transformations.
+
+	* src/glc_trap.c (glc_color_trapezoids): Removed unwanted 
+	transformations.
+
+	* src/glc_rect.c: Removed unwanted transformations.
+
+	* src/glc.c (glc_composite): Removed unwanted transformations.
+
+	* src/glc_surface.c: Added disable/enable transform functions.
+
+	* src/glcint.h: Added disable/enable transform functions.
+
+2003-11-27    <c99drn@cs.umu.se>
+
+	* src/glc_glx_info.c (glc_glx_thread_info_get): Type fix for not thread
+	safe building.
+
+	* src/glc_glx_context.c: Use XID instead of GLXFBConfigID.
+
+	* src/glc_glxint.h: Use XID instead of GLXFBConfigID.
+
