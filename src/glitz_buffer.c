@@ -30,17 +30,17 @@
 #include "glitzint.h"
 
 static glitz_status_t
-_glitz_buffer_init (glitz_buffer_t *buffer,
-                    glitz_surface_t *surface,
-                    void *data,
-                    unsigned int size,
+_glitz_buffer_init (glitz_buffer_t      *buffer,
+                    glitz_drawable_t    *drawable,
+                    void                *data,
+                    unsigned int        size,
                     glitz_buffer_hint_t hint)
 {
   glitz_gl_enum_t usage;
 
   buffer->ref_count = 1;
   buffer->name = 0;
-  
+
   switch (hint) {
   case GLITZ_BUFFER_HINT_STREAM_DRAW:
     usage = GLITZ_GL_STREAM_DRAW;
@@ -71,21 +71,26 @@ _glitz_buffer_init (glitz_buffer_t *buffer,
     break;
   }
   
-  if (surface) {
-    buffer->surface = surface;
-    glitz_surface_reference (surface);
+  if (drawable) {
 
-    glitz_surface_push_current (buffer->surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+    GLITZ_GL_DRAWABLE (drawable);
+    
+    buffer->drawable = drawable;
+    glitz_drawable_reference (drawable);
 
-    surface->backend->gl.gen_buffers (1, &buffer->name);
+    drawable->backend->push_current (drawable, NULL,
+                                     GLITZ_ANY_CONTEXT_CURRENT);
+
+    gl->gen_buffers (1, &buffer->name);
     if (buffer->name) {
-      surface->backend->gl.bind_buffer (buffer->target, buffer->name);
-      surface->backend->gl.buffer_data (buffer->target, size, data, usage);
-      surface->backend->gl.bind_buffer (buffer->target, 0);
+      gl->bind_buffer (buffer->target, buffer->name);
+      gl->buffer_data (buffer->target, size, data, usage);
+      gl->bind_buffer (buffer->target, 0);
     }
-    glitz_surface_pop_current (buffer->surface);
+    
+    drawable->backend->pop_current (drawable);
   } else
-    buffer->surface = NULL;
+    buffer->drawable = NULL;
   
   if (size > 0 && buffer->name == 0) {
     buffer->data = malloc (size);
@@ -105,9 +110,9 @@ _glitz_buffer_init (glitz_buffer_t *buffer,
 }
 
 glitz_buffer_t *
-glitz_geometry_buffer_create (glitz_surface_t *surface,
-                              void *data,
-                              unsigned int size,
+glitz_geometry_buffer_create (glitz_drawable_t    *drawable,
+                              void                *data,
+                              unsigned int        size,
                               glitz_buffer_hint_t hint)
 {
   glitz_buffer_t *buffer;
@@ -116,14 +121,15 @@ glitz_geometry_buffer_create (glitz_surface_t *surface,
   if (size == 0)
     return NULL;
 
-  buffer = malloc (sizeof (glitz_buffer_t));
+  buffer = (glitz_buffer_t *) malloc (sizeof (glitz_buffer_t));
   if (buffer == NULL)
     return NULL;
   
   buffer->target = GLITZ_GL_ARRAY_BUFFER;
-
-  if (surface->backend->feature_mask & GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK)
-    status = _glitz_buffer_init (buffer, surface, data, size, hint);
+  
+  if (drawable->backend->feature_mask &
+      GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK)
+    status = _glitz_buffer_init (buffer, drawable, data, size, hint);
   else
     status = _glitz_buffer_init (buffer, NULL, data, size, hint);
   
@@ -136,9 +142,9 @@ glitz_geometry_buffer_create (glitz_surface_t *surface,
 }
 
 glitz_buffer_t *
-glitz_pixel_buffer_create (glitz_surface_t *surface,
-                           void *data,
-                           unsigned int size,
+glitz_pixel_buffer_create (glitz_drawable_t    *drawable,
+                           void                *data,
+                           unsigned int        size,
                            glitz_buffer_hint_t hint)
 {
   glitz_buffer_t *buffer;
@@ -147,7 +153,7 @@ glitz_pixel_buffer_create (glitz_surface_t *surface,
   if (size == 0)
     return NULL;
   
-  buffer = malloc (sizeof (glitz_buffer_t));
+  buffer = (glitz_buffer_t *) malloc (sizeof (glitz_buffer_t));
   if (buffer == NULL)
     return NULL;
   
@@ -162,8 +168,8 @@ glitz_pixel_buffer_create (glitz_surface_t *surface,
     break;
   }
 
-  if (surface->backend->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
-    status = _glitz_buffer_init (buffer, surface, data, size, hint);
+  if (drawable->backend->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
+    status = _glitz_buffer_init (buffer, drawable, data, size, hint);
   else
     status = _glitz_buffer_init (buffer, NULL, data, size, hint);
 
@@ -183,7 +189,7 @@ glitz_buffer_create_for_data (void *data)
   if (data == NULL)
     return NULL;
   
-  buffer = malloc (sizeof (glitz_buffer_t));
+  buffer = (glitz_buffer_t *) malloc (sizeof (glitz_buffer_t));
   if (buffer == NULL)
     return NULL;
 
@@ -205,11 +211,12 @@ glitz_buffer_destroy (glitz_buffer_t *buffer)
   if (buffer->ref_count)
     return;
   
-  if (buffer->surface) {
-    glitz_surface_push_current (buffer->surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
-    buffer->surface->backend->gl.delete_buffers (1, &buffer->name);
-    glitz_surface_pop_current (buffer->surface);
-    glitz_surface_destroy (buffer->surface);
+  if (buffer->drawable) {
+    buffer->drawable->backend->push_current (buffer->drawable, NULL,
+                                             GLITZ_ANY_CONTEXT_CURRENT);
+    buffer->drawable->backend->gl.delete_buffers (1, &buffer->name);
+    buffer->drawable->backend->pop_current (buffer->drawable);
+    glitz_drawable_destroy (buffer->drawable);
   } else if (buffer->owns_data)
     free (buffer->data);
   
@@ -227,19 +234,19 @@ glitz_buffer_reference (glitz_buffer_t *buffer)
 
 void
 glitz_buffer_set_data (glitz_buffer_t *buffer,
-                       int offset,
-                       unsigned int size,
-                       const void *data)
+                       int            offset,
+                       unsigned int   size,
+                       const void     *data)
 {
-  if (buffer->surface) {
-    glitz_surface_push_current (buffer->surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+  if (buffer->drawable) {
+    GLITZ_GL_DRAWABLE (buffer->drawable);
     
-    buffer->surface->backend->gl.bind_buffer (buffer->target, buffer->name);
-    buffer->surface->backend->gl.buffer_sub_data (buffer->target,
-                                                  offset, size, data);
-    buffer->surface->backend->gl.bind_buffer (buffer->target, 0);
-    
-    glitz_surface_pop_current (buffer->surface);
+    buffer->drawable->backend->push_current (buffer->drawable, NULL,
+                                             GLITZ_ANY_CONTEXT_CURRENT);
+    gl->bind_buffer (buffer->target, buffer->name);
+    gl->buffer_sub_data (buffer->target, offset, size, data);
+    gl->bind_buffer (buffer->target, 0);
+    buffer->drawable->backend->pop_current (buffer->drawable);
   } else if (buffer->data)
     memcpy ((char *) buffer->data + offset, data, size);
 }
@@ -247,34 +254,39 @@ slim_hidden_def(glitz_buffer_set_data);
 
 void
 glitz_buffer_get_data (glitz_buffer_t *buffer,
-                       int offset,
-                       unsigned int size,
-                       void *data)
+                       int            offset,
+                       unsigned int   size,
+                       void           *data)
 {
-  if (buffer->surface) {
-    glitz_surface_push_current (buffer->surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+  if (buffer->drawable) {
+    GLITZ_GL_DRAWABLE (buffer->drawable);
     
-    buffer->surface->backend->gl.bind_buffer (buffer->target, buffer->name);
-    buffer->surface->backend->gl.get_buffer_sub_data (buffer->target,
-                                                      offset, size, data);
-    buffer->surface->backend->gl.bind_buffer (buffer->target, 0);
+    buffer->drawable->backend->push_current (buffer->drawable, NULL,
+                                             GLITZ_ANY_CONTEXT_CURRENT);
     
-    glitz_surface_pop_current (buffer->surface);
+    gl->bind_buffer (buffer->target, buffer->name);
+    gl->get_buffer_sub_data (buffer->target, offset, size, data);
+    gl->bind_buffer (buffer->target, 0);
+
+    buffer->drawable->backend->pop_current (buffer->drawable);
   } else if (buffer->data)
     memcpy (data, (char *) buffer->data + offset, size);
 }
 slim_hidden_def(glitz_buffer_get_data);
 
 void *
-glitz_buffer_map (glitz_buffer_t *buffer,
+glitz_buffer_map (glitz_buffer_t        *buffer,
                   glitz_buffer_access_t access)
 {
   void *pointer = NULL;
   
-  if (buffer->surface) {
+  if (buffer->drawable) {
     glitz_gl_enum_t buffer_access;
-    
-    glitz_surface_push_current (buffer->surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+
+    GLITZ_GL_DRAWABLE (buffer->drawable);
+
+    buffer->drawable->backend->push_current (buffer->drawable, NULL,
+                                             GLITZ_ANY_CONTEXT_CURRENT);
     
     switch (access) {
     case GLITZ_BUFFER_ACCESS_READ_ONLY:
@@ -288,11 +300,10 @@ glitz_buffer_map (glitz_buffer_t *buffer,
       break;
     }
 
-    buffer->surface->backend->gl.bind_buffer (buffer->target, buffer->name);
-    pointer = buffer->surface->backend->gl.map_buffer (buffer->target,
-                                                       buffer_access);
+    gl->bind_buffer (buffer->target, buffer->name);
+    pointer = gl->map_buffer (buffer->target, buffer_access);
     
-    glitz_surface_pop_current (buffer->surface);
+    buffer->drawable->backend->pop_current (buffer->drawable);
   }
   
   if (pointer == NULL)
@@ -306,16 +317,18 @@ glitz_buffer_unmap (glitz_buffer_t *buffer)
 {
   glitz_status_t status = GLITZ_STATUS_SUCCESS;
   
-  if (buffer->surface) {
-    glitz_surface_push_current (buffer->surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
+  if (buffer->drawable) {
+    GLITZ_GL_DRAWABLE (buffer->drawable);
     
-    if (buffer->surface->backend->gl.unmap_buffer (buffer->target) ==
-        GLITZ_GL_FALSE)
+    buffer->drawable->backend->push_current (buffer->drawable, NULL,
+                                             GLITZ_ANY_CONTEXT_CURRENT);
+    
+    if (gl->unmap_buffer (buffer->target) == GLITZ_GL_FALSE)
       status = GLITZ_STATUS_CONTENT_DESTROYED;
       
-    buffer->surface->backend->gl.bind_buffer (buffer->target, 0);
-    
-    glitz_surface_pop_current (buffer->surface);
+    gl->bind_buffer (buffer->target, 0);
+
+    buffer->drawable->backend->pop_current (buffer->drawable);
   }
 
   return status;
@@ -325,8 +338,8 @@ void *
 glitz_buffer_bind (glitz_buffer_t *buffer,
                    glitz_gl_enum_t target)
 {
-  if (buffer->surface) {
-    buffer->surface->backend->gl.bind_buffer (target, buffer->name);
+  if (buffer->drawable) {
+    buffer->drawable->backend->gl.bind_buffer (target, buffer->name);
     buffer->target = target;
     
     return NULL;
@@ -338,6 +351,6 @@ glitz_buffer_bind (glitz_buffer_t *buffer,
 void
 glitz_buffer_unbind (glitz_buffer_t *buffer)
 {
-  if (buffer->surface)
-    buffer->surface->backend->gl.bind_buffer (buffer->target, 0);
+  if (buffer->drawable)
+    buffer->drawable->backend->gl.bind_buffer (buffer->target, 0);
 }

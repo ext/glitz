@@ -6,7 +6,7 @@ dnl ===========================================================================
 
 # Package version number, (as distinct from shared library version)
 # This must be manually synchronized with the version in src/glitz.h
-GLITZ_VERSION=0.2.3
+GLITZ_VERSION=0.3.0
 # libtool shared library version
 
 # Increment if the interface has additions, changes, removals.
@@ -90,6 +90,14 @@ if test "x$GCC" = "xyes"; then
 fi
 
 AC_C_BIGENDIAN
+
+dnl ===========================================================================
+
+GLITZ_LIB='-L$(top_builddir)/src -lglitz'
+GLITZ_INC='-I$(top_builddir)/src -I$(top_srcdir)/src'
+
+AC_SUBST(GLITZ_LIB)
+AC_SUBST(GLITZ_INC)
 
 dnl ===========================================================================
 
@@ -193,9 +201,11 @@ dnl ===========================================================================
 AC_OUTPUT([
 Makefile
 src/Makefile
-glitz.pc
-glitz-glx.pc
-glitz-agl.pc
+src/glx/Makefile
+src/agl/Makefile
+src/glitz.pc
+src/glx/glitz-glx.pc
+src/agl/glitz-agl.pc
 ])
 
 dnl ===========================================================================

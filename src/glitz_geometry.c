@@ -99,25 +99,38 @@ static glitz_sample_info_t _1x_sample = {
 };
 
 void
-glitz_set_geometry (glitz_surface_t *dst,
-                    int x_dst,
-                    int y_dst,
+glitz_set_geometry (glitz_surface_t         *dst,
+                    glitz_fixed16_16_t      x_dst,
+                    glitz_fixed16_16_t      y_dst,
                     glitz_geometry_format_t *format,
-                    glitz_buffer_t *buffer)
+                    glitz_buffer_t          *buffer)
 {
-  if (dst->geometry.buffer) {
-    glitz_buffer_destroy (dst->geometry.buffer);
-    dst->geometry.buffer = NULL;
-  }
+  glitz_drawable_t *drawable = (dst->attached)? dst->attached: dst->drawable;
 
   if (buffer) {
-    dst->geometry.buffer = buffer;
     glitz_buffer_reference (buffer);
     
-    dst->geometry.x_offset = x_dst;
-    dst->geometry.y_offset = y_dst;
+    if (dst->geometry.buffer)
+      glitz_buffer_destroy (dst->geometry.buffer);
+
+    dst->geometry.buffer = buffer;
+    
+    dst->geometry.x_offset = FIXED_TO_FLOAT (x_dst);
+    dst->geometry.y_offset = FIXED_TO_FLOAT (y_dst);
 
     switch (format->primitive) {
+    case GLITZ_GEOMETRY_PRIMITIVE_POINTS:
+      dst->geometry.primitive = GLITZ_GL_POINTS;
+      break;
+    case GLITZ_GEOMETRY_PRIMITIVE_LINES:
+      dst->geometry.primitive = GLITZ_GL_LINES;
+      break;
+    case GLITZ_GEOMETRY_PRIMITIVE_LINE_STRIP:
+      dst->geometry.primitive = GLITZ_GL_LINE_STRIP;
+      break;
+    case GLITZ_GEOMETRY_PRIMITIVE_LINE_LOOP:
+      dst->geometry.primitive = GLITZ_GL_LINE_LOOP;
+      break;
     case GLITZ_GEOMETRY_PRIMITIVE_TRIANGLES:
       dst->geometry.primitive = GLITZ_GL_TRIANGLES;
       break;
@@ -156,7 +169,7 @@ glitz_set_geometry (glitz_surface_t *dst,
     dst->geometry.first = format->first;
     dst->geometry.count = format->count;
 
-    if (dst->format->multisample.samples > 1) {
+    if (drawable->format->samples > 1) {
       if (format->edge_hint != GLITZ_GEOMETRY_EDGE_HINT_SHARP) {
         dst->flags |= GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK;
 
@@ -164,29 +177,25 @@ glitz_set_geometry (glitz_surface_t *dst,
           dst->flags |= GLITZ_SURFACE_FLAG_NICEST_MULTISAMPLE_MASK;
         else
           dst->flags &= ~GLITZ_SURFACE_FLAG_NICEST_MULTISAMPLE_MASK;
-        
-        dst->update_mask |= GLITZ_UPDATE_MULTISAMPLE_MASK;
-      } else {
+      } else
         dst->flags &= ~GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK;
-        dst->update_mask |= GLITZ_UPDATE_MULTISAMPLE_MASK;
-      }
     } else {
       if (format->mode == GLITZ_GEOMETRY_MODE_INDIRECT) {
         switch (format->edge_hint) {
         case GLITZ_GEOMETRY_EDGE_HINT_BEST_SMOOTH:
-          if (dst->format->stencil_size >= 4) {
+          if (drawable->format->stencil_size >= 4) {
             dst->indirect = &_8x_multi_sample;
             break;
           }
           /* fall-through */
         case GLITZ_GEOMETRY_EDGE_HINT_GOOD_SMOOTH:
-          if (dst->format->stencil_size >= 3) {
+          if (drawable->format->stencil_size >= 3) {
             dst->indirect = &_4x_multi_sample;
             break;
           }
           /* fall-through */
         case GLITZ_GEOMETRY_EDGE_HINT_FAST_SMOOTH:
-          if (dst->format->stencil_size >= 2) {
+          if (drawable->format->stencil_size >= 2) {
             dst->indirect = &_2x_multi_sample;
             break;
           }
@@ -200,19 +209,20 @@ glitz_set_geometry (glitz_surface_t *dst,
         dst->indirect = NULL;
     }
   } else {
-    if (dst->format->multisample.samples > 1) {
-      dst->flags &= ~GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK;
-      dst->update_mask |= GLITZ_UPDATE_MULTISAMPLE_MASK;
-    } else
-      dst->indirect = NULL;
+    if (dst->geometry.buffer)
+      glitz_buffer_destroy (dst->geometry.buffer);
+
+    dst->geometry.buffer = NULL;
+    dst->flags &= ~GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK;
+    dst->indirect = NULL;
   }
 }
 slim_hidden_def(glitz_set_geometry);
 
 void
 glitz_geometry_enable_default (glitz_gl_proc_address_list_t *gl,
-                               glitz_surface_t *dst,
-                               glitz_bounding_box_t *box)
+                               glitz_surface_t              *dst,
+                               glitz_box_t                  *box)
 {
   dst->geometry.data[0] = box->x1;
   dst->geometry.data[1] = box->y1;
@@ -228,11 +238,11 @@ glitz_geometry_enable_default (glitz_gl_proc_address_list_t *gl,
 
 void
 glitz_geometry_enable (glitz_gl_proc_address_list_t *gl,
-                       glitz_surface_t *dst,
-                       glitz_gl_enum_t *primitive,
-                       glitz_gl_int_t *first,
-                       glitz_gl_sizei_t *count,
-                       glitz_bounding_box_t *box)
+                       glitz_surface_t              *dst,
+                       glitz_gl_enum_t              *primitive,
+                       glitz_gl_int_t               *first,
+                       glitz_gl_sizei_t             *count,
+                       glitz_box_t                  *box)
 {
   if (dst->geometry.buffer) {
     void *ptr;
@@ -257,9 +267,10 @@ glitz_geometry_enable (glitz_gl_proc_address_list_t *gl,
 
 void
 glitz_geometry_disable (glitz_gl_proc_address_list_t *gl,
-                        glitz_surface_t *dst)
+                        glitz_surface_t              *dst)
 {
   if (dst->geometry.buffer &&
-      (dst->backend->feature_mask & GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK))
+      (dst->drawable->backend->feature_mask &
+       GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK))
     gl->bind_buffer (GLITZ_GL_ARRAY_BUFFER, 0);
 }

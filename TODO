@@ -1,3 +1,5 @@
+* API documentation.
+
 * Allow the fragment filters to be applied to mask surfaces
   and not only source surfaces. The filter system and the fragment
   programs are design to work both with source and mask surfaces,

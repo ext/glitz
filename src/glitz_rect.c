@@ -37,8 +37,8 @@
 
 static void
 glitz_rectangle_bounds (const glitz_rectangle_t *rects,
-                        int n_rects,
-                        glitz_bounding_box_t *box)
+                        int                     n_rects,
+                        glitz_box_t             *box)
 {
   box->x1 = MAXSHORT;
   box->x2 = MINSHORT;
@@ -58,31 +58,34 @@ glitz_rectangle_bounds (const glitz_rectangle_t *rects,
 }
 
 void
-glitz_set_rectangles (glitz_surface_t *dst,
-                      const glitz_color_t *color,
+glitz_set_rectangles (glitz_surface_t         *dst,
+                      const glitz_color_t     *color,
                       const glitz_rectangle_t *rects,
-                      int n_rects)
+                      int                     n_rects)
 {
-  glitz_bounding_box_t bounds;
-  glitz_gl_proc_address_list_t *gl = &dst->backend->gl;
+  glitz_box_t bounds;
+
+  GLITZ_GL_SURFACE (dst);
 
   glitz_rectangle_bounds (rects, n_rects, &bounds);
   if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
       bounds.x2 < 0 || bounds.y2 < 0)
     return;
 
-  if (SURFACE_SOLID (dst) && SURFACE_OFFSCREEN (dst) &&
+  if (SURFACE_SOLID (dst) &&
       (bounds.x2 - bounds.x1) > 0 && (bounds.y2 - bounds.y1) > 0) {
-    STORE_16 (dst->solid.red, dst->format->red_size, color->red);
-    STORE_16 (dst->solid.green, dst->format->green_size, color->green);
-    STORE_16 (dst->solid.blue, dst->format->blue_size, color->blue);
-    STORE_16 (dst->solid.alpha, dst->format->alpha_size, color->alpha);
-    
-    dst->flags |= GLITZ_SURFACE_FLAG_DRAWABLE_DIRTY_MASK;
+    STORE_16 (dst->solid.red, dst->format->color.red_size, color->red);
+    STORE_16 (dst->solid.green, dst->format->color.green_size, color->green);
+    STORE_16 (dst->solid.blue, dst->format->color.blue_size, color->blue);
+    STORE_16 (dst->solid.alpha, dst->format->color.alpha_size, color->alpha);
+
+    glitz_surface_damage (dst, &bounds,
+                          GLITZ_DAMAGE_TEXTURE_MASK |
+                          GLITZ_DAMAGE_DRAWABLE_MASK);
     return;
   }
 
-  if (glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+  if (glitz_surface_push_current (dst, GLITZ_DRAWABLE_CURRENT)) {
     gl->clear_color (color->red / (glitz_gl_clampf_t) 0xffff,
                      color->green / (glitz_gl_clampf_t) 0xffff,
                      color->blue / (glitz_gl_clampf_t) 0xffff,
@@ -90,12 +93,14 @@ glitz_set_rectangles (glitz_surface_t *dst,
 
     for (; n_rects; n_rects--, rects++) {
       gl->scissor (rects->x,
-                   dst->height - rects->y - rects->height,
+                   dst->attached->height - dst->y - rects->y - rects->height,
                    rects->width,
                    rects->height);
       gl->clear (GLITZ_GL_COLOR_BUFFER_BIT);
     }
-    glitz_surface_dirty (dst, &bounds);
+    glitz_surface_damage (dst, &bounds,
+                          GLITZ_DAMAGE_TEXTURE_MASK |
+                          GLITZ_DAMAGE_SOLID_MASK);
   } else {
     static glitz_pixel_format_t pf = {
       {
@@ -154,12 +159,12 @@ glitz_set_rectangles (glitz_surface_t *dst,
 slim_hidden_def(glitz_set_rectangles);
 
 void
-glitz_set_rectangle (glitz_surface_t *dst,
+glitz_set_rectangle (glitz_surface_t     *dst,
                      const glitz_color_t *color,
-                     int x,
-                     int y,
-                     unsigned int width,
-                     unsigned int height)
+                     int                 x,
+                     int                 y,
+                     unsigned int        width,
+                     unsigned int        height)
 {
   glitz_rectangle_t rect;
 

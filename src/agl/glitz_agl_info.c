@@ -1,28 +1,26 @@
 /*
- * Copyright © 2004 David Reveman, Peter Nilsson
- *
+ * Copyright © 2004 David Reveman
+ * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
  * appear in supporting documentation, and that the names of
- * David Reveman and Peter Nilsson not be used in advertising or
- * publicity pertaining to distribution of the software without
- * specific, written prior permission. David Reveman and Peter Nilsson
- * makes no representations about the suitability of this software for
- * any purpose. It is provided "as is" without express or implied warranty.
+ * David Reveman not be used in advertising or publicity pertaining to
+ * distribution of the software without specific, written prior permission.
+ * David Reveman makes no representations about the suitability of this
+ * software for any purpose. It is provided "as is" without express or
+ * implied warranty.
  *
- * DAVID REVEMAN AND PETER NILSSON DISCLAIMS ALL WARRANTIES WITH
- * REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL DAVID REVEMAN AND
- * PETER NILSSON BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA
- * OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * DAVID REVEMAN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, 
+ * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
+ * NO EVENT SHALL DAVID REVEMAN BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+ * OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, 
+ * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
+ * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Authors: David Reveman <c99drn@cs.umu.se>
- *          Peter Nilsson <c99pnn@cs.umu.se>
+ * Author: David Reveman <c99drn@cs.umu.se>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -34,9 +32,12 @@
 #include <OpenGL/glext.h>
 
 glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
+
+  /* core */
   (glitz_gl_enable_t) glEnable,
   (glitz_gl_disable_t) glDisable,
   (glitz_gl_get_error_t) glGetError,
+  (glitz_gl_get_string_t) glGetString,
   (glitz_gl_enable_client_state_t) glEnableClientState,
   (glitz_gl_disable_client_state_t) glDisableClientState,
   (glitz_gl_vertex_pointer_t) glVertexPointer,
@@ -91,6 +92,7 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_copy_tex_sub_image_2d_t) glCopyTexSubImage2D,
   (glitz_gl_get_integer_v_t) glGetIntegerv,
 
+  /* extensions */
   (glitz_gl_blend_color_t) 0,
   (glitz_gl_active_texture_t) 0,
   (glitz_gl_gen_programs_t) 0,
@@ -106,80 +108,8 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_buffer_sub_data_t) 0,
   (glitz_gl_get_buffer_sub_data_t) 0,
   (glitz_gl_map_buffer_t) 0,
-  (glitz_gl_unmap_buffer_t) 0,
-  
-  1
+  (glitz_gl_unmap_buffer_t) 0
 };
-
-CFBundleRef
-glitz_agl_get_bundle (const char *name)
-{
-  CFBundleRef bundle = 0;
-  FSRefParam ref_param;
-  unsigned char framework_name[256];
-
-  framework_name[0] = strlen (name);
-  strcpy (&framework_name[1], name);
-  
-  memset (&ref_param, 0, sizeof (ref_param));
-
-  if (FindFolder (kSystemDomain,
-                  kFrameworksFolderType,
-                  kDontCreateFolder,
-                  &ref_param.ioVRefNum,
-                  &ref_param.ioDirID) == noErr) {
-    FSRef ref;
-
-    memset (&ref, 0, sizeof (ref));
-
-    ref_param.ioNamePtr = framework_name;
-    ref_param.newRef = &ref;
-
-    if (PBMakeFSRefSync (&ref_param) == noErr) {
-      CFURLRef url;
-
-      url = CFURLCreateFromFSRef (kCFAllocatorDefault, &ref);
-      if (url) {
-        bundle = CFBundleCreate (kCFAllocatorDefault, url);
-        CFRelease (url);
-
-        if (!CFBundleLoadExecutable (bundle)) {
-          CFRelease (bundle);
-          return (CFBundleRef) 0;
-        }
-      }
-    }
-  }
-    
-  return bundle;
-}
-
-void
-glitz_agl_release_bundle (CFBundleRef bundle)
-{
-  if (bundle) {
-    CFBundleUnloadExecutable (bundle);
-    CFRelease (bundle);
-  }
-}
-
-glitz_function_pointer_t
-glitz_agl_get_proc_address (CFBundleRef bundle, const char *name)
-{
-  glitz_function_pointer_t address = NULL;
-  CFStringRef str;
-  
-  if (bundle) {
-    str = CFStringCreateWithCString (kCFAllocatorDefault, name,
-                                     kCFStringEncodingMacRoman);
-
-    address = CFBundleGetFunctionPointerForName (bundle, str);
-
-    CFRelease (str);
-  }
-  
-  return address;
-}
 
 static void
 glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info);
@@ -244,6 +174,7 @@ glitz_agl_thread_info_get (void)
 
 /* not thread safe */
 static glitz_agl_thread_info_t _thread_info = {
+  0,
   NULL,
   NULL,
   0,
@@ -251,10 +182,7 @@ static glitz_agl_thread_info_t _thread_info = {
   0,
   { 0 },
   0,
-  { 0 },
-  0,
-  0,
-  0,
+  NULL,
   0,
   { 0 }
 };
@@ -280,59 +208,24 @@ glitz_agl_thread_info_get (void)
 static void
 glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
 {
-  GLint attrib[] = {
-    AGL_RGBA,
-    AGL_NO_RECOVERY,
-    AGL_NONE
-  };
-
   thread_info->formats = NULL;
-  thread_info->format_ids = NULL;
+  thread_info->pixel_formats = (AGLPixelFormat *) 0;
   thread_info->n_formats = 0;
   thread_info->contexts = NULL;
   thread_info->n_contexts = 0;
 
-  glitz_program_map_init (&thread_info->program_map);
-
-  glitz_agl_surface_backend_init (&thread_info->root_context.backend);
-
-  memcpy (&thread_info->root_context.backend.gl,
-          &_glitz_agl_gl_proc_address,
-          sizeof (glitz_gl_proc_address_list_t));
-  
-  thread_info->root_context.backend.formats = NULL;
-  thread_info->root_context.backend.n_formats = 0;
-  thread_info->root_context.backend.program_map = NULL;
-  thread_info->root_context.backend.feature_mask = 0;
-
-  thread_info->agl_feature_mask = thread_info->feature_mask = 0;
-  
-  thread_info->root_context.pixel_format =
-    aglChoosePixelFormat (NULL, 0, attrib);
-  if (thread_info->root_context.pixel_format) {
-    thread_info->root_context.context =
-      aglCreateContext (thread_info->root_context.pixel_format, NULL);
-    if (thread_info->root_context.context) {
-
-      aglSetCurrentContext (thread_info->root_context.context);
-  
-      if (glitz_agl_query_extensions (thread_info) == GLITZ_STATUS_SUCCESS) {
-          thread_info->root_context.backend.feature_mask =
-            thread_info->feature_mask;
-        glitz_agl_context_proc_address_lookup (thread_info,
-                                               &thread_info->root_context);
-        glitz_agl_query_formats (thread_info);
-      }
-    }
-  }
-
-  thread_info->root_context.backend.formats = thread_info->formats;
-  thread_info->root_context.backend.n_formats = thread_info->n_formats;
-  thread_info->root_context.backend.program_map = &thread_info->program_map;
-
   thread_info->context_stack_size = 1;
   thread_info->context_stack->surface = NULL;
-  thread_info->context_stack->constraint = GLITZ_CN_NONE;
+  thread_info->context_stack->constraint = GLITZ_NONE;
+
+  thread_info->root_context = NULL;
+
+  thread_info->agl_feature_mask = 0;
+
+  glitz_program_map_init (&thread_info->program_map);
+
+  if (!glitz_agl_query_extensions (thread_info))
+    glitz_agl_query_formats (thread_info);
 }
 
 static void
@@ -340,27 +233,17 @@ glitz_agl_thread_info_fini (glitz_agl_thread_info_t *thread_info)
 {
   int i;
 
-  if (thread_info->root_context.context) {
-    aglSetCurrentContext (thread_info->root_context.context);
-    glitz_program_map_fini (&thread_info->root_context.backend.gl,
-                            &thread_info->program_map);
-    aglSetCurrentContext (NULL);
-  }
-
   for (i = 0; i < thread_info->n_contexts; i++)
     glitz_agl_context_destroy (thread_info, thread_info->contexts[i]);
-
+  
   for (i = 0; i < thread_info->n_formats; i++)
-    aglDestroyPixelFormat (thread_info->format_ids[i]);
-
+    aglDestroyPixelFormat (thread_info->pixel_formats[i]);
+  
   if (thread_info->formats)
     free (thread_info->formats);
   
-  if (thread_info->format_ids)
-    free (thread_info->format_ids);
-
-  if (thread_info->root_context.context)
-    aglDestroyContext (thread_info->root_context.context);
+  if (thread_info->pixel_formats)
+    free (thread_info->pixel_formats);
 }
 
 void
@@ -373,8 +256,7 @@ slim_hidden_def(glitz_agl_init);
 void
 glitz_agl_fini (void)
 {
-  glitz_agl_thread_info_t *info =
-    glitz_agl_thread_info_get ();
+  glitz_agl_thread_info_t *info = glitz_agl_thread_info_get ();
 
   glitz_agl_thread_info_destroy (info);
 }

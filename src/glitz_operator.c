@@ -86,13 +86,5 @@ glitz_set_operator (glitz_gl_proc_address_list_t *gl, glitz_operator_t op) {
     gl->enable (GLITZ_GL_BLEND);
     gl->blend_func (GLITZ_GL_ONE, GLITZ_GL_ONE);
     break;
-  case GLITZ_OPERATOR_SATURATE:
-    gl->enable (GLITZ_GL_BLEND);
-    gl->blend_func (GLITZ_GL_SRC_ALPHA_SATURATE, GLITZ_GL_ONE);
-    break;
-  default:
-    gl->enable (GLITZ_GL_BLEND);
-    gl->blend_func (GLITZ_GL_ZERO, GLITZ_GL_ONE);
-    break;
   }
 }

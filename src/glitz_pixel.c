@@ -31,13 +31,15 @@
 
 #include <string.h>
 
-typedef struct _glitz_gl_pixel_format glitz_gl_pixel_format_t;
-  
-static struct _glitz_gl_pixel_format {
+#include <stdio.h>
+
+typedef struct _glitz_gl_pixel_format {
   glitz_pixel_format_t pixel;
-  glitz_gl_enum_t format;
-  glitz_gl_enum_t type;
-}  _gl_format_map[] = {
+  glitz_gl_enum_t      format;
+  glitz_gl_enum_t      type;
+} glitz_gl_pixel_format_t;
+  
+static glitz_gl_pixel_format_t _gl_pixel_formats[] = {
   {
     {
       {
@@ -51,26 +53,6 @@ static struct _glitz_gl_pixel_format {
       GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
     },
     GLITZ_GL_ALPHA,
-    GLITZ_GL_UNSIGNED_BYTE
-  }, {
-    {
-      {
-        24,
-        0x00000000,
-        0x00ff0000,
-        0x0000ff00,
-        0x000000ff
-      },
-      0, 0, 0,
-      GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
-    },
-    
-#if IMAGE_BYTE_ORDER == MSBFirst
-    GLITZ_GL_RGB,
-#else
-    GLITZ_GL_BGR,
-#endif
-    
     GLITZ_GL_UNSIGNED_BYTE
   }, {
     {
@@ -95,9 +77,29 @@ static struct _glitz_gl_pixel_format {
   }
 };
 
-#define GLITZ_GL_FORMAT_A    0
-#define GLITZ_GL_FORMAT_RGB  1
-#define GLITZ_GL_FORMAT_ARGB 2
+static glitz_gl_pixel_format_t _gl_packed_pixel_formats[] = {
+  {
+    {
+      {
+        16,
+        0x00000000,
+        0x0000f800,
+        0x000007e0,
+        0x0000001f
+      },
+      0, 0, 0,
+      GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
+    },
+    GLITZ_GL_BGR,
+    
+#if IMAGE_BYTE_ORDER == MSBFirst  
+    GLITZ_GL_UNSIGNED_SHORT_5_6_5_REV
+#else
+    GLITZ_GL_UNSIGNED_SHORT_5_6_5
+#endif
+    
+  }
+};
 
 typedef struct _glitz_pixel_color {
   uint32_t r, g, b, a;
@@ -286,10 +288,12 @@ static void
 _glitz_pixel_transform (unsigned long transform,
                         glitz_image_t *src,
                         glitz_image_t *dst,
-                        int x_src,
-                        int x_dst,
-                        int width,
-                        int height)
+                        int           x_src,
+                        int           y_src,
+                        int           x_dst,
+                        int           y_dst,
+                        int           width,
+                        int           height)
 {
   int src_stride, dst_stride;
   int x, y, bytes_per_pixel = 0;
@@ -352,11 +356,11 @@ _glitz_pixel_transform (unsigned long transform,
 
   for (y = 0; y < height; y++) {
     if (src->format->scanline_order != dst->format->scanline_order)
-      src_op.line = &src->data[(src->height - y - 1) * src_stride];
+      src_op.line = &src->data[(src->height - (y + y_src) - 1) * src_stride];
     else
-      src_op.line = &src->data[y * src_stride];
+      src_op.line = &src->data[(y + y_src) * src_stride];
 
-    dst_op.line = &dst->data[y * dst_stride];
+    dst_op.line = &dst->data[(y + y_dst) * dst_stride];
     
     if (transform & GLITZ_TRANSFORM_PIXELS_MASK) {
       for (x = 0; x < width; x++) {
@@ -371,7 +375,7 @@ _glitz_pixel_transform (unsigned long transform,
          it will never be used for bitmaps */
       if (bytes_per_pixel == 0)
         bytes_per_pixel = src->format->masks.bpp / 8;
-      
+
       memcpy (&dst_op.line[x_dst * bytes_per_pixel],
               &src_op.line[x_src * bytes_per_pixel],
               width * bytes_per_pixel);
@@ -379,49 +383,174 @@ _glitz_pixel_transform (unsigned long transform,
   }
 }
 
+static glitz_bool_t
+_glitz_format_match (glitz_pixel_masks_t  *masks1,
+                     glitz_pixel_masks_t  *masks2,
+                     glitz_color_format_t *internal_color)
+{
+  if (masks1->bpp != masks2->bpp)
+    return 0;
+    
+  if (internal_color->red_size)
+    if (masks1->red_mask != masks2->red_mask)
+      return 0;
+
+  if (internal_color->green_size)
+    if (masks1->green_mask != masks2->green_mask)
+      return 0;
+
+  if (internal_color->blue_size)
+    if (masks1->blue_mask != masks2->blue_mask)
+      return 0;
+  
+  if (internal_color->alpha_size)
+    if (masks1->alpha_mask != masks2->alpha_mask)
+      return 0;
+  
+  return 1;
+}
+
 static glitz_gl_pixel_format_t *
-_glitz_find_gl_pixel_format (glitz_pixel_format_t *format)
+_glitz_find_gl_pixel_format (glitz_pixel_format_t *format,
+                             glitz_color_format_t *internal_color,
+                             unsigned long        feature_mask)
 {
   int i, n_formats;
 
-  n_formats = sizeof (_gl_format_map) / sizeof (glitz_gl_pixel_format_t);
+  n_formats = sizeof (_gl_pixel_formats) / sizeof (glitz_gl_pixel_format_t);
   for (i = 0; i < n_formats; i++) {
-    if (memcmp (&_gl_format_map[i].pixel.masks, &format->masks,
-                sizeof (glitz_pixel_masks_t)) == 0)
-      return &_gl_format_map[i];
+    if (_glitz_format_match (&_gl_pixel_formats[i].pixel.masks, &format->masks,
+                             internal_color))
+      return &_gl_pixel_formats[i];
+  }
+  
+  if (feature_mask & GLITZ_FEATURE_PACKED_PIXELS_MASK) {
+    n_formats = sizeof (_gl_packed_pixel_formats) /
+      sizeof (glitz_gl_pixel_format_t);
+    
+    for (i = 0; i < n_formats; i++) {
+      if (_glitz_format_match (&_gl_packed_pixel_formats[i].pixel.masks,
+                               &format->masks,
+                               internal_color))
+        return &_gl_packed_pixel_formats[i];
+    }
   }
   
   return NULL;
 }
 
-static glitz_gl_pixel_format_t *
-_glitz_best_gl_pixel_format (glitz_format_t *format)
+static int
+_component_size (unsigned long mask)
 {
-  if (format->red_size) {
-    if (format->alpha_size)
-      return &_gl_format_map[GLITZ_GL_FORMAT_ARGB];
-    else
-      return &_gl_format_map[GLITZ_GL_FORMAT_RGB];
-  } else
-    return &_gl_format_map[GLITZ_GL_FORMAT_A];
+  unsigned long y;
+  
+  /* HACKMEM 169 */
+  y = (mask >> 1) & 033333333333;
+  y = mask - y - ((y >> 1) & 033333333333);
+  return (((y + (y >> 3)) & 030707070707) % 077);
+}
+
+static glitz_bool_t
+_glitz_format_diff (glitz_pixel_masks_t  *masks,
+                    glitz_color_format_t *pixel_color,
+                    glitz_color_format_t *internal_color,
+                    int                  *diff)
+{
+  int size;
+  
+  *diff = 0;
+
+  size = _component_size (masks->red_mask);
+  if (size < pixel_color->red_size && size < internal_color->red_size)
+    return 0;
+  
+  *diff += abs (size - internal_color->red_size);
+
+  size = _component_size (masks->green_mask);
+  if (size < pixel_color->green_size && size < internal_color->green_size)
+    return 0;
+  
+  *diff += abs (size - internal_color->green_size);
+
+  size = _component_size (masks->blue_mask);
+  if (size < pixel_color->blue_size && size < internal_color->blue_size)
+    return 0;
+  
+  *diff += abs (size - internal_color->blue_size);
+
+  size = _component_size (masks->alpha_mask);
+  if (size < pixel_color->alpha_size && size < internal_color->alpha_size)
+    return 0;
+  
+  *diff += abs (size - internal_color->alpha_size);
+  
+  return 1;
+}
+
+static glitz_gl_pixel_format_t *
+_glitz_find_best_gl_pixel_format (glitz_pixel_format_t *format,
+                                  glitz_color_format_t *internal_color,
+                                  unsigned long        feature_mask)
+{
+  glitz_gl_pixel_format_t *best = NULL;
+  glitz_color_format_t color;
+  int i, n_formats, diff, best_diff = MAXSHORT;
+
+  color.red_size = _component_size (format->masks.red_mask);
+  color.green_size = _component_size (format->masks.green_mask);
+  color.blue_size = _component_size (format->masks.blue_mask);
+  color.alpha_size = _component_size (format->masks.alpha_mask);
+
+  n_formats = sizeof (_gl_pixel_formats) / sizeof (glitz_gl_pixel_format_t);
+  for (i = 0; best_diff > 0 && i < n_formats; i++) {
+    if (_glitz_format_diff (&_gl_pixel_formats[i].pixel.masks,
+                            &color,
+                            internal_color,
+                            &diff)) {
+      if (diff < best_diff) {
+        best = &_gl_pixel_formats[i];
+        best_diff = diff;
+      }
+    }
+  }
+  
+  if (feature_mask & GLITZ_FEATURE_PACKED_PIXELS_MASK) {
+    n_formats = sizeof (_gl_packed_pixel_formats) /
+      sizeof (glitz_gl_pixel_format_t);
+    
+    for (i = 0; best_diff > 0 && i < n_formats; i++) {
+      if (_glitz_format_diff (&_gl_packed_pixel_formats[i].pixel.masks,
+                              &color,
+                              internal_color,
+                              &diff)) {
+        if (diff < best_diff) {
+          best = &_gl_packed_pixel_formats[i];
+          best_diff = diff;
+        }
+      }
+    }
+  }
+
+  return best;
 }
 
 void
-glitz_set_pixels (glitz_surface_t *dst,
-                  int x_dst,
-                  int y_dst,
-                  int width,
-                  int height,
+glitz_set_pixels (glitz_surface_t      *dst,
+                  int                  x_dst,
+                  int                  y_dst,
+                  int                  width,
+                  int                  height,
                   glitz_pixel_format_t *format,
-                  glitz_buffer_t *buffer)
+                  glitz_buffer_t       *buffer)
 {
-  glitz_gl_proc_address_list_t *gl;
-  glitz_bool_t to_drawable;
   glitz_texture_t *texture;
   char *pixels, *data = NULL;
   glitz_gl_pixel_format_t *gl_format = NULL;
   unsigned long transform = 0;
   int xoffset, bytes_per_line, bpp;
+  glitz_box_t box;
+
+  GLITZ_GL_SURFACE (dst);
 
   if (x_dst < 0 || x_dst > (dst->width - width) ||
       y_dst < 0 || y_dst > (dst->height - height)) {
@@ -429,33 +558,34 @@ glitz_set_pixels (glitz_surface_t *dst,
     return;
   }
 
-  gl = &dst->backend->gl;
-
-  if (format->scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN)
-    transform |= GLITZ_TRANSFORM_SCANLINE_ORDER_MASK;
-
   /* find direct format */
-  gl_format = _glitz_find_gl_pixel_format (format);
+  gl_format =
+    _glitz_find_gl_pixel_format (format,
+                                 &dst->format->color,
+                                 dst->drawable->backend->feature_mask);
   if (gl_format == NULL) {
     transform |= GLITZ_TRANSFORM_PIXELS_MASK;
-    gl_format = _glitz_best_gl_pixel_format (dst->format);
+    gl_format =
+      _glitz_find_best_gl_pixel_format (format,
+                                        &dst->format->color,
+                                        dst->drawable->backend->feature_mask);
   }
 
-  if (SURFACE_DRAWABLE (dst))
-    to_drawable = 1;
-  else
-    to_drawable = 0;
-
-  if (to_drawable) {
-    if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT))
-      to_drawable = 0;
-  } else
-    glitz_surface_push_current (dst, GLITZ_CN_ANY_CONTEXT_CURRENT);
+  /* should not happen */
+  if (gl_format == NULL)
+    return;
+  
+  glitz_surface_push_current (dst, GLITZ_ANY_CONTEXT_CURRENT);
 
   texture = glitz_surface_get_texture (dst, 1);
   if (!texture) {
     glitz_surface_pop_current (dst);
     return;
+  }
+
+  if (height > 1) {
+    if (format->scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN)
+      transform |= GLITZ_TRANSFORM_SCANLINE_ORDER_MASK;
   }
 
   glitz_texture_bind (gl, texture);
@@ -488,8 +618,8 @@ glitz_set_pixels (glitz_surface_t *dst,
     _glitz_pixel_transform (transform,
                             &src_image,
                             &dst_image,
-                            format->xoffset,
-                            0,
+                            format->xoffset, 0,
+                            0, 0,
                             width, height);
 
     glitz_buffer_unmap (buffer);
@@ -534,42 +664,17 @@ glitz_set_pixels (glitz_surface_t *dst,
 
   if (transform == 0)
     glitz_buffer_unbind (buffer);
-
-  if (to_drawable) {
-    glitz_bounding_box_t box;
-
-    box.x1 = x_dst;
-    box.y1 = y_dst;
-    box.x2 = box.x1 + width;
-    box.y2 = box.y1 + height;
-    
-    glitz_texture_set_tex_gen (gl, texture, 0, 0, 0); 
-
-    gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
-                   GLITZ_GL_REPLACE);
-    gl->color_4us (0x0, 0x0, 0x0, 0xffff);
-    
-    glitz_texture_ensure_wrap (gl, texture, GLITZ_GL_CLAMP_TO_EDGE);
-    glitz_texture_ensure_filter (gl, texture, GLITZ_GL_NEAREST);
-
-    glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
-
-    gl->scissor (box.x1,
-                 dst->height - box.y2,
-                 width, height);
-
-    glitz_geometry_enable_default (gl, dst, &box);
-
-    gl->draw_arrays (GLITZ_GL_QUADS, 0, 4);
-
-    if (x_dst == 0 && y_dst == 0 &&
-        width == dst->width && height == dst->height)
-      dst->flags &= ~GLITZ_SURFACE_FLAG_DIRTY_MASK;
-  }
   
   glitz_texture_unbind (gl, texture);
 
-  dst->flags |= GLITZ_SURFACE_FLAG_SOLID_DIRTY_MASK;
+  box.x1 = x_dst;
+  box.y1 = y_dst;
+  box.x2 = box.x1 + width;
+  box.y2 = box.y1 + height;
+
+  glitz_surface_damage (dst, &box,
+                        GLITZ_DAMAGE_DRAWABLE_MASK |
+                        GLITZ_DAMAGE_SOLID_MASK);
   
   glitz_surface_pop_current (dst);
   
@@ -578,15 +683,14 @@ glitz_set_pixels (glitz_surface_t *dst,
 }
 
 void
-glitz_get_pixels (glitz_surface_t *src,
-                  int x_src,
-                  int y_src,
-                  int width,
-                  int height,
+glitz_get_pixels (glitz_surface_t      *src,
+                  int                  x_src,
+                  int                  y_src,
+                  int                  width,
+                  int                  height,
                   glitz_pixel_format_t *format,
-                  glitz_buffer_t *buffer)
+                  glitz_buffer_t       *buffer)
 {
-  glitz_gl_proc_address_list_t *gl;
   glitz_bool_t from_drawable;
   glitz_texture_t *texture = NULL;
   char *pixels, *data = NULL;
@@ -594,6 +698,9 @@ glitz_get_pixels (glitz_surface_t *src,
   unsigned long transform = 0;
   int src_x = 0, src_y = 0, src_w = width, src_h = height;
   int xoffset, bytes_per_line, bpp;
+  glitz_color_format_t *color;
+
+  GLITZ_GL_SURFACE (src);
   
   if (x_src < 0 || x_src > (src->width - width) ||
       y_src < 0 || y_src > (src->height - height)) {
@@ -601,12 +708,12 @@ glitz_get_pixels (glitz_surface_t *src,
     return;
   }
 
-  gl = &src->backend->gl;
-
-  if (glitz_surface_push_current (src, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+  if (glitz_surface_push_current (src, GLITZ_DRAWABLE_CURRENT)) {
     from_drawable = 1;
+    color = &src->attached->format->color;
   } else {
     from_drawable = 0;
+    color = &src->format->color;
     
     texture = glitz_surface_get_texture (src, 0);
     if (!texture) {
@@ -614,17 +721,31 @@ glitz_get_pixels (glitz_surface_t *src,
       return;
     }
 
-    transform |= GLITZ_TRANSFORM_COPY_BOX_MASK;
+    if (texture->width > width || texture->height > height)
+      transform |= GLITZ_TRANSFORM_COPY_BOX_MASK;
   }
   
-  if (format->scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN)
-    transform |= GLITZ_TRANSFORM_SCANLINE_ORDER_MASK;
-  
+  if (transform || height > 1) {
+    if (format->scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_TOP_DOWN)
+      transform |= GLITZ_TRANSFORM_SCANLINE_ORDER_MASK;
+  }
+
   /* find direct format */
-  gl_format = _glitz_find_gl_pixel_format (format);
+  gl_format =
+    _glitz_find_gl_pixel_format (format, color,
+                                 src->drawable->backend->feature_mask);
   if (gl_format == NULL) {
     transform |= GLITZ_TRANSFORM_PIXELS_MASK;
-    gl_format = _glitz_best_gl_pixel_format (src->format);
+    
+    gl_format =
+      _glitz_find_best_gl_pixel_format (format, color,
+                                        src->drawable->backend->feature_mask);
+  }
+
+  /* should not happen */
+  if (gl_format == NULL) {
+    glitz_surface_pop_current (src);
+    return;
   }
   
   if (transform) {
@@ -675,21 +796,18 @@ glitz_get_pixels (glitz_surface_t *src,
     gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, 0);
   }
 
-  if (from_drawable) {
-    if (SURFACE_OFFSCREEN (src)) {
-       x_src += src->texture.box.x1;
-       y_src += src->texture.box.y1;
-    }
+  if (from_drawable) {    
+    gl->read_buffer (src->buffer);
+    
+    gl->disable (GLITZ_GL_SCISSOR_TEST);
 
-    if (src->format->doublebuffer)
-      gl->read_buffer (src->read_buffer);
-
-    gl->scissor (0, 0, src->width, src->height);
-      
-    gl->read_pixels (x_src, src->height - y_src - height,
+    gl->read_pixels (x_src + src->x,
+                     src->attached->height - (y_src + src->y) - height,
                      width, height,
                      gl_format->format, gl_format->type,
                      pixels);
+    
+    gl->enable (GLITZ_GL_SCISSOR_TEST);
   } else {
     glitz_texture_bind (gl, texture);
     gl->get_tex_image (texture->target, 0,
@@ -700,29 +818,22 @@ glitz_get_pixels (glitz_surface_t *src,
 
   if (transform) {
     glitz_image_t src_image, dst_image;
-    int stride;
 
-    src_image.data = data + src_y * bytes_per_line;
+    src_image.data = data;
     src_image.format = &gl_format->pixel;
     src_image.width = src_w;
     src_image.height = src_h;
 
-    if (format->bytes_per_line)
-      stride = format->bytes_per_line;
-    else
-      stride = (((width * format->masks.bpp) / 8) + 3) & -4;
-    
     dst_image.data = glitz_buffer_map (buffer, GLITZ_BUFFER_ACCESS_WRITE_ONLY);
-    dst_image.data += format->skip_lines * stride;
     dst_image.format = format;
     dst_image.width = width;
     dst_image.height = height;
-    
+
     _glitz_pixel_transform (transform,
                             &src_image,
                             &dst_image,
-                            src_x,
-                            format->xoffset,
+                            src_x, src_y,
+                            format->xoffset, format->skip_lines,
                             width, height);
 
     glitz_buffer_unmap (buffer);

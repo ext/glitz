@@ -346,9 +346,9 @@ _string_array_to_char_array (char *dst, const char *src[])
 #define GRADIENT_STOP_SIZE 256
 
 static glitz_gl_uint_t
-_glitz_create_fragment_program (glitz_composite_op_t *op,
-                                int fp_type,
-                                int id,
+_glitz_create_fragment_program (glitz_composite_op_t         *op,
+                                int                          fp_type,
+                                int                          id,
                                 const glitz_program_expand_t *expand)
 {
   char buffer[1024], *program = NULL, *tex, *p = NULL;
@@ -481,7 +481,7 @@ glitz_program_map_init (glitz_program_map_t *map)
 
 void
 glitz_program_map_fini (glitz_gl_proc_address_list_t *gl,
-                        glitz_program_map_t *map)
+                        glitz_program_map_t          *map)
 {
   glitz_gl_uint_t program;
   int i, j, k, x, y;
@@ -518,15 +518,16 @@ glitz_program_map_fini (glitz_gl_proc_address_list_t *gl,
 
 glitz_gl_uint_t
 glitz_get_fragment_program (glitz_composite_op_t *op,
-                            int fp_type,
-                            int id)
+                            int                  fp_type,
+                            int                  id)
 {
+  glitz_program_map_t *map;
   glitz_program_t *program;
   int t0 = TEXTURE_INDEX (op->src);
   int t1 = TEXTURE_INDEX (op->mask);
 
-  program =
-    &op->dst->backend->program_map->filters[op->type][fp_type].fp[t0][t1];
+  map = op->dst->drawable->backend->program_map;
+  program = &map->filters[op->type][fp_type].fp[t0][t1];
   
   if (program->size < id) {
     int old_size;
@@ -544,7 +545,7 @@ glitz_get_fragment_program (glitz_composite_op_t *op,
   }
   
   if (program->name[id - 1] == 0) {
-    glitz_surface_push_current (op->dst, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
+    glitz_surface_push_current (op->dst, GLITZ_CONTEXT_CURRENT);
     
     program->name[id - 1] =
       _glitz_create_fragment_program (op, fp_type, id,

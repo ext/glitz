@@ -449,12 +449,13 @@ glitz_composite_op_init (glitz_composite_op_t *op,
   glitz_surface_type_t src_type;
   glitz_surface_type_t mask_type;
   glitz_combine_t *combine;
+  unsigned long feature_mask;
 
   op->render_op = render_op;
   op->type = GLITZ_COMBINE_TYPE_NA;
   op->combine = NULL;
   op->alpha_mask = _default_alpha_mask;
-  op->gl = &dst->backend->gl;
+  op->gl = &dst->drawable->backend->gl;
   op->src = src;
   op->mask = mask;
   op->dst = dst;
@@ -463,14 +464,16 @@ glitz_composite_op_init (glitz_composite_op_t *op,
   op->per_component = 0;
   op->fp = 0;
 
-  if (dst->indirect && (dst->format->stencil_size < 1))
+  feature_mask = dst->attached->backend->feature_mask;
+
+  if (dst->indirect && (dst->attached->format->stencil_size < 1))
     return;
   
-  src_type = _glitz_get_surface_type (src, dst->backend->feature_mask);
+  src_type = _glitz_get_surface_type (src, feature_mask);
   if (src_type < 1)
     return;
 
-  mask_type = _glitz_get_surface_type (mask, dst->backend->feature_mask);
+  mask_type = _glitz_get_surface_type (mask, feature_mask);
   if (mask_type < 0)
     return;
 
@@ -488,62 +491,51 @@ glitz_composite_op_init (glitz_composite_op_t *op,
     src_type = GLITZ_SURFACE_TYPE_ARGB;
     
   combine = &_glitz_combine_map[src_type][mask_type];
-  if (combine->type == GLITZ_COMBINE_TYPE_NA) {
-    op->type = GLITZ_COMBINE_TYPE_INTERMEDIATE;
-    
+  if (!combine->type)
     return;
-  } 
   
   if (src_type == GLITZ_SURFACE_TYPE_SOLID) {
-    glitz_surface_ensure_solid (src);
+    glitz_surface_sync_solid (src);
     op->solid = &src->solid;
     op->src = NULL;
   }
   
   if (mask_type == GLITZ_SURFACE_TYPE_SOLID) {
-    glitz_surface_ensure_solid (mask);
+    glitz_surface_sync_solid (mask);
     op->alpha_mask = mask->solid;
     op->mask = NULL;
     op->combine = combine;
   } else if (mask_type == GLITZ_SURFACE_TYPE_SOLIDC) {
-    glitz_surface_ensure_solid (mask);
+    glitz_surface_sync_solid (mask);
     op->alpha_mask = mask->solid;
     op->mask = NULL;
     
     if (op->src) {
       op->per_component = 4;
       op->combine = combine;
-    } else if (dst->backend->feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK)
+    } else if (feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK)
       op->combine = combine;
     
   } else if (mask_type != GLITZ_SURFACE_TYPE_NULL) {
     if (mask_type == GLITZ_SURFACE_TYPE_ARGBC) {
       if (op->src) {
         op->per_component = 4;
-        if (dst->backend->feature_mask &
-            GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
+        if (feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
           op->combine = combine;
-      } else if (dst->backend->feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK)
+      } else if (feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK)
         op->combine = combine;
-    } else if (dst->backend->feature_mask &
-               GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
+    } else if (feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
       op->combine = combine;
   } else
     op->combine = combine;
 
-  if (!(dst->backend->feature_mask & GLITZ_FEATURE_MULTITEXTURE_MASK)) {
-    if (op->src && op->mask) {
-      if (!op->per_component) {
-        op->type = GLITZ_COMBINE_TYPE_INTERMEDIATE;
-        return;
-      } else
-        op->combine = NULL;
-    }
+  if (!(feature_mask & GLITZ_FEATURE_MULTITEXTURE_MASK)) {
+    if (op->src && op->mask)
+      op->combine = NULL;
   }
 
   if (op->per_component &&
-      (!(dst->backend->feature_mask &
-         GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK)))
+      (!(feature_mask & GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK)))
     op->combine = NULL;
   
   if (op->combine == combine) {

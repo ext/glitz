@@ -1,28 +1,26 @@
 /*
- * Copyright © 2004 David Reveman, Peter Nilsson
- *
+ * Copyright © 2004 David Reveman
+ * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
  * appear in supporting documentation, and that the names of
- * David Reveman and Peter Nilsson not be used in advertising or
- * publicity pertaining to distribution of the software without
- * specific, written prior permission. David Reveman and Peter Nilsson
- * makes no representations about the suitability of this software for
- * any purpose. It is provided "as is" without express or implied warranty.
+ * David Reveman not be used in advertising or publicity pertaining to
+ * distribution of the software without specific, written prior permission.
+ * David Reveman makes no representations about the suitability of this
+ * software for any purpose. It is provided "as is" without express or
+ * implied warranty.
  *
- * DAVID REVEMAN AND PETER NILSSON DISCLAIMS ALL WARRANTIES WITH
- * REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL DAVID REVEMAN AND
- * PETER NILSSON BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA
- * OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * DAVID REVEMAN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, 
+ * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
+ * NO EVENT SHALL DAVID REVEMAN BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+ * OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, 
+ * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
+ * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Authors: David Reveman <c99drn@cs.umu.se>
- *          Peter Nilsson <c99pnn@cs.umu.se>
+ * Author: David Reveman <c99drn@cs.umu.se>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -34,33 +32,35 @@
 #include <stdlib.h>
 #include <string.h>
 
-void
-glitz_intersect_bounding_box (glitz_bounding_box_t *box1,
-                              glitz_bounding_box_t *box2,
-                              glitz_bounding_box_t *return_box)
-{
-  return_box->x1 = (box1->x1 >= box2->x1)? box1->x1: box2->x1;
-  return_box->x2 = (box1->x2 <= box2->x2)? box1->x2: box2->x2;
-  return_box->y1 = (box1->y1 >= box2->y1)? box1->y1: box2->y1;
-  return_box->y2 = (box1->y2 <= box2->y2)? box1->y2: box2->y2;
-
-  if (return_box->x1 >= return_box->x2)
-    return_box->x1 = return_box->x2 = 0;
-  
-  if (return_box->y1 >= return_box->y2)
-    return_box->y1 = return_box->y2 = 0;
-}
-
-void
-glitz_union_bounding_box (glitz_bounding_box_t *box1,
-                          glitz_bounding_box_t *box2,
-                          glitz_bounding_box_t *return_box)
-{
-  return_box->x1 = (box1->x1 <= box2->x1)? box1->x1: box2->x1;
-  return_box->x2 = (box1->x2 >= box2->x2)? box1->x2: box2->x2;
-  return_box->y1 = (box1->y1 <= box2->y1)? box1->y1: box2->y1;
-  return_box->y2 = (box1->y2 >= box2->y2)? box1->y2: box2->y2;
-}
+static glitz_extension_map gl_extensions[] = {
+  { 0.0, "GL_ARB_texture_rectangle", GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK },
+  { 0.0, "GL_EXT_texture_rectangle", GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK },
+  { 0.0, "GL_NV_texture_rectangle", GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK },
+  { 0.0, "GL_ARB_texture_non_power_of_two",
+    GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK },
+  { 0.0, "GL_ARB_texture_mirrored_repeat",
+    GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK },
+  { 0.0, "GL_ARB_texture_border_clamp",
+    GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK },
+  { 0.0, "GL_ARB_texture_env_combine",
+    GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK },
+  { 0.0, "GL_EXT_texture_env_combine",
+    GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK },
+  { 0.0, "GL_ARB_texture_env_dot3", GLITZ_FEATURE_TEXTURE_ENV_DOT3_MASK },
+  { 0.0, "GL_ARB_multisample", GLITZ_FEATURE_MULTISAMPLE_MASK },
+  { 0.0, "GL_NV_multisample_filter_hint",
+    GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK },
+  { 0.0, "GL_ARB_multitexture", GLITZ_FEATURE_MULTITEXTURE_MASK },
+  { 0.0, "GL_ARB_fragment_program", GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK },
+  { 0.0, "GL_ARB_vertex_buffer_object",
+    GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
+  { 0.0, "GL_EXT_pixel_buffer_object",
+    GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
+  { 0.0, "GL_EXT_blend_color", GLITZ_FEATURE_BLEND_COLOR_MASK },
+  { 0.0, "GL_ARB_imaging", GLITZ_FEATURE_BLEND_COLOR_MASK },
+  { 0.0, "GL_APPLE_packed_pixels", GLITZ_FEATURE_PACKED_PIXELS_MASK },
+  { 0.0, NULL, 0 }
+};
 
 static glitz_bool_t
 _glitz_extension_check (const char *extensions,
@@ -87,8 +87,8 @@ _glitz_extension_check (const char *extensions,
 }
 
 unsigned long
-glitz_extensions_query (glitz_gl_float_t version,
-                        const char *extensions_string,
+glitz_extensions_query (glitz_gl_float_t    version,
+                        const char          *extensions_string,
                         glitz_extension_map *extensions_map)
 {
   unsigned long mask = 0;
@@ -101,6 +101,167 @@ glitz_extensions_query (glitz_gl_float_t version,
       mask |= extensions_map[i].mask;
 
   return mask;
+}
+
+static glitz_status_t
+_glitz_query_gl_extensions (glitz_gl_proc_address_list_t *gl,
+                            glitz_gl_float_t             *gl_version,
+                            unsigned long                *feature_mask)
+{
+  const char *gl_extensions_string;
+
+  *gl_version = atof ((const char *) gl->get_string (GLITZ_GL_VERSION));
+  if (*gl_version < 1.2f)
+    return GLITZ_STATUS_NOT_SUPPORTED;
+  
+  gl_extensions_string = (const char *) gl->get_string (GLITZ_GL_EXTENSIONS);
+  
+  *feature_mask = glitz_extensions_query (*gl_version,
+                                          gl_extensions_string,
+                                          gl_extensions);
+  
+  if ((*feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK) &&
+      (*feature_mask & GLITZ_FEATURE_TEXTURE_ENV_DOT3_MASK)) {
+    glitz_gl_int_t max_texture_units;
+    
+    gl->get_integer_v (GLITZ_GL_MAX_TEXTURE_UNITS, &max_texture_units);
+    if (max_texture_units >= 3)
+      *feature_mask |= GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
+  }
+
+  return GLITZ_STATUS_SUCCESS;
+}
+
+static void
+_glitz_gl_proc_address_lookup (glitz_backend_t               *backend,
+                               glitz_get_proc_address_proc_t get_proc_address,
+                               void                          *closure)
+{
+  if (backend->feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK) {
+    if (backend->gl_version >= 1.4f) {
+      backend->gl.blend_color = (glitz_gl_blend_color_t)
+        get_proc_address ("glBlendColor", closure);
+    } else {
+      backend->gl.blend_color = (glitz_gl_blend_color_t)
+        get_proc_address ("glBlendColorEXT", closure);
+    }
+
+    if (!backend->gl.blend_color)
+      backend->feature_mask &= ~GLITZ_FEATURE_BLEND_COLOR_MASK;
+  }
+
+  if (backend->feature_mask & GLITZ_FEATURE_MULTITEXTURE_MASK) {
+    if (backend->gl_version >= 1.3f) {
+      backend->gl.active_texture = (glitz_gl_active_texture_t)
+        get_proc_address ("glActiveTexture", closure);
+    } else {
+      backend->gl.active_texture = (glitz_gl_active_texture_t)
+        get_proc_address ("glActiveTextureARB", closure);
+    }
+
+    if (!backend->gl.active_texture) {
+      backend->feature_mask &= ~GLITZ_FEATURE_MULTITEXTURE_MASK;
+      backend->feature_mask &= ~GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
+    }
+  }
+
+  if (backend->feature_mask & GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK) {
+    backend->gl.gen_programs = (glitz_gl_gen_programs_t)
+      get_proc_address ("glGenProgramsARB", closure);
+    backend->gl.delete_programs = (glitz_gl_delete_programs_t)
+      get_proc_address ("glDeleteProgramsARB", closure);
+    backend->gl.program_string = (glitz_gl_program_string_t)
+      get_proc_address ("glProgramStringARB", closure);
+    backend->gl.bind_program = (glitz_gl_bind_program_t)
+      get_proc_address ("glBindProgramARB", closure);
+    backend->gl.program_local_param_4fv = (glitz_gl_program_local_param_4fv_t)
+      get_proc_address ("glProgramLocalParameter4fvARB", closure);
+    backend->gl.get_program_iv = (glitz_gl_get_program_iv_t)
+      get_proc_address ("glGetProgramivARB", closure);
+
+    if ((!backend->gl.gen_programs) ||
+        (!backend->gl.delete_programs) ||
+        (!backend->gl.program_string) ||
+        (!backend->gl.bind_program) ||
+        (!backend->gl.program_local_param_4fv))
+      backend->feature_mask &= ~GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
+  }
+
+  if ((backend->feature_mask & GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK) ||
+      (backend->feature_mask & GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)) {
+    if (backend->gl_version >= 1.5f) {
+      backend->gl.gen_buffers = (glitz_gl_gen_buffers_t)
+        get_proc_address ("glGenBuffers", closure);
+      backend->gl.delete_buffers = (glitz_gl_delete_buffers_t)
+        get_proc_address ("glDeleteBuffers", closure);
+      backend->gl.bind_buffer = (glitz_gl_bind_buffer_t)
+        get_proc_address ("glBindBuffer", closure);
+      backend->gl.buffer_data = (glitz_gl_buffer_data_t)
+        get_proc_address ("glBufferData", closure);
+      backend->gl.buffer_sub_data = (glitz_gl_buffer_sub_data_t)
+        get_proc_address ("glBufferSubData", closure);
+      backend->gl.get_buffer_sub_data = (glitz_gl_get_buffer_sub_data_t)
+        get_proc_address ("glGetBufferSubData", closure);
+      backend->gl.map_buffer = (glitz_gl_map_buffer_t)
+        get_proc_address ("glMapBuffer", closure);
+      backend->gl.unmap_buffer = (glitz_gl_unmap_buffer_t)
+        get_proc_address ("glUnmapBuffer", closure);
+    } else {
+      backend->gl.gen_buffers = (glitz_gl_gen_buffers_t)
+        get_proc_address ("glGenBuffersARB", closure);
+      backend->gl.delete_buffers = (glitz_gl_delete_buffers_t)
+        get_proc_address ("glDeleteBuffersARB", closure);
+      backend->gl.bind_buffer = (glitz_gl_bind_buffer_t)
+        get_proc_address ("glBindBufferARB", closure);
+      backend->gl.buffer_data = (glitz_gl_buffer_data_t)
+        get_proc_address ("glBufferDataARB", closure);
+      backend->gl.buffer_sub_data = (glitz_gl_buffer_sub_data_t)
+        get_proc_address ("glBufferSubDataARB", closure);
+      backend->gl.get_buffer_sub_data = (glitz_gl_get_buffer_sub_data_t)
+        get_proc_address ("glGetBufferSubDataARB", closure);
+      backend->gl.map_buffer = (glitz_gl_map_buffer_t)
+        get_proc_address ("glMapBufferARB", closure);
+      backend->gl.unmap_buffer = (glitz_gl_unmap_buffer_t)
+        get_proc_address ("glUnmapBufferARB", closure);
+    }
+
+    if ((!backend->gl.gen_buffers) ||
+        (!backend->gl.delete_buffers) ||
+        (!backend->gl.bind_buffer) ||
+        (!backend->gl.buffer_data) ||
+        (!backend->gl.buffer_sub_data) ||
+        (!backend->gl.get_buffer_sub_data) ||
+        (!backend->gl.map_buffer) ||
+        (!backend->gl.unmap_buffer)) {
+      backend->feature_mask &= ~GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK;
+      backend->feature_mask &= ~GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
+    }
+  }
+}
+
+void
+glitz_backend_init (glitz_backend_t               *backend,
+                    glitz_get_proc_address_proc_t get_proc_address,
+                    void                          *closure)
+{
+  if (!_glitz_query_gl_extensions (&backend->gl,
+                                   &backend->gl_version,
+                                   &backend->feature_mask)) {
+    _glitz_gl_proc_address_lookup (backend, get_proc_address, closure);
+    glitz_create_surface_formats (&backend->gl,
+                                  &backend->formats,
+                                  &backend->texture_formats,
+                                  &backend->n_formats);
+  }
+  
+  backend->gl.get_integer_v (GLITZ_GL_MAX_TEXTURE_SIZE,
+                             &backend->max_texture_2d_size);
+  
+  if (backend->feature_mask & GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK)
+    backend->gl.get_integer_v (GLITZ_GL_MAX_RECTANGLE_TEXTURE_SIZE,
+                               &backend->max_texture_rect_size);
+  else
+    backend->max_texture_rect_size = 0;
 }
 
 unsigned int
@@ -117,8 +278,8 @@ glitz_uint_to_power_of_two (unsigned int x)
 
 void
 glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
-                      int x,
-                      int y)
+                      int                          x,
+                      int                          y)
 {
   gl->push_attrib (GLITZ_GL_TRANSFORM_BIT | GLITZ_GL_VIEWPORT_BIT);
   gl->matrix_mode (GLITZ_GL_PROJECTION);
@@ -147,4 +308,23 @@ glitz_clamp_value (glitz_float_t *value,
     *value = min;
   else if (*value > max)
     *value = max;
+}
+
+void
+glitz_initiate_state (glitz_gl_proc_address_list_t *gl)
+{
+  gl->disable (GLITZ_GL_DEPTH_TEST); 
+  gl->hint (GLITZ_GL_PERSPECTIVE_CORRECTION_HINT, GLITZ_GL_FASTEST);
+  gl->disable (GLITZ_GL_CULL_FACE);
+  gl->depth_mask (GLITZ_GL_FALSE);  
+  gl->polygon_mode (GLITZ_GL_FRONT_AND_BACK, GLITZ_GL_FILL);
+  gl->disable (GLITZ_GL_POLYGON_SMOOTH);
+  gl->disable (GLITZ_GL_LINE_SMOOTH);
+  gl->disable (GLITZ_GL_POINT_SMOOTH);
+  gl->shade_model (GLITZ_GL_FLAT);
+  gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE, GLITZ_GL_TRUE, GLITZ_GL_TRUE);
+  gl->enable (GLITZ_GL_SCISSOR_TEST);
+  gl->disable (GLITZ_GL_STENCIL_TEST);
+  gl->enable_client_state (GLITZ_GL_VERTEX_ARRAY);
+  gl->disable (GLITZ_GL_DEPTH_TEST); 
 }

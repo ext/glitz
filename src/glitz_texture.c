@@ -1,28 +1,26 @@
 /*
- * Copyright © 2004 David Reveman, Peter Nilsson
- *
+ * Copyright © 2004 David Reveman
+ * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
  * appear in supporting documentation, and that the names of
- * David Reveman and Peter Nilsson not be used in advertising or
- * publicity pertaining to distribution of the software without
- * specific, written prior permission. David Reveman and Peter Nilsson
- * makes no representations about the suitability of this software for
- * any purpose. It is provided "as is" without express or implied warranty.
+ * David Reveman not be used in advertising or publicity pertaining to
+ * distribution of the software without specific, written prior permission.
+ * David Reveman makes no representations about the suitability of this
+ * software for any purpose. It is provided "as is" without express or
+ * implied warranty.
  *
- * DAVID REVEMAN AND PETER NILSSON DISCLAIMS ALL WARRANTIES WITH
- * REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL DAVID REVEMAN AND
- * PETER NILSSON BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA
- * OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * DAVID REVEMAN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, 
+ * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
+ * NO EVENT SHALL DAVID REVEMAN BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+ * OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, 
+ * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
+ * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Authors: David Reveman <c99drn@cs.umu.se>
- *          Peter Nilsson <c99pnn@cs.umu.se>
+ * Author: David Reveman <c99drn@cs.umu.se>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -33,10 +31,10 @@
 
 void
 glitz_texture_init (glitz_texture_t *texture,
-                    unsigned int width,
-                    unsigned int height,
-                    unsigned int texture_format,
-                    unsigned long feature_mask)
+                    int             width,
+                    int             height,
+                    glitz_gl_int_t  texture_format,
+                    unsigned long   feature_mask)
 {
   texture->filter = 0;
   texture->wrap = 0;
@@ -89,9 +87,9 @@ glitz_texture_init (glitz_texture_t *texture,
 
 void
 glitz_texture_size_check (glitz_gl_proc_address_list_t *gl,
-                          glitz_texture_t *texture,
-                          glitz_gl_int_t max_2d,
-                          glitz_gl_int_t max_rect) {
+                          glitz_texture_t              *texture,
+                          glitz_gl_int_t               max_2d,
+                          glitz_gl_int_t               max_rect) {
   glitz_gl_enum_t proxy_target;
   glitz_gl_int_t value, max;
 
@@ -126,7 +124,7 @@ glitz_texture_size_check (glitz_gl_proc_address_list_t *gl,
 
 void
 glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
-                        glitz_texture_t *texture)
+                        glitz_texture_t              *texture)
 {
   char *data = NULL;
   
@@ -162,7 +160,7 @@ glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
 
 void 
 glitz_texture_fini (glitz_gl_proc_address_list_t *gl,
-                    glitz_texture_t *texture)
+                    glitz_texture_t              *texture)
 {
   if (texture->name)
     gl->delete_textures (1, &texture->name);
@@ -170,8 +168,8 @@ glitz_texture_fini (glitz_gl_proc_address_list_t *gl,
 
 void
 glitz_texture_ensure_filter (glitz_gl_proc_address_list_t *gl,
-                             glitz_texture_t *texture,
-                             glitz_gl_enum_t filter)
+                             glitz_texture_t              *texture,
+                             glitz_gl_enum_t              filter)
 {
   if (!texture->name)
     return;
@@ -185,8 +183,8 @@ glitz_texture_ensure_filter (glitz_gl_proc_address_list_t *gl,
 
 void
 glitz_texture_ensure_wrap (glitz_gl_proc_address_list_t *gl,
-                           glitz_texture_t *texture,
-                           glitz_gl_enum_t wrap)
+                           glitz_texture_t              *texture,
+                           glitz_gl_enum_t              wrap)
 {
   if (!texture->name)
     return;
@@ -200,7 +198,7 @@ glitz_texture_ensure_wrap (glitz_gl_proc_address_list_t *gl,
 
 void
 glitz_texture_bind (glitz_gl_proc_address_list_t *gl,
-                    glitz_texture_t *texture)
+                    glitz_texture_t              *texture)
 {  
   gl->disable (GLITZ_GL_TEXTURE_RECTANGLE);
   gl->disable (GLITZ_GL_TEXTURE_2D);
@@ -214,48 +212,37 @@ glitz_texture_bind (glitz_gl_proc_address_list_t *gl,
 
 void
 glitz_texture_unbind (glitz_gl_proc_address_list_t *gl,
-                      glitz_texture_t *texture)
+                      glitz_texture_t              *texture)
 {
   gl->bind_texture (texture->target, 0);
   gl->disable (texture->target);
 }
 
 void
-glitz_texture_copy_surface (glitz_texture_t *texture,
-                            glitz_surface_t *surface,
-                            int x_surface,
-                            int y_surface,
-                            int width,
-                            int height,
-                            int x_texture,
-                            int y_texture)
+glitz_texture_copy_drawable (glitz_gl_proc_address_list_t *gl,
+                             glitz_texture_t              *texture,
+                             glitz_drawable_t             *drawable,
+                             int                          x_drawable,
+                             int                          y_drawable,
+                             int                          width,
+                             int                          height,
+                             int                          x_texture,
+                             int                          y_texture)
 {
-  glitz_gl_proc_address_list_t *gl = &surface->backend->gl;
-  
-  glitz_surface_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
-  
-  glitz_texture_bind (gl, texture);
-
-  if (surface->format->doublebuffer)
-    gl->read_buffer (surface->read_buffer);
-
   gl->copy_tex_sub_image_2d (texture->target, 0,
                              texture->box.x1 + x_texture,
                              texture->box.y2 - y_texture - height,
-                             x_surface,
-                             surface->height - y_surface - height,
+                             x_drawable,
+                             drawable->height - y_drawable - height,
                              width, height);
-
-  glitz_texture_unbind (gl, texture);
-  glitz_surface_pop_current (surface);
 }
 
 void
 glitz_texture_set_tex_gen (glitz_gl_proc_address_list_t *gl,
-                           glitz_texture_t *texture,
-                           int x_src,
-                           int y_src,
-                           unsigned long flags)
+                           glitz_texture_t              *texture,
+                           int                          x_src,
+                           int                          y_src,
+                           unsigned long                flags)
 {
   glitz_vec4_t plane;
 

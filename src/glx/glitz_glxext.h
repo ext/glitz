@@ -106,6 +106,9 @@ typedef GLXPbuffer (* glitz_glx_create_pbuffer_t)
      (Display *display, GLXFBConfig config, const int *attrib_list);
 typedef void (* glitz_glx_destroy_pbuffer_t)
      (Display *display, GLXPbuffer pbuffer);
+typedef void (* glitz_glx_query_drawable_t)
+     (Display *display, GLXDrawable drawable,
+      int attribute, unsigned int *value);
 typedef Bool (* glitz_glx_make_context_current_t)
      (Display *display, GLXDrawable draw, GLXDrawable read, GLXContext ctx);
 typedef GLXContext (* glitz_glx_create_new_context_t)

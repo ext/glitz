@@ -32,103 +32,56 @@
 #include <stdlib.h>
 #include <string.h>
 
-void
-glitz_surface_init (glitz_surface_t *surface,
-                    glitz_surface_backend_t *backend,
-                    glitz_format_t *format,
-                    int width,
-                    int height)
+glitz_surface_t *
+glitz_surface_create (glitz_drawable_t *drawable,
+                      glitz_format_t   *format,
+                      unsigned int     width,
+                      unsigned int     height)
 {
-  surface->backend = backend;
-
-  surface->ref_count = 1;
-
-  surface->filter = GLITZ_FILTER_NEAREST;
+  glitz_surface_t *surface;
   
-  surface->format = format;
-  surface->width = width;
-  surface->height = height;
-  surface->update_mask = GLITZ_UPDATE_ALL_MASK;
+  if (width == 0 || height == 0)
+    return NULL;
 
-  if (format->doublebuffer)
-    surface->draw_buffer = surface->read_buffer = GLITZ_GL_BACK;
-  else
-    surface->draw_buffer = surface->read_buffer = GLITZ_GL_FRONT;
+  surface = (glitz_surface_t *) calloc (1, sizeof (glitz_surface_t));
+  if (surface == NULL)
+    return NULL;
+
+  surface->drawable = drawable;
+  glitz_drawable_reference (drawable);
+  
+  surface->ref_count = 1;
+  surface->filter = GLITZ_FILTER_NEAREST;  
+  surface->format = format;
+  surface->width = (int) width;
+  surface->height = (int) height;
+  surface->buffer = GLITZ_GL_FRONT;
+
+  REGION_INIT (&surface->texture_damage, NULL_BOX);
+  REGION_INIT (&surface->drawable_damage, NULL_BOX);
 
   if (width == 1 && height == 1) {
     surface->flags |= GLITZ_SURFACE_FLAG_SOLID_MASK;
-    surface->solid.red = surface->solid.green = surface->solid.blue = 0x0;
     surface->solid.alpha = 0xffff;
   }
-
-  glitz_texture_init (&surface->texture,
-                      width, height,
-                      glitz_format_get_best_texture_format (backend->formats,
-                                                            backend->n_formats,
-                                                            format),
-                      backend->feature_mask);
-}
-
-void
-glitz_surface_fini (glitz_surface_t *surface)
-{
-  if (surface->geometry.buffer)
-    glitz_buffer_destroy (surface->geometry.buffer);
-   
-  if (surface->texture.name) {
-    glitz_surface_push_current (surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
-    glitz_texture_fini (&surface->backend->gl, &surface->texture);
+  
+  glitz_texture_init (&surface->texture, width, height,
+                      drawable->backend->texture_formats[format->id],
+                      drawable->backend->feature_mask);
+  
+  if (width > 64 || height > 64) {
+    glitz_surface_push_current (surface, GLITZ_CONTEXT_CURRENT);
+    glitz_texture_size_check (&drawable->backend->gl, &surface->texture,
+                              drawable->backend->max_texture_2d_size,
+                              drawable->backend->max_texture_rect_size);
     glitz_surface_pop_current (surface);
+    if (TEXTURE_INVALID_SIZE (&surface->texture)) {
+      glitz_surface_destroy (surface);
+      return NULL;
+    }
   }
   
-  if (surface->transform)
-    free (surface->transform);
-  
-  if (surface->filter_params)
-    glitz_filter_params_destroy (surface->filter_params);
-}
-
-glitz_format_t *
-glitz_surface_find_similar_standard_format (glitz_surface_t *surface,
-                                            glitz_format_name_t format_name)
-{
-  return
-    glitz_format_find_standard (surface->backend->formats,
-                                surface->backend->n_formats,
-                                format_name);
-}
-slim_hidden_def(glitz_surface_find_similar_standard_format);
-
-glitz_format_t *
-glitz_surface_find_similar_format (glitz_surface_t *surface,
-                                   unsigned long mask,
-                                   const glitz_format_t *templ,
-                                   int count)
-{
-  return glitz_format_find (surface->backend->formats,
-                            surface->backend->n_formats,
-                            mask, templ, count);
-}
-
-glitz_surface_t *
-glitz_surface_create_similar (glitz_surface_t *templ,
-                              glitz_format_t *format,
-                              int width,
-                              int height)
-{
-  if (width < 1 || height < 1)
-    return NULL;
-  
-  return templ->backend->create_similar (templ, format, width, height);
-}
-
-void
-glitz_surface_reference (glitz_surface_t *surface)
-{
-  if (surface == NULL)
-    return;
-
-  surface->ref_count++;
+  return surface;
 }
 
 void
@@ -140,61 +93,197 @@ glitz_surface_destroy (glitz_surface_t *surface)
   surface->ref_count--;
   if (surface->ref_count)
     return;
-  
-  surface->backend->destroy (surface);
-}
 
-static void
-_glitz_surface_solid_store (glitz_surface_t *surface) {
-  glitz_gl_proc_address_list_t *gl = &surface->backend->gl;
-
-  if (SURFACE_DRAWABLE (surface)) {
-    glitz_bounding_box_t box;
-
-    box.x1 = box.y1 = 0;
-    box.x2 = box.y2 = 1;
-    
-    gl->color_4us (surface->solid.red,
-                   surface->solid.green,
-                   surface->solid.blue,
-                   surface->solid.alpha);
-    
-    glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
-    
-    glitz_geometry_enable_default (gl, surface, &box);
-    
-    gl->draw_arrays (GLITZ_GL_QUADS, 0, 4);
-    
-    glitz_geometry_disable (gl, surface);
-  } else {
-    glitz_gl_float_t color[4];
-
-    if (TEXTURE_ALLOCATED (&surface->texture)) {
-      color[0] = surface->solid.red / 65535.0f;
-      color[1] = surface->solid.green / 65535.0f;
-      color[2] = surface->solid.blue / 65535.0f;
-      color[3] = surface->solid.alpha / 65535.0f;
-    
-      glitz_texture_bind (gl, &surface->texture);
-      gl->tex_sub_image_2d (surface->texture.target, 0,
-                            surface->texture.box.x1, surface->texture.box.y1,
-                            1, 1, GLITZ_GL_RGBA, GLITZ_GL_FLOAT, color);
-      glitz_texture_unbind (gl, &surface->texture);
-    }
+  if (surface->texture.name) {
+    glitz_surface_push_current (surface, GLITZ_ANY_CONTEXT_CURRENT);
+    glitz_texture_fini (&surface->drawable->backend->gl, &surface->texture);
+    glitz_surface_pop_current (surface);
   }
-  surface->flags &= ~GLITZ_SURFACE_FLAG_DRAWABLE_DIRTY_MASK;
+
+  REGION_UNINIT (&surface->texture_damage);
+  REGION_UNINIT (&surface->drawable_damage);
+  
+  if (surface->geometry.buffer)
+    glitz_buffer_destroy (surface->geometry.buffer);
+  
+  if (surface->transform)
+    free (surface->transform);
+  
+  if (surface->filter_params)
+    glitz_filter_params_destroy (surface->filter_params);
+
+  if (surface->attached)
+    glitz_drawable_destroy (surface->attached);
+  
+  glitz_drawable_destroy (surface->drawable);
+
+  free (surface);
 }
 
 void
-glitz_surface_ensure_solid (glitz_surface_t *surface)
+glitz_surface_reference (glitz_surface_t *surface)
 {
-  if (SURFACE_DIRTY (surface) || SURFACE_SOLID_DIRTY (surface)) {
-    glitz_gl_proc_address_list_t *gl = &surface->backend->gl;
+  if (surface == NULL)
+    return;
+
+  surface->ref_count++;
+}
+
+static void
+_glitz_surface_sync_texture (glitz_surface_t *surface)
+{
+  if (REGION_NOTEMPTY (&surface->texture_damage)) {
+    glitz_box_t *box;
+    int         n_box;
+
+    GLITZ_GL_SURFACE (surface);
+
+    if (!(TEXTURE_ALLOCATED (&surface->texture)))
+      glitz_texture_allocate (gl, &surface->texture);
+
+    if (SURFACE_SOLID (surface) && (!SURFACE_SOLID_DAMAGE (surface))) {
+      glitz_gl_float_t color[4];
+
+      if (TEXTURE_ALLOCATED (&surface->texture)) {
+        color[0] = surface->solid.red / 65535.0f;
+        color[1] = surface->solid.green / 65535.0f;
+        color[2] = surface->solid.blue / 65535.0f;
+        color[3] = surface->solid.alpha / 65535.0f;
+    
+        glitz_texture_bind (gl, &surface->texture);
+        gl->tex_sub_image_2d (surface->texture.target, 0,
+                              surface->texture.box.x1, surface->texture.box.y1,
+                              1, 1, GLITZ_GL_RGBA, GLITZ_GL_FLOAT, color);
+        glitz_texture_unbind (gl, &surface->texture);
+      }
+      REGION_EMPTY (&surface->texture_damage);
+      return;
+    }
+
+    glitz_surface_push_current (surface, GLITZ_DRAWABLE_CURRENT);
+
+    gl->read_buffer (surface->buffer);
+
+    gl->disable (GLITZ_GL_SCISSOR_TEST);
+
+    glitz_texture_bind (gl, &surface->texture);
+
+    box = REGION_RECTS (&surface->texture_damage);
+    n_box = REGION_NUM_RECTS (&surface->texture_damage);
+  
+    while (n_box--) {
+      glitz_texture_copy_drawable (gl,
+                                   &surface->texture,
+                                   surface->attached,
+                                   box->x1 + surface->x,
+                                   box->y1 + surface->y,
+                                   box->x2 - box->x1,
+                                   box->y2 - box->y1,
+                                   box->x1,
+                                   box->y1);
+      
+      box++;
+    }
+
+    REGION_EMPTY (&surface->texture_damage);
+
+    glitz_texture_unbind (gl, &surface->texture);
+
+    gl->enable (GLITZ_GL_SCISSOR_TEST);
+
+    glitz_surface_pop_current (surface);
+  }
+}
+
+static void
+_glitz_surface_sync_drawable (glitz_surface_t *surface)
+{   
+  if (REGION_NOTEMPTY (&surface->drawable_damage)) {
+    glitz_texture_t *texture;
+    glitz_box_t     *box, *ext;
+    int             n_box;
+  
+    GLITZ_GL_SURFACE (surface);
+
+    texture = glitz_surface_get_texture (surface, 0);
+    if (!texture)
+      return;
+    
+    box = REGION_RECTS (&surface->drawable_damage);
+    ext = REGION_EXTENTS (&surface->drawable_damage);
+    n_box = REGION_NUM_RECTS (&surface->drawable_damage);
+
+    glitz_texture_bind (gl, texture);
+  
+    glitz_texture_set_tex_gen (gl, texture, 0, 0, 0); 
+    
+    gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
+                   GLITZ_GL_REPLACE);
+    gl->color_4us (0x0, 0x0, 0x0, 0xffff);
+    
+    glitz_texture_ensure_wrap (gl, texture, GLITZ_GL_CLAMP_TO_EDGE);
+    glitz_texture_ensure_filter (gl, texture, GLITZ_GL_NEAREST);
+    
+    glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
+    
+    gl->scissor (surface->x + ext->x1,
+                 surface->attached->height - surface->y - ext->y2,
+                 ext->x2 - ext->x1,
+                 ext->y2 - ext->y1);
+
+    if (n_box > 1) {
+      glitz_float_t *data;
+      void          *ptr;
+      int           vertices;
+      
+      ptr = malloc (n_box * 8 * sizeof (glitz_float_t));
+      if (!ptr) {
+        glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
+        return;
+      }
+
+      data = (glitz_float_t *) ptr;
+      vertices = n_box << 2;
+
+      while (n_box--) {
+        *data++ = (glitz_float_t) box->x1;
+        *data++ = (glitz_float_t) box->y1;
+        *data++ = (glitz_float_t) box->x2;
+        *data++ = (glitz_float_t) box->y1;
+        *data++ = (glitz_float_t) box->x2;
+        *data++ = (glitz_float_t) box->y2;
+        *data++ = (glitz_float_t) box->x1;
+        *data++ = (glitz_float_t) box->y2;
+        
+        box++;
+      }
+
+      gl->vertex_pointer (2, GLITZ_GL_FLOAT, 0, ptr);
+      gl->draw_arrays (GLITZ_GL_QUADS, 0, vertices);
+      
+      free (ptr);
+    } else {
+      glitz_geometry_enable_default (gl, surface, ext);
+      gl->draw_arrays (GLITZ_GL_QUADS, 0, 4);
+    }
+
+    glitz_texture_unbind (gl, texture);
+    
+    REGION_EMPTY (&surface->drawable_damage);
+  }
+}
+
+void
+glitz_surface_sync_solid (glitz_surface_t *surface)
+{
+  if (SURFACE_SOLID_DAMAGE (surface)) {
     glitz_gl_float_t *c, color[64];
     glitz_texture_t *texture;
 
-    texture = glitz_surface_get_texture (surface, 0);
+    GLITZ_GL_SURFACE (surface);
 
+    texture = glitz_surface_get_texture (surface, 0);
+    
     c = &color[(texture->box.y1 * texture->width + texture->box.x1) * 4];
     if (texture) {
       glitz_texture_bind (gl, texture);
@@ -205,37 +294,257 @@ glitz_surface_ensure_solid (glitz_surface_t *surface)
       c[0] = c[1] = c[2] = 0.0f;
       c[3] = 1.0f;
     }
-  
+    
     surface->solid.red = c[0] * 65535.0f;
     surface->solid.green = c[1] * 65535.0f;
     surface->solid.blue = c[2] * 65535.0f;
     surface->solid.alpha = c[3] * 65535.0f;
 
-    surface->flags &= ~GLITZ_SURFACE_FLAG_SOLID_DIRTY_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK;
   }
 }
 
+glitz_texture_t *
+glitz_surface_get_texture (glitz_surface_t *surface,
+                           glitz_bool_t    allocate)
+{
+  GLITZ_GL_SURFACE (surface);
+
+  if (REGION_NOTEMPTY (&surface->texture_damage)) {
+    _glitz_surface_sync_texture (surface);
+  } else if (allocate) {
+    if (!(TEXTURE_ALLOCATED (&surface->texture)))
+      glitz_texture_allocate (gl, &surface->texture);
+  }
+  
+  if (TEXTURE_ALLOCATED (&surface->texture))
+    return &surface->texture;
+  
+  return NULL;
+}
+
+void
+glitz_surface_damage (glitz_surface_t *surface,
+                      glitz_box_t     *box,
+                      int             what)
+{
+  glitz_box_t b;
+
+  if (box) {
+    b.x1 = MAX (0, box->x1);
+    b.y1 = MAX (0, box->y1);
+    b.x2 = MIN (surface->width, box->x2);
+    b.y2 = MIN (surface->height, box->y2);
+
+    if (b.x1 >= b.x2 || b.y1 >= b.y2)
+      return;
+    
+    if (what & GLITZ_DAMAGE_DRAWABLE_MASK)
+      REGION_UNION (&surface->drawable_damage, &b);
+
+    if (what & GLITZ_DAMAGE_TEXTURE_MASK)
+      REGION_UNION (&surface->texture_damage, &b);
+  } else {
+    b.x1 = b.y1 = 0;
+    b.x2 = surface->width;
+    b.y2 = surface->height;
+
+    if (what & GLITZ_DAMAGE_DRAWABLE_MASK) {
+      REGION_EMPTY (&surface->drawable_damage);
+      REGION_INIT (&surface->drawable_damage, &b);
+    }
+
+    if (what & GLITZ_DAMAGE_TEXTURE_MASK) {
+      REGION_EMPTY (&surface->texture_damage);
+      REGION_INIT (&surface->texture_damage, &b);
+    }
+  }
+
+  if (what & GLITZ_DAMAGE_SOLID_MASK)
+    surface->flags |= GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK;
+}
+
+void
+glitz_surface_status_add (glitz_surface_t *surface, int flags)
+{
+  surface->status_mask |= flags;
+}
+
+static void
+_glitz_surface_update_state (glitz_surface_t *surface)
+{
+  glitz_rectangle_t *viewport;
+  
+  GLITZ_GL_SURFACE (surface);
+
+  viewport = &surface->attached->viewport;
+  
+  if (surface->attached->update_all ||
+      viewport->x != surface->x ||
+      viewport->y != surface->y ||
+      viewport->width != surface->width ||
+      viewport->height != surface->height) {
+    gl->viewport (surface->x,
+                  surface->attached->height - surface->y - surface->height,
+                  surface->width,
+                  surface->height);
+    gl->matrix_mode (GLITZ_GL_PROJECTION);
+    gl->load_identity ();
+    gl->ortho (0.0,
+               surface->width,
+               surface->attached->height - surface->height,
+               surface->attached->height,
+               -1.0, 1.0);
+    gl->matrix_mode (GLITZ_GL_MODELVIEW);
+    gl->load_identity ();
+    gl->scale_f (1.0f, -1.0f, 1.0f);
+    gl->translate_f (0.0f, -surface->attached->height, 0.0f);
+    
+    viewport->x = surface->x;
+    viewport->y = surface->y;
+    viewport->width = surface->width;
+    viewport->height = surface->height;
+    
+    surface->attached->update_all = 0;
+  }
+
+  gl->draw_buffer (surface->buffer);
+
+  if (SURFACE_DITHER (surface))
+    gl->enable (GLITZ_GL_DITHER);
+  else
+    gl->disable (GLITZ_GL_DITHER);
+
+  if (surface->attached->format->samples > 1) {
+    if (SURFACE_MULTISAMPLE (surface)) {
+      gl->enable (GLITZ_GL_MULTISAMPLE);
+      
+      if (surface->attached->backend->feature_mask &
+          GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK) {
+        if (SURFACE_NICEST_MULTISAMPLE (surface))
+          gl->hint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_NICEST);
+        else
+          gl->hint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_FASTEST);
+      }
+    } else
+      gl->disable (GLITZ_GL_MULTISAMPLE);
+  }
+}
+
+void
+glitz_surface_attach (glitz_surface_t         *surface,
+                      glitz_drawable_t        *drawable,
+                      glitz_drawable_buffer_t buffer,
+                      int                     x,
+                      int                     y)
+{
+  glitz_drawable_reference (drawable);
+
+  if (surface->attached)
+    glitz_drawable_destroy (surface->attached);
+  
+  surface->attached = drawable;
+  surface->x = x;
+  surface->y = y;
+
+  switch (buffer) {
+  case GLITZ_DRAWABLE_BUFFER_FRONT_COLOR:
+    surface->buffer = GLITZ_GL_FRONT;
+    break;
+  case GLITZ_DRAWABLE_BUFFER_BACK_COLOR:
+    surface->buffer = GLITZ_GL_BACK;
+    break;
+  }
+
+  if ((!SURFACE_SOLID (surface)) || SURFACE_SOLID_DAMAGE (surface))
+    REGION_EMPTY (&surface->texture_damage);
+}
+
+void
+glitz_surface_detach (glitz_surface_t *surface)
+{
+  glitz_box_t box;
+
+  if (!surface->attached)
+    return;
+
+  if (REGION_NOTEMPTY (&surface->texture_damage)) {
+    glitz_surface_push_current (surface, GLITZ_DRAWABLE_CURRENT);
+    _glitz_surface_sync_texture (surface);
+    glitz_surface_pop_current (surface);
+  }
+  
+  glitz_drawable_destroy (surface->attached); 
+  surface->attached = NULL;
+
+  box.x1 = box.y1 = 0;
+  box.x2 = surface->width;
+  box.y2 = surface->height;
+    
+  REGION_EMPTY (&surface->drawable_damage);
+  REGION_INIT (&surface->drawable_damage, &box);
+}
+
+glitz_drawable_t *
+glitz_surface_get_drawable (glitz_surface_t *surface)
+{
+  return surface->drawable;
+}
+slim_hidden_def(glitz_surface_get_drawable);
+
+glitz_drawable_t *
+glitz_surface_get_attached_drawable (glitz_surface_t *surface)
+{
+  return surface->attached;
+}
+slim_hidden_def(glitz_surface_get_attached_drawable);
+
 glitz_bool_t
-glitz_surface_push_current (glitz_surface_t *surface,
+glitz_surface_push_current (glitz_surface_t    *surface,
                             glitz_constraint_t constraint)
 {
-  if (!surface->backend->push_current (surface, constraint))
-    return 0;
-
-  if (SURFACE_SOLID (surface) && SURFACE_DRAWABLE_DIRTY (surface))
-    _glitz_surface_solid_store (surface);
-
+  if (surface->attached) {
+    surface->attached->backend->push_current (surface->attached, surface,
+                                              constraint);
+    if (constraint == GLITZ_DRAWABLE_CURRENT) {
+      _glitz_surface_update_state (surface);
+      _glitz_surface_sync_drawable (surface);
+    }
+  } else {
+    surface->drawable->backend->push_current (surface->drawable, NULL,
+                                              constraint);
+    if (constraint == GLITZ_DRAWABLE_CURRENT)
+      return 0;
+  }
+  
   return 1;
 }
 
 void
 glitz_surface_pop_current (glitz_surface_t *surface)
 {
-  surface->backend->pop_current (surface);
+  glitz_surface_t *other;
+  
+  if (surface->attached)
+    other = surface->attached->backend->pop_current (surface->attached);
+  else
+    other = surface->drawable->backend->pop_current (surface->drawable);
+
+  if (other)
+    _glitz_surface_update_state (other);
+}
+
+glitz_status_t
+glitz_surface_make_current_read (glitz_surface_t *surface)
+{
+  if (surface->attached)
+    return surface->attached->backend->make_current_read (surface->attached);
+  else
+    return surface->drawable->backend->make_current_read (surface->drawable);
 }
 
 void
-glitz_surface_set_transform (glitz_surface_t *surface,
+glitz_surface_set_transform (glitz_surface_t   *surface,
                              glitz_transform_t *transform)
 {
   static glitz_transform_t identity = {
@@ -357,7 +666,7 @@ slim_hidden_def(glitz_surface_set_transform);
 
 void
 glitz_surface_set_fill (glitz_surface_t *surface,
-                        glitz_fill_t fill)
+                        glitz_fill_t    fill)
 {
   switch (fill) {
   case GLITZ_FILL_TRANSPARENT:
@@ -388,9 +697,9 @@ slim_hidden_def(glitz_surface_set_fill);
 
 void
 glitz_surface_set_component_alpha (glitz_surface_t *surface,
-                                   glitz_bool_t component_alpha)
+                                   glitz_bool_t    component_alpha)
 {
-  if (component_alpha && surface->format->red_size)
+  if (component_alpha && surface->format->color.red_size)
     surface->flags |= GLITZ_SURFACE_FLAG_COMPONENT_ALPHA_MASK;
   else
     surface->flags &= ~GLITZ_SURFACE_FLAG_COMPONENT_ALPHA_MASK;
@@ -398,10 +707,10 @@ glitz_surface_set_component_alpha (glitz_surface_t *surface,
 slim_hidden_def(glitz_surface_set_component_alpha);
 
 void
-glitz_surface_set_filter (glitz_surface_t *surface,
-                          glitz_filter_t filter,
+glitz_surface_set_filter (glitz_surface_t    *surface,
+                          glitz_filter_t     filter,
                           glitz_fixed16_16_t *params,
-                          int n_params)
+                          int                n_params)
 {
   glitz_status_t status;
   
@@ -442,143 +751,40 @@ glitz_surface_set_filter (glitz_surface_t *surface,
 }
 slim_hidden_def(glitz_surface_set_filter);
 
-int
-glitz_surface_get_width (glitz_surface_t *surface)
-{
-  return surface->width;
-}
-slim_hidden_def(glitz_surface_get_width);
-
-int
-glitz_surface_get_height (glitz_surface_t *surface)
-{
-  return surface->height;
-}
-slim_hidden_def(glitz_surface_get_height);
-
-glitz_texture_t *
-glitz_surface_get_texture (glitz_surface_t *surface,
-                           glitz_bool_t allocate)
-{
-  glitz_texture_t *texture;
-
-  if (SURFACE_SOLID (surface) && SURFACE_DRAWABLE_DIRTY (surface)) {
-    texture = surface->backend->get_texture (surface, 1);
-    _glitz_surface_solid_store (surface);
-  } else
-    texture = surface->backend->get_texture (surface, allocate);
-
-  return texture;
-}
-
-static glitz_gl_enum_t
-_gl_color_buffer (glitz_color_buffer_t buffer)
-{
-  switch (buffer) {
-  case GLITZ_COLOR_BUFFER_FRONT:
-    return GLITZ_GL_FRONT;
-  case GLITZ_COLOR_BUFFER_BACK:
-    return GLITZ_GL_BACK;
-  default:
-    return GLITZ_GL_BACK;
-  }
-}
-
 void
-glitz_surface_set_read_color_buffer (glitz_surface_t *surface,
-                                     glitz_color_buffer_t buffer)
+glitz_surface_set_dither (glitz_surface_t *surface,
+                          glitz_bool_t    dither)
 {
-  glitz_gl_enum_t mode;
-  
-  if (!surface->format->doublebuffer)
-    return;
-    
-  mode = _gl_color_buffer (buffer);
-  if (mode != surface->read_buffer) {
-    surface->read_buffer = mode;
-    glitz_surface_dirty (surface, NULL);
-  }
+  if (dither)
+    surface->flags |= GLITZ_SURFACE_FLAG_DITHER_MASK;
+  else
+    surface->flags &= ~GLITZ_SURFACE_FLAG_DITHER_MASK;
 }
-slim_hidden_def(glitz_surface_set_read_color_buffer);
-
-void
-glitz_surface_set_draw_color_buffer (glitz_surface_t *surface,
-                                     glitz_color_buffer_t buffer)
-{
-  if (!surface->format->doublebuffer)
-    return;
-
-  surface->draw_buffer = _gl_color_buffer (buffer);
-
-  surface->update_mask |= GLITZ_UPDATE_DRAW_BUFFER_MASK;
-}
-slim_hidden_def(glitz_surface_set_draw_color_buffer);
-
-void
-glitz_surface_swap_buffers (glitz_surface_t *surface)
-{
-  if (!surface->format->doublebuffer)
-    return;
-  
-  surface->backend->swap_buffers (surface);
-}
-slim_hidden_def(glitz_surface_swap_buffers);
+slim_hidden_def(glitz_surface_set_dither);
 
 void
 glitz_surface_flush (glitz_surface_t *surface)
 {
-  if (glitz_surface_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT))
-    surface->backend->gl.flush ();
-  
-  glitz_surface_pop_current (surface);
+  if (surface->attached && REGION_NOTEMPTY (&surface->drawable_damage)) {
+    glitz_surface_push_current (surface, GLITZ_DRAWABLE_CURRENT);
+    glitz_surface_pop_current (surface);
+  }
 }
 slim_hidden_def(glitz_surface_flush);
 
-void
-glitz_surface_finish (glitz_surface_t *surface)
+unsigned int
+glitz_surface_get_width (glitz_surface_t *surface)
 {
-  if (glitz_surface_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT))
-    surface->backend->gl.finish ();
-  
-  glitz_surface_pop_current (surface);
+  return (unsigned int) surface->width;
 }
-slim_hidden_def(glitz_surface_finish);
+slim_hidden_def(glitz_surface_get_width);
 
-glitz_bool_t
-glitz_surface_make_current_read (glitz_surface_t *surface)
+unsigned int
+glitz_surface_get_height (glitz_surface_t *surface)
 {
-  return surface->backend->make_current_read (surface);
+  return (unsigned int) surface->height;
 }
-
-void
-glitz_surface_dirty (glitz_surface_t *surface,
-                     glitz_bounding_box_t *box)
-{ 
-  if (surface->draw_buffer != surface->read_buffer)
-    return;
-  
-  if (!box) {
-    surface->dirty_box.x1 = surface->dirty_box.y1 = 0;
-    surface->dirty_box.x2 = surface->width;
-    surface->dirty_box.y2 = surface->height;
-  } else {
-    if (!SURFACE_DIRTY (surface)) {
-      surface->dirty_box = *box;
-    } else
-      glitz_union_bounding_box (box,
-                                &surface->dirty_box,
-                                &surface->dirty_box);
-  }
-  
-  surface->flags |=
-    (GLITZ_SURFACE_FLAG_DIRTY_MASK | GLITZ_SURFACE_FLAG_SOLID_DIRTY_MASK);
-}
-
-void
-glitz_surface_status_add (glitz_surface_t *surface, int flags)
-{
-  surface->status_mask |= flags;
-}
+slim_hidden_def(glitz_surface_get_height);
 
 glitz_status_t
 glitz_surface_get_status (glitz_surface_t *surface)
@@ -586,72 +792,6 @@ glitz_surface_get_status (glitz_surface_t *surface)
   return glitz_status_pop_from_mask (&surface->status_mask);
 }
 slim_hidden_def(glitz_surface_get_status);
-
-void
-glitz_surface_update_state (glitz_surface_t *surface)
-{
-  glitz_gl_proc_address_list_t *gl = &surface->backend->gl;
-  
-  if (surface->update_mask & GLITZ_UPDATE_VIEWPORT_MASK) {
-    gl->viewport (0, 0, surface->width, surface->height);
-    gl->matrix_mode (GLITZ_GL_PROJECTION);
-    gl->load_identity ();
-    gl->ortho (0.0, surface->width, 0.0, surface->height, -1.0, 1.0);
-    gl->matrix_mode (GLITZ_GL_MODELVIEW);
-    gl->load_identity ();
-    gl->scale_f (1.0f, -1.0f, 1.0f);
-    gl->translate_f (0.0f, -surface->height, 0.0f);
-    gl->disable (GLITZ_GL_DEPTH_TEST); 
-    gl->hint (GLITZ_GL_PERSPECTIVE_CORRECTION_HINT, GLITZ_GL_FASTEST);
-    gl->disable (GLITZ_GL_CULL_FACE);
-    gl->depth_mask (GLITZ_GL_FALSE);  
-    gl->polygon_mode (GLITZ_GL_FRONT_AND_BACK, GLITZ_GL_FILL);
-    gl->disable (GLITZ_GL_POLYGON_SMOOTH);
-    gl->shade_model (GLITZ_GL_FLAT);
-    gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE, GLITZ_GL_TRUE,
-                    GLITZ_GL_TRUE);
-    gl->disable (GLITZ_GL_DITHER);
-    gl->enable (GLITZ_GL_SCISSOR_TEST);
-    gl->scissor (0, 0, surface->width, surface->height);
-    gl->disable (GLITZ_GL_STENCIL_TEST);
-    gl->enable_client_state (GLITZ_GL_VERTEX_ARRAY);
-    
-    surface->update_mask &= ~GLITZ_UPDATE_VIEWPORT_MASK;
-  }
-  
-  if (surface->update_mask & GLITZ_UPDATE_DRAW_BUFFER_MASK) {
-    if (surface->format->doublebuffer)
-      gl->draw_buffer (surface->draw_buffer);
-    
-    surface->update_mask &= ~GLITZ_UPDATE_DRAW_BUFFER_MASK;
-  }
-
-  if (surface->update_mask & GLITZ_UPDATE_MULTISAMPLE_MASK) {
-    if (surface->format->multisample.samples) {
-      if (SURFACE_MULTISAMPLE (surface)) {
-        gl->enable (GLITZ_GL_MULTISAMPLE);
-        
-        if (surface->backend->feature_mask &
-            GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK) {
-          if (SURFACE_NICEST_MULTISAMPLE (surface))
-            gl->hint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_NICEST);
-          else
-            gl->hint (GLITZ_GL_MULTISAMPLE_FILTER_HINT, GLITZ_GL_FASTEST);
-        }
-      } else
-        gl->disable (GLITZ_GL_MULTISAMPLE);
-    }
-    
-    surface->update_mask &= ~GLITZ_UPDATE_MULTISAMPLE_MASK;
-  }
-}
-
-unsigned long
-glitz_surface_get_features (glitz_surface_t *surface)
-{
-  return surface->backend->feature_mask;
-}
-slim_hidden_def(glitz_surface_get_features);
 
 glitz_format_t *
 glitz_surface_get_format (glitz_surface_t *surface)

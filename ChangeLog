@@ -1,3 +1,7 @@
+2004-11-03  David Reveman  <c99drn@cs.umu.se>
+
+	* Source tree restructuring and switch to new drawable interface.
+
 2004-10-21  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_pixel.c (glitz_get_pixels): Set read buffer and

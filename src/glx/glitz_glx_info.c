@@ -1,28 +1,26 @@
 /*
- * Copyright © 2004 David Reveman, Peter Nilsson
- *
+ * Copyright © 2004 David Reveman
+ * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
  * appear in supporting documentation, and that the names of
- * David Reveman and Peter Nilsson not be used in advertising or
- * publicity pertaining to distribution of the software without
- * specific, written prior permission. David Reveman and Peter Nilsson
- * makes no representations about the suitability of this software for
- * any purpose. It is provided "as is" without express or implied warranty.
+ * David Reveman not be used in advertising or publicity pertaining to
+ * distribution of the software without specific, written prior permission.
+ * David Reveman makes no representations about the suitability of this
+ * software for any purpose. It is provided "as is" without express or
+ * implied warranty.
  *
- * DAVID REVEMAN AND PETER NILSSON DISCLAIMS ALL WARRANTIES WITH
- * REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL DAVID REVEMAN AND
- * PETER NILSSON BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA
- * OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * DAVID REVEMAN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, 
+ * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
+ * NO EVENT SHALL DAVID REVEMAN BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+ * OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, 
+ * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
+ * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Authors: David Reveman <c99drn@cs.umu.se>
- *          Peter Nilsson <c99pnn@cs.umu.se>
+ * Author: David Reveman <c99drn@cs.umu.se>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -35,9 +33,12 @@
 #include <dlfcn.h>
 
 glitz_gl_proc_address_list_t _glitz_glx_gl_proc_address = {
+
+  /* core */
   (glitz_gl_enable_t) glEnable,
   (glitz_gl_disable_t) glDisable,
   (glitz_gl_get_error_t) glGetError,
+  (glitz_gl_get_string_t) glGetString,
   (glitz_gl_enable_client_state_t) glEnableClientState,
   (glitz_gl_disable_client_state_t) glDisableClientState,
   (glitz_gl_vertex_pointer_t) glVertexPointer,
@@ -92,6 +93,7 @@ glitz_gl_proc_address_list_t _glitz_glx_gl_proc_address = {
   (glitz_gl_copy_tex_sub_image_2d_t) glCopyTexSubImage2D,
   (glitz_gl_get_integer_v_t) glGetIntegerv,
 
+  /* extensions */
   (glitz_gl_blend_color_t) 0,
   (glitz_gl_active_texture_t) 0,
   (glitz_gl_gen_programs_t) 0,
@@ -107,20 +109,18 @@ glitz_gl_proc_address_list_t _glitz_glx_gl_proc_address = {
   (glitz_gl_buffer_sub_data_t) 0,
   (glitz_gl_get_buffer_sub_data_t) 0,
   (glitz_gl_map_buffer_t) 0,
-  (glitz_gl_unmap_buffer_t) 0,
-  
-  1
+  (glitz_gl_unmap_buffer_t) 0
 };
 
 glitz_function_pointer_t
-glitz_glx_get_proc_address (glitz_glx_screen_info_t *screen_info,
-                            const char *name)
+glitz_glx_get_proc_address (const char *name,
+                            void       *closure)
 {
-  glitz_function_pointer_t address = NULL;
+  glitz_glx_screen_info_t *screen_info = (glitz_glx_screen_info_t *) closure;
   glitz_glx_thread_info_t *info = screen_info->display_info->thread_info;
+  glitz_function_pointer_t address = NULL;
 
-  if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_GLX_GET_PROC_ADDRESS_MASK)
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GET_PROC_ADDRESS_MASK)
     address = screen_info->glx.get_proc_address ((glitz_gl_ubyte_t *) name);
   
   if (!address) {
@@ -141,89 +141,108 @@ glitz_glx_get_proc_address (glitz_glx_screen_info_t *screen_info,
 static void
 _glitz_glx_proc_address_lookup (glitz_glx_screen_info_t *screen_info)
 {
-  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX_FBCONFIG_MASK) {
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_FBCONFIG_MASK) {
     if (screen_info->glx_version >= 1.3f) {
       screen_info->glx.get_fbconfigs = (glitz_glx_get_fbconfigs_t)
-        glitz_glx_get_proc_address (screen_info, "glXGetFBConfigs");
+        glitz_glx_get_proc_address ("glXGetFBConfigs", (void *) screen_info);
       screen_info->glx.get_fbconfig_attrib = (glitz_glx_get_fbconfig_attrib_t)
-        glitz_glx_get_proc_address (screen_info, "glXGetFBConfigAttrib");
+        glitz_glx_get_proc_address ("glXGetFBConfigAttrib",
+                                    (void *) screen_info);
       screen_info->glx.get_visual_from_fbconfig =
         (glitz_glx_get_visual_from_fbconfig_t)
-        glitz_glx_get_proc_address (screen_info, "glXGetVisualFromFBConfig");
+        glitz_glx_get_proc_address ("glXGetVisualFromFBConfig",
+                                    (void *) screen_info);
       screen_info->glx.create_new_context = (glitz_glx_create_new_context_t)
-        glitz_glx_get_proc_address (screen_info, "glXCreateNewContext");
+        glitz_glx_get_proc_address ("glXCreateNewContext",
+                                    (void *) screen_info);
 
-      if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX_PBUFFER_MASK) {
+      if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_PBUFFER_MASK) {
         screen_info->glx.create_pbuffer = (glitz_glx_create_pbuffer_t)
-          glitz_glx_get_proc_address (screen_info, "glXCreatePbuffer");
+          glitz_glx_get_proc_address ("glXCreatePbuffer",
+                                      (void *) screen_info);
         screen_info->glx.destroy_pbuffer = (glitz_glx_destroy_pbuffer_t)
-          glitz_glx_get_proc_address (screen_info, "glXDestroyPbuffer");
+          glitz_glx_get_proc_address ("glXDestroyPbuffer",
+                                      (void *) screen_info);
+        screen_info->glx.query_drawable = (glitz_glx_query_drawable_t)
+          glitz_glx_get_proc_address ("glXQueryDrawable",
+                                      (void *) screen_info);
       }      
     } else {
       screen_info->glx.get_fbconfigs = (glitz_glx_get_fbconfigs_t)
-        glitz_glx_get_proc_address (screen_info, "glXGetFBConfigsSGIX");
+        glitz_glx_get_proc_address ("glXGetFBConfigsSGIX",
+                                    (void *) screen_info);
       screen_info->glx.get_fbconfig_attrib = (glitz_glx_get_fbconfig_attrib_t)
-        glitz_glx_get_proc_address (screen_info, "glXGetFBConfigAttribSGIX");
+        glitz_glx_get_proc_address ("glXGetFBConfigAttribSGIX",
+                                    (void *) screen_info);
       screen_info->glx.get_visual_from_fbconfig =
         (glitz_glx_get_visual_from_fbconfig_t)
-        glitz_glx_get_proc_address (screen_info,
-                                    "glXGetVisualFromFBConfigSGIX");
+        glitz_glx_get_proc_address ("glXGetVisualFromFBConfigSGIX",
+                                    (void *) screen_info);
       screen_info->glx.create_new_context = (glitz_glx_create_new_context_t)
-        glitz_glx_get_proc_address (screen_info,
-                                    "glXCreateContextWithConfigSGIX");
+        glitz_glx_get_proc_address ("glXCreateContextWithConfigSGIX",
+                                    (void *) screen_info);
 
-      if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX_PBUFFER_MASK) {
+      if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_PBUFFER_MASK) {
         screen_info->glx.create_pbuffer = (glitz_glx_create_pbuffer_t)
-          glitz_glx_get_proc_address (screen_info, "glXCreatePbufferSGIX");
+          glitz_glx_get_proc_address ("glXCreateGLXPbufferSGIX",
+                                      (void *) screen_info);
         screen_info->glx.destroy_pbuffer = (glitz_glx_destroy_pbuffer_t)
-          glitz_glx_get_proc_address (screen_info, "glXDestroyPbufferSGIX");
+          glitz_glx_get_proc_address ("glXDestroyGLXPbufferSGIX",
+                                      (void *) screen_info);
+        screen_info->glx.query_drawable = (glitz_glx_query_drawable_t)
+          glitz_glx_get_proc_address ("glXQueryGLXPbufferSGIX",
+                                      (void *) screen_info);
       }
     }
 
     if ((!screen_info->glx.create_pbuffer) ||
-        (!screen_info->glx.destroy_pbuffer))
-      screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_GLX_PBUFFER_MASK;
+        (!screen_info->glx.destroy_pbuffer) ||
+        (!screen_info->glx.query_drawable))
+      screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_PBUFFER_MASK;
 
     if ((!screen_info->glx.get_fbconfigs) ||
         (!screen_info->glx.get_fbconfig_attrib) ||
         (!screen_info->glx.get_visual_from_fbconfig) ||
         (!screen_info->glx.create_new_context)) {
-      screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_GLX_FBCONFIG_MASK;
-      screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_GLX_PBUFFER_MASK;
+      screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_FBCONFIG_MASK;
+      screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_PBUFFER_MASK;
     }
   } else
-    screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_GLX_PBUFFER_MASK;
+    screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_PBUFFER_MASK;
 
   if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_GLX_MAKE_CURRENT_READ_MASK) {
+      GLITZ_GLX_FEATURE_MAKE_CURRENT_READ_MASK) {
     if (screen_info->glx_version >= 1.3f) {
       screen_info->glx.make_context_current =
         (glitz_glx_make_context_current_t)
-        glitz_glx_get_proc_address (screen_info, "glXMakeContextCurrent");
+        glitz_glx_get_proc_address ("glXMakeContextCurrent",
+                                    (void *) screen_info);
     } else {
       screen_info->glx.make_context_current =
         (glitz_glx_make_context_current_t)
-        glitz_glx_get_proc_address (screen_info, "glXMakeCurrentReadSGI");
+        glitz_glx_get_proc_address ("glXMakeCurrentReadSGI",
+                                    (void *) screen_info);
     }
       
     if (!screen_info->glx.make_context_current)
       screen_info->glx_feature_mask &=
-        ~GLITZ_GLX_FEATURE_GLX_MAKE_CURRENT_READ_MASK;
+        ~GLITZ_GLX_FEATURE_MAKE_CURRENT_READ_MASK;
   }
   
   if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_GLX_GET_PROC_ADDRESS_MASK) {
+      GLITZ_GLX_FEATURE_GET_PROC_ADDRESS_MASK) {
     if (screen_info->glx_version >= 1.4f) {
       screen_info->glx.get_proc_address = (glitz_glx_get_proc_address_t)
-        glitz_glx_get_proc_address (screen_info, "glXGetProcAddress");
+        glitz_glx_get_proc_address ("glXGetProcAddress", (void *) screen_info);
     } else {
       screen_info->glx.get_proc_address = (glitz_glx_get_proc_address_t)
-        glitz_glx_get_proc_address (screen_info, "glXGetProcAddressARB");
+        glitz_glx_get_proc_address ("glXGetProcAddressARB",
+                                    (void *) screen_info);
     }
 
     if (!screen_info->glx.get_proc_address)
       screen_info->glx_feature_mask &=
-        ~GLITZ_GLX_FEATURE_GLX_GET_PROC_ADDRESS_MASK;
+        ~GLITZ_GLX_FEATURE_GET_PROC_ADDRESS_MASK;
   }
 }
 
@@ -417,76 +436,9 @@ _glitz_glx_display_destroy (glitz_glx_display_info_t *display_info)
   free (display_info);
 }
 
-static void
-_glitz_glx_create_root_context (glitz_glx_screen_info_t *screen_info)
-{
-  XVisualInfo *vinfo;
-  XSetWindowAttributes win_attrib;
-  static int attrib_double[] = {
-    GLX_RGBA,
-    GLX_RED_SIZE, 1,
-    GLX_DOUBLEBUFFER,
-    None
-  };
-  static int attrib_single[] = {
-    GLX_RGBA,
-    GLX_RED_SIZE, 1,
-    None
-  };
-  int screen = screen_info->screen;
-  Display *display = screen_info->display_info->display;
-
-  vinfo = glXChooseVisual (display, screen, attrib_double);
-  if (!vinfo)
-    vinfo = glXChooseVisual (display, screen, attrib_single);
-  
-  if (vinfo) {
-    screen_info->root_colormap = XCreateColormap (display,
-                                                  RootWindow (display, screen),
-                                                  vinfo->visual, AllocNone);
-    win_attrib.background_pixel = 0;
-    win_attrib.border_pixel = 0;
-    win_attrib.event_mask = StructureNotifyMask | ExposureMask;
-    win_attrib.colormap = screen_info->root_colormap;
-
-    screen_info->root_drawable =
-      XCreateWindow (display, RootWindow (display, screen),
-                     -1, -1, 1, 1, 0, vinfo->depth, InputOutput,
-                     vinfo->visual,
-                     CWBackPixel | CWBorderPixel | CWColormap | CWEventMask,
-                     &win_attrib);
-    
-    screen_info->root_context.context =
-      glXCreateContext (display, vinfo, NULL, 1);
-    
-    screen_info->root_context.id = vinfo->visualid;
-    
-    XFree (vinfo);
-  } else {
-    screen_info->root_drawable = None;
-    screen_info->root_context.context = NULL;
-    screen_info->root_context.id = 0;
-  }
-
-  screen_info->root_context.fbconfig = (XID) 0;
-
-  glitz_glx_surface_backend_init (&screen_info->root_context.backend);
-  
-  memcpy (&screen_info->root_context.backend.gl,
-          &_glitz_glx_gl_proc_address,
-          sizeof (glitz_gl_proc_address_list_t));
-
-  screen_info->root_context.backend.formats = NULL;
-  screen_info->root_context.backend.n_formats = 0;
-  screen_info->root_context.backend.program_map = NULL;
-  screen_info->root_context.backend.feature_mask = 0;
-  
-  screen_info->root_context.backend.gl.need_lookup = 1;
-}
-
 glitz_glx_screen_info_t *
 glitz_glx_screen_info_get (Display *display,
-                           int screen)
+                           int     screen)
 {
   glitz_glx_screen_info_t *screen_info;
   glitz_glx_display_info_t *display_info =
@@ -503,12 +455,13 @@ glitz_glx_screen_info_get (Display *display,
   display_info->screens =
     realloc (display_info->screens,
              sizeof (glitz_glx_screen_info_t *) * display_info->n_screens);
-
+  
   screen_info = malloc (sizeof (glitz_glx_screen_info_t));
   display_info->screens[index] = screen_info;
-
+  
   screen_info->display_info = display_info;
   screen_info->screen = screen;
+  screen_info->drawables = 0;
   screen_info->formats = NULL;
   screen_info->format_ids = NULL;
   screen_info->n_formats = 0;
@@ -520,43 +473,26 @@ glitz_glx_screen_info_get (Display *display,
 
   glitz_program_map_init (&screen_info->program_map);
   
-  screen_info->root_context.context = (GLXContext) 0;
+  screen_info->root_context = (GLXContext) 0;
+  screen_info->glx_feature_mask = 0;
 
   if (glXQueryExtension (display, &error_base, &event_base)) {
     int major, minor;
     
     if (glXQueryVersion (display, &major, &minor)) {
       screen_info->glx_version = major + minor / 10.0f;
-      if (major > 1 || (major > 0 || minor >= 2))
-        _glitz_glx_create_root_context (screen_info);
-    }
-  }
-
-  screen_info->glx_feature_mask = screen_info->feature_mask = 0;
-
-  if (screen_info->root_context.context &&
-      glXMakeCurrent (screen_info->display_info->display,
-                      screen_info->root_drawable,
-                      screen_info->root_context.context)) {
-    if (glitz_glx_query_extensions (screen_info) == GLITZ_STATUS_SUCCESS) {
-        screen_info->root_context.backend.feature_mask =
-          screen_info->feature_mask;
-
+      if (major > 1 || (major > 0 || minor >= 2)) {
+        glitz_glx_query_extensions (screen_info, screen_info->glx_version);
         _glitz_glx_proc_address_lookup (screen_info);
-        
-        glitz_glx_context_proc_address_lookup (screen_info,
-                                               &screen_info->root_context);
         glitz_glx_query_formats (screen_info);
+      }
     }
   }
 
-  screen_info->root_context.backend.formats = screen_info->formats;
-  screen_info->root_context.backend.n_formats = screen_info->n_formats;
-  screen_info->root_context.backend.program_map = &screen_info->program_map;
-  
   screen_info->context_stack_size = 1;
+  screen_info->context_stack->drawable = NULL;
   screen_info->context_stack->surface = NULL;
-  screen_info->context_stack->constraint = GLITZ_CN_NONE;
+  screen_info->context_stack->constraint = GLITZ_NONE;
   
   return screen_info;
 }
@@ -564,17 +500,11 @@ glitz_glx_screen_info_get (Display *display,
 static void
 _glitz_glx_screen_destroy (glitz_glx_screen_info_t *screen_info)
 {
-  int i;
   Display *display = screen_info->display_info->display;
+  int     i;
 
-  if (screen_info->root_context.context &&
-      glXMakeCurrent (screen_info->display_info->display,
-                      screen_info->root_drawable,
-                      screen_info->root_context.context)) {
-    glitz_program_map_fini (&screen_info->root_context.backend.gl,
-                            &screen_info->program_map);
+  if (screen_info->root_context)
     glXMakeCurrent (display, None, NULL);
-  }
   
   for (i = 0; i < screen_info->n_contexts; i++)
     glitz_glx_context_destroy (screen_info, screen_info->contexts[i]);
@@ -587,15 +517,6 @@ _glitz_glx_screen_destroy (glitz_glx_screen_info_t *screen_info)
 
   if (screen_info->format_ids)
     free (screen_info->format_ids);
-  
-  if (screen_info->root_context.context)
-    glXDestroyContext (display, screen_info->root_context.context);
-  
-  if (screen_info->root_drawable)
-    XDestroyWindow (display, screen_info->root_drawable);
-
-  if (screen_info->root_colormap)
-    XFreeColormap (display, screen_info->root_colormap);
 
   free (screen_info);
 }

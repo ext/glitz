@@ -53,6 +53,9 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_NO_ERROR          0x0
 #define GLITZ_GL_INVALID_OPERATION 0x0502
 
+#define GLITZ_GL_VERSION                     0x1F02
+#define GLITZ_GL_EXTENSIONS                  0x1F03
+
 #define GLITZ_GL_UNSIGNED_BYTE               0x1401
 #define GLITZ_GL_FLOAT                       0x1406
 #define GLITZ_GL_UNSIGNED_BYTE_3_3_2         0x8032
@@ -75,6 +78,10 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_FLOAT  0x1406
 #define GLITZ_GL_DOUBLE 0x140A
 
+#define GLITZ_GL_POINTS         0x0000
+#define GLITZ_GL_LINES          0x0001
+#define GLITZ_GL_LINE_LOOP      0x0002
+#define GLITZ_GL_LINE_STRIP     0x0003
 #define GLITZ_GL_TRIANGLES      0x0004
 #define GLITZ_GL_TRIANGLE_STRIP 0x0005
 #define GLITZ_GL_TRIANGLE_FAN   0x0006
@@ -88,6 +95,9 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_FRONT          0x0404
 #define GLITZ_GL_BACK           0x0405
 #define GLITZ_GL_CULL_FACE      0x0B44
+
+#define GLITZ_GL_POINT_SMOOTH   0x0B10
+#define GLITZ_GL_LINE_SMOOTH    0x0B20
 #define GLITZ_GL_POLYGON_SMOOTH 0x0B41
 
 #define GLITZ_GL_SCISSOR_TEST 0x0C11
@@ -297,6 +307,8 @@ typedef glitz_gl_void_t (* glitz_gl_disable_t)
      (glitz_gl_enum_t cap);
 typedef glitz_gl_enum_t (* glitz_gl_get_error_t)
      (glitz_gl_void_t);
+typedef glitz_gl_ubyte_t *(* glitz_gl_get_string_t)
+     (glitz_gl_enum_t);
 typedef glitz_gl_void_t (* glitz_gl_enable_client_state_t)
      (glitz_gl_enum_t cap);
 typedef glitz_gl_void_t (* glitz_gl_disable_client_state_t)
