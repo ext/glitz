@@ -40,7 +40,7 @@ libglitz_la_SOURCES = \
 	glitz_program.c \
 	glitz_programmatic.c \
 	glitz_color_range.c \
-	glitz_gl.h
+	glitz_gl.h \
 	glitzint.h
 
 libglitz_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined
@@ -78,7 +78,6 @@ libglitz_agl_la_SOURCES = \
 	glitz_agl_extension.c \
 	glitz_agl_context.c \
 	glitz_agl_pbuffer.c \
-	glitz_aglext.h
 	glitz_aglint.h
 libglitz_agl_la_LDFLAGS = -version-info @VERSION_INFO@
 libglitz_agl_la_CFLAGS = $(AGL_CFLAGS)
