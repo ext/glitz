@@ -8,7 +8,7 @@ LIBTOOLIZE_FLAGS="--copy --force"
 ACLOCAL=${ACLOCAL-aclocal}
 AUTOHEADER=${AUTOHEADER-autoheader}
 AUTOMAKE=${AUTOMAKE-automake}
-AUTOMAKE_FLAGS="--add-missing"
+AUTOMAKE_FLAGS="--add-missing --foreign"
 AUTOCONF=${AUTOCONF-autoconf}
 
 ARGV0=$0

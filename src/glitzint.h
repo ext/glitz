@@ -415,13 +415,13 @@ glitz_union_sub_pixel_region (glitz_sub_pixel_region_box_t *box1,
                               glitz_sub_pixel_region_box_t *box2,
                               glitz_sub_pixel_region_box_t *return_box);
 
-extern glitz_gl_enum_t __internal_linkage
+glitz_gl_enum_t
 glitz_get_gl_format_from_bpp (unsigned short bpp);
 
 extern glitz_gl_enum_t __internal_linkage
 glitz_get_gl_data_type_from_bpp (unsigned short bpp);
 
-extern long int __internal_linkage
+long int
 glitz_extensions_query (const char *extensions_string,
                         glitz_extension_map *extensions_map);
 
@@ -431,18 +431,18 @@ glitz_uint_is_power_of_two (unsigned int value);
 extern void __internal_linkage
 glitz_uint_to_power_of_two (unsigned int *value);
 
-extern glitz_texture_t *__internal_linkage
+glitz_texture_t *
 glitz_texture_generate (glitz_gl_proc_address_list_t *gl,
                         unsigned int width,
                         unsigned int height,
                         unsigned int texture_format,
                         long int target_mask);
 
-extern void __internal_linkage
+void
 glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
                         glitz_texture_t *texture);
 
-extern void __internal_linkage
+void
 glitz_texture_destroy (glitz_gl_proc_address_list_t *gl,
                        glitz_texture_t *texture);
 
@@ -456,20 +456,20 @@ glitz_texture_ensure_repeat (glitz_gl_proc_address_list_t *gl,
                              glitz_texture_t *texture,
                              glitz_bool_t repeat);
 
-extern void __internal_linkage
+void
 glitz_texture_bind (glitz_gl_proc_address_list_t *gl,
                     glitz_texture_t *texture);
 
-extern void __internal_linkage
+void
 glitz_texture_unbind (glitz_gl_proc_address_list_t *gl,
                       glitz_texture_t *texture);
 
-extern void __internal_linkage
+void
 glitz_texture_copy_surface (glitz_texture_t *texture,
                             glitz_surface_t *surface,
                             glitz_region_box_t *region);
 
-extern void __internal_linkage
+void
 glitz_surface_init (glitz_surface_t *surface,
                     const glitz_surface_backend_t *backend);
 
@@ -479,7 +479,7 @@ glitz_surface_push_transform (glitz_surface_t *surface);
 extern void __internal_linkage
 glitz_surface_pop_transform (glitz_surface_t *surface);
 
-extern void __internal_linkage
+void
 glitz_surface_deinit (glitz_surface_t *surface);
 
 extern glitz_texture_t *__internal_linkage
@@ -488,11 +488,11 @@ glitz_surface_get_texture (glitz_surface_t *surface);
 extern void __internal_linkage
 glitz_surface_destory (glitz_surface_t *surface);
 
-extern glitz_bool_t __internal_linkage
+glitz_bool_t
 glitz_surface_push_current (glitz_surface_t *surface,
                             glitz_constraint_t constraint);
 
-extern void __internal_linkage
+void
 glitz_surface_pop_current (glitz_surface_t *surface);
 
 extern void __internal_linkage
@@ -518,7 +518,7 @@ glitz_surface_dirty (glitz_surface_t *surface,
 extern void __internal_linkage
 glitz_surface_status_add (glitz_surface_t *surface, int flags);
 
-extern void __internal_linkage
+void
 glitz_surface_setup_environment (glitz_surface_t *surface);
 
 extern glitz_status_t __internal_linkage
@@ -553,20 +553,20 @@ glitz_int_surface_clip_triangles (glitz_surface_t *surface,
                                   const glitz_point_fixed_t *points,
                                   int n_points);
 
-extern glitz_format_t *__internal_linkage
+glitz_format_t *
 glitz_format_find (glitz_format_t *formats,
                    int n_formats,
                    unsigned long mask,
                    const glitz_format_t *templ,
                    int count);
 
-extern glitz_format_t *__internal_linkage
+glitz_format_t *
 glitz_format_find_standard (glitz_format_t *formats,
                             int n_formats,
                             unsigned long options,
                             glitz_format_name_t format_name);
 
-extern glitz_format_t *__internal_linkage
+glitz_format_t *
 glitz_format_find_sufficient_standard (glitz_format_t *formats,
                                        int n_formats,
                                        unsigned long options,
