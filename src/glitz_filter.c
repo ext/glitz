@@ -213,7 +213,7 @@ glitz_filter_set_params (glitz_surface_t *surface,
       else if (surface->height == 1)
         size = surface->width;
     } else
-      size = (n_params - 1) / 3;
+      size = (n_params - 2) / 3;
     
     if (size < 2)
       size = 2;

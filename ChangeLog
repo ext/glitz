@@ -1,5 +1,8 @@
 2004-09-20  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz_filter.c (glitz_filter_set_params): Fixed number of color
+	stops calculation.
+
 	* src/glitz_texture.c (glitz_texture_init): Initialize texture
 	flags depending on border clamp support.
 
