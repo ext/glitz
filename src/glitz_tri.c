@@ -179,15 +179,12 @@ glitz_int_composite_triangles (glitz_operator_t op,
 
     if ((bounds.x2 - bounds.x1) <= 0 || (bounds.y2 - bounds.y1) <= 0)
       return;
-  
-    mask = glitz_int_surface_create_similar (dst, GLITZ_STANDARD_ARGB32, 1,
-                                             bounds.x2 - bounds.x1,
-                                             bounds.y2 - bounds.y1);
-  
-    if (!mask) {
-      glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
+
+    mask = glitz_surface_create_intermediate (dst, GLITZ_INTERMEDIATE_ALPHA,
+                                              bounds.x2 - bounds.x1,
+                                              bounds.y2 - bounds.y1);
+    if (!mask)
       return;
-    }
     
     mask->hint_mask |= GLITZ_INT_HINT_IMPLICIT_MASK_MASK;
 

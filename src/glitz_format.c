@@ -101,12 +101,20 @@ glitz_format_find (glitz_format_t *formats,
       if (templ->multisample.samples != formats->multisample.samples)
         continue;
 
-    if (mask & GLITZ_FORMAT_ONSCREEN_MASK)
-      if (templ->drawable.onscreen != formats->drawable.onscreen)
+    if (mask & GLITZ_FORMAT_READ_ONSCREEN_MASK)
+      if (templ->read.onscreen != formats->read.onscreen)
         continue;
     
-    if (mask & GLITZ_FORMAT_OFFSCREEN_MASK)
-      if (templ->drawable.offscreen != formats->drawable.offscreen)
+    if (mask & GLITZ_FORMAT_READ_OFFSCREEN_MASK)
+      if (templ->read.offscreen != formats->read.offscreen)
+        continue;
+
+    if (mask & GLITZ_FORMAT_DRAW_ONSCREEN_MASK)
+      if (templ->draw.onscreen != formats->draw.onscreen)
+        continue;
+    
+    if (mask & GLITZ_FORMAT_DRAW_OFFSCREEN_MASK)
+      if (templ->draw.offscreen != formats->draw.offscreen)
         continue;
 
     if (count-- == 0)
@@ -133,13 +141,13 @@ _glitz_format_add_options (unsigned long options,
   }
 
   if (options & GLITZ_FORMAT_OPTION_ONSCREEN_MASK) {
-    format->drawable.onscreen = 1;
-    *mask |= GLITZ_FORMAT_ONSCREEN_MASK;
+    format->draw.onscreen = 1;
+    *mask |= GLITZ_FORMAT_DRAW_ONSCREEN_MASK;
   }
 
   if (options & GLITZ_FORMAT_OPTION_OFFSCREEN_MASK) {
-    format->drawable.offscreen = 1;
-    *mask |= GLITZ_FORMAT_OFFSCREEN_MASK;
+    format->read.offscreen = 1;
+    *mask |= GLITZ_FORMAT_READ_OFFSCREEN_MASK;
   }
 
   if (options & GLITZ_FORMAT_OPTION_MULTISAMPLE_MASK) {
@@ -150,6 +158,12 @@ _glitz_format_add_options (unsigned long options,
   if (options & GLITZ_FORMAT_OPTION_NO_MULTISAMPLE_MASK) {
     format->multisample.supported = 0;
     *mask |= GLITZ_FORMAT_MULTISAMPLE_MASK;
+  }
+
+  if (options & GLITZ_FORMAT_OPTION_READONLY_MASK) {
+    format->draw.offscreen = format->draw.onscreen = 0;
+    *mask |= GLITZ_FORMAT_DRAW_ONSCREEN_MASK;
+    *mask |= GLITZ_FORMAT_DRAW_OFFSCREEN_MASK;
   }
 }
 

@@ -56,12 +56,11 @@ _glitz_glx_format_compare (const void *elem1,
       score[i] += (10 + format[i]->stencil_size);
     if (format[i]->doublebuffer)
       score[i] += 10;
-    if (format[i]->drawable.onscreen)
+    if (format[i]->draw.onscreen)
       score[i] += 10;
-    if (format[i]->drawable.offscreen)
+    if (format[i]->draw.offscreen)
       score[i] += 10;
-    if (format[i]->drawable.offscreen &&
-        format[i]->drawable.onscreen)
+    if (format[i]->draw.offscreen && format[i]->draw.onscreen)
       score[i] += 5;
     if (format[i]->multisample.supported) 
       score[i] += (10 + format[i]->multisample.samples);
@@ -119,8 +118,8 @@ glitz_glx_query_formats_glx12 (glitz_glx_screen_info_t *screen_info)
                             &visual_templ, &num_visuals);
 
   /* Offscreen drawing never supported if GLX is older than 1.3 */
-  format.drawable.offscreen = 0;
-  format.drawable.onscreen = 1;
+  format.draw.offscreen = 0;
+  format.draw.onscreen = format.read.onscreen = 1;
 
   for (i = 0; i < num_visuals; i++) {
     int value;
@@ -224,8 +223,10 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
     if (!((value & GLX_WINDOW_BIT) || (value & GLX_PBUFFER_BIT)))
       continue;
     
-    format.drawable.onscreen = (value & GLX_WINDOW_BIT)? 1: 0;
-    format.drawable.offscreen = (value & GLX_PBUFFER_BIT)? 1: 0;
+    format.read.onscreen = format.draw.onscreen =
+      (value & GLX_WINDOW_BIT)? 1: 0;
+    format.read.offscreen = format.draw.offscreen =
+      (value & GLX_PBUFFER_BIT)? 1: 0;
     
     glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_FBCONFIG_ID, &value);
     format.id = (XID) value;
@@ -282,22 +283,43 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
 }
 
 static void
-glitz_glx_use_fake_offscreen_formats (glitz_glx_screen_info_t *screen_info)
+glitz_glx_remove_offscreen_drawing (glitz_glx_screen_info_t *screen_info)
 {
-  glitz_format_t format;
   glitz_format_t *formats = screen_info->formats;
   int n_formats = screen_info->n_formats;
   
   screen_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
 
   for (; n_formats; n_formats--, formats++)
-    formats->drawable.offscreen = 0;
+    formats->draw.offscreen = 0;
+}
+
+void
+glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info)
+{
+  glitz_bool_t status = 1;
+  glitz_format_t *formats;
+  glitz_format_t format;
+
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX13_MASK)
+    status = glitz_glx_query_formats_glx13 (screen_info);
+
+  if (status)
+    glitz_glx_query_formats_glx12 (screen_info);
   
-  /* Adding fake offscreen formats. Surfaces created with these format can
-     only be used with draw/read pixel functions and as source in composite
-     functions. */
+  formats = glitz_format_find_standard (screen_info->formats,
+                                        screen_info->n_formats,
+                                        GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
+                                        GLITZ_STANDARD_ARGB32);
+
+  if (formats == NULL ||
+      glitz_glx_ensure_pbuffer_support (screen_info, formats->id))
+    glitz_glx_remove_offscreen_drawing (screen_info);
+
+  /* Adding read only offscreen formats. Surfaces created with these format
+     can only be used with draw/read pixel functions and as source. */
   memset (&format, 0, sizeof (glitz_format_t));
-  format.drawable.offscreen = 1;
+  format.read.offscreen = 1;
   format.alpha_size = format.red_size = format.green_size =
     format.blue_size = 8;
   _glitz_add_format (screen_info, &format);
@@ -306,28 +328,6 @@ glitz_glx_use_fake_offscreen_formats (glitz_glx_screen_info_t *screen_info)
   format.alpha_size = 8;
   format.red_size = format.green_size = format.blue_size = 0;
   _glitz_add_format (screen_info, &format);
-}
-
-void
-glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info)
-{
-  glitz_bool_t status = 1;
-  glitz_format_t *format;
-
-  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX13_MASK)
-    status = glitz_glx_query_formats_glx13 (screen_info);
-
-  if (status)
-    glitz_glx_query_formats_glx12 (screen_info);
-  
-  format = glitz_format_find_standard (screen_info->formats,
-                                       screen_info->n_formats,
-                                       GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
-                                       GLITZ_STANDARD_ARGB32);
-
-  if (format == NULL ||
-      glitz_glx_ensure_pbuffer_support (screen_info, format->id))
-    glitz_glx_use_fake_offscreen_formats (screen_info);
   
   _glitz_move_out_ids (screen_info);
 }
@@ -350,7 +350,7 @@ slim_hidden_def(glitz_glx_find_format);
 glitz_format_t *
 glitz_glx_find_standard_format (Display *display,
                                 int screen,
-                                unsigned long options,
+                                unsigned long option_mask,
                                 glitz_format_name_t format_name)
 {
   glitz_glx_screen_info_t *screen_info =
@@ -358,7 +358,7 @@ glitz_glx_find_standard_format (Display *display,
   
   return
     glitz_format_find_standard (screen_info->formats, screen_info->n_formats,
-                                options, format_name);
+                                option_mask, format_name);
 }
 slim_hidden_def(glitz_glx_find_standard_format);
 

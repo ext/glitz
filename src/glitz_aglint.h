@@ -107,7 +107,8 @@ glitz_agl_context_destroy (glitz_agl_thread_info_t *thread_info,
                            glitz_agl_context_t *context);
 
 extern void __internal_linkage
-glitz_agl_context_make_current (glitz_agl_surface_t *surface);
+glitz_agl_context_make_current (glitz_agl_surface_t *surface,
+                                glitz_bool_t flush);
 
 extern glitz_agl_surface_t *__internal_linkage
 glitz_agl_context_push_current (glitz_agl_surface_t *surface,

@@ -284,11 +284,11 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
 
     format.id = (unsigned long int) pixel_format;
 
-    format.drawable.onscreen = 1;
+    format.read.onscreen = format.draw.onscreen = 1;
     if (thread_info->feature_mask & GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK)
-      format.drawable.offscreen = 1;
+      format.read.offscreen = format.draw.offscreen = 1;
     else
-      format.drawable.offscreen = 0;
+      format.read.offscreen = format.draw.offscreen = 0;
       
     aglDescribePixelFormat (pixel_format, AGL_RED_SIZE, &value);
     format.red_size = (unsigned short) value;
@@ -312,7 +312,7 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
       if (format.multisample.supported) {
         if (!(thread_info->feature_mask &
               GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK))
-          format.drawable.offscreen = 0;
+          format.read.offscreen = format.draw.offscreen = 0;
       }
     } else {
       format.multisample.supported = 0;
@@ -343,21 +343,20 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
                                    GLITZ_STANDARD_ARGB32)) {
     
     thread_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
-    
-    /* Adding fake offscreen formats. Surfaces created with these format can
-       only be used with draw/read pixel functions and as source in composite
-       functions. */
-    memset (&format, 0, sizeof (glitz_format_t));
-    format.drawable.offscreen = 1;
-    format.alpha_size = format.red_size = format.green_size =
-      format.blue_size = 8;
-    _glitz_add_format (thread_info, &format);
-    format.alpha_size = 0;
-    _glitz_add_format (thread_info, &format);
-    format.alpha_size = 8;
-    format.red_size = format.green_size = format.blue_size = 0;
-    _glitz_add_format (thread_info, &format);
   }
+
+  /* Adding read only offscreen formats. Surfaces created with these format
+     can only be used with draw/read pixel functions and as source. */
+  memset (&format, 0, sizeof (glitz_format_t));
+  format.read.offscreen = 1;
+  format.alpha_size = format.red_size = format.green_size =
+    format.blue_size = 8;
+  _glitz_add_format (thread_info, &format);
+  format.alpha_size = 0;
+  _glitz_add_format (thread_info, &format);
+  format.alpha_size = 8;
+  format.red_size = format.green_size = format.blue_size = 0;
+  _glitz_add_format (thread_info, &format);
   
   _glitz_move_out_ids (thread_info);
 }
@@ -375,13 +374,13 @@ glitz_agl_find_format (unsigned long mask,
 slim_hidden_def(glitz_agl_find_format);
 
 glitz_format_t *
-glitz_agl_find_standard_format (unsigned long options,
+glitz_agl_find_standard_format (unsigned long option_mask,
                                 glitz_format_name_t format_name)
 {
   glitz_agl_thread_info_t *thread_info = glitz_agl_thread_info_get ();
   
   return
     glitz_format_find_standard (thread_info->formats, thread_info->n_formats,
-                                options, format_name);
+                                option_mask, format_name);
 }
 slim_hidden_def(glitz_agl_find_standard_format);

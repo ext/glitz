@@ -1,3 +1,39 @@
+2004-05-24  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Added support for read-only surfaces.
+
+	* src/glitz_tri.c (glitz_int_composite_triangles): Use 
+	create_intermediate.
+
+	* src/glitz_trap.c (glitz_composite_trapezoids): Use 
+	create_intermediate.
+
+	* src/glitz_surface.c: Added support for read-only surfaces.
+	Added glitz_surface_find_similar_format and 
+	glitz_surface_find_similar_standard_format.
+
+	* src/glitz_programmatic.c: Added support for read-only surfaces.
+
+	* src/glitz_glx_surface.c: Added support for read-only surfaces.
+
+	* src/glitz_glx_format.c: Added read-only formats.
+
+	* src/glitz_format.c: Added read-only formats.
+
+	* src/glitz_agl_surface.c: Added support for read-only surfaces.
+
+	* src/glitz_agl_format.c: Added read-only formats.
+
+	* src/glitz.h: Added read-only formats.
+	Added find_similar format functions, create_similar new takes a
+	a format pointer instead of an format name.
+
+	* src/glitz.c (glitz_composite): Use create_intermediate.
+
+	* src/glitz-glx.h: option_mask is a more appropriate name than options.
+
+	* src/glitz-agl.h: option_mask is a more appropriate name than options.
+
 2004-05-20  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.1.3.

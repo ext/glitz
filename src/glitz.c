@@ -463,11 +463,9 @@ glitz_composite (glitz_operator_t op,
         intermediate_translate = 1;
       
       mask_surface = intermediate =
-        glitz_int_surface_create_similar (dst,
-                                          GLITZ_STANDARD_ARGB32,
-                                          1,
-                                          mask_bounds.x2 - mask_bounds.x1,
-                                          mask_bounds.y2 - mask_bounds.y1);
+        glitz_surface_create_intermediate (dst, GLITZ_INTERMEDIATE_RGBA,
+                                           mask_bounds.x2 - mask_bounds.x1,
+                                           mask_bounds.y2 - mask_bounds.y1);
       
       if (!mask_surface) {
         glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
@@ -898,7 +896,8 @@ glitz_copy_area (glitz_surface_t *src,
         gl->read_buffer (src->read_buffer);
 
       gl->disable (GLITZ_GL_SCISSOR_TEST);
-      gl->disable (GLITZ_GL_DITHER);    
+      gl->disable (GLITZ_GL_DITHER);
+      gl->disable (GLITZ_GL_STENCIL_TEST);
       glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
       
       gl->pixel_zoom (1.0, 1.0);

@@ -35,8 +35,7 @@
 
 static glitz_surface_t *
 _glitz_programmatic_surface_create_similar (void *abstract_templ,
-                                            glitz_format_name_t format_name,
-                                            glitz_bool_t drawable,
+                                            glitz_format_t *format,
                                             int width,
                                             int height)
 {
@@ -131,7 +130,7 @@ _glitz_programmatic_surface_create (void)
   
   glitz_surface_init (&surface->base,
                       &glitz_programmatic_surface_backend,
-                      NULL, NULL, MAXSHORT, MAXSHORT, NULL, 0);
+                      NULL, NULL, NULL, 0, MAXSHORT, MAXSHORT, NULL, 0);
 
   surface->base.hint_mask |= GLITZ_HINT_PROGRAMMATIC_MASK;
   

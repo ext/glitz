@@ -33,8 +33,7 @@
 
 static glitz_surface_t *
 _glitz_glx_surface_create_similar (void *abstract_templ,
-                                   glitz_format_name_t format_name,
-                                   glitz_bool_t drawable,
+                                   glitz_format_t *format,
                                    int width,
                                    int height);
 
@@ -234,6 +233,8 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
                       &glitz_glx_surface_backend,
                       &context->gl,
                       format,
+                      screen_info->formats,
+                      screen_info->n_formats,
                       width,
                       height,
                       &screen_info->programs,
@@ -244,7 +245,7 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
   
   surface->base.hint_mask |= GLITZ_HINT_OFFSCREEN_MASK;
 
-  if (screen_info->feature_mask & GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK) {
+  if (surface->base.format->draw.offscreen) {
     glitz_surface_push_current (&surface->base, GLITZ_CN_ANY_CONTEXT_CURRENT);
     
     surface->drawable = surface->pbuffer =
@@ -303,6 +304,8 @@ glitz_glx_surface_create_for_window (Display *display,
                       &glitz_glx_surface_backend,
                       &context->gl,
                       format,
+                      screen_info->formats,
+                      screen_info->n_formats,
                       width,
                       height,
                       &screen_info->programs,
@@ -320,27 +323,16 @@ slim_hidden_def(glitz_glx_surface_create_for_window);
 
 static glitz_surface_t *
 _glitz_glx_surface_create_similar (void *abstract_templ,
-                                   glitz_format_name_t format_name,
-                                   glitz_bool_t drawable,
+                                   glitz_format_t *format,
                                    int width,
                                    int height)
 {
   glitz_glx_surface_t *templ = (glitz_glx_surface_t *) abstract_templ;
+
+  if (!format->read.offscreen)
+    return NULL;
   
-  if ((!drawable) || (templ->screen_info->feature_mask &
-                      GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK)) {
-    glitz_format_t *format;
-    
-    format = glitz_format_find_standard (templ->screen_info->formats,
-                                         templ->screen_info->n_formats,
-                                         GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
-                                         format_name);
-    if (format)
-      return _glitz_glx_surface_create (templ->screen_info, format,
-                                        width, height);
-  }
-  
-  return NULL;
+  return _glitz_glx_surface_create (templ->screen_info, format, width, height);
 }
 
 static void

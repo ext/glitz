@@ -76,7 +76,7 @@
 #define GLITZ_TEXTURE_TARGET_RECTANGLE_MASK (1L << 1)
 #define GLITZ_TEXTURE_TARGET_NPOT_MASK      (1L << 2)
 
-#define GLITZ_FORMAT_ALL_EXCEPT_ID_MASK ((1L << 17) - 2)
+#define GLITZ_FORMAT_ALL_EXCEPT_ID_MASK ((1L << 19) - 2)
 
 #include "glitz_gl.h"
 
@@ -248,8 +248,7 @@ typedef struct _glitz_texture {
 typedef struct glitz_surface_backend {
   glitz_surface_t *
   (*create_similar) (void *surface,
-                     glitz_format_name_t format_name,
-                     glitz_bool_t drawable,
+                     glitz_format_t *format,
                      int width,
                      int height);
   
@@ -305,6 +304,8 @@ struct _glitz_surface {
   const glitz_surface_backend_t *backend;
 
   glitz_format_t *format;
+  glitz_format_t *formats;
+  int n_formats;
   glitz_texture_t texture;
   unsigned long status_mask;
   unsigned long feature_mask;
@@ -499,6 +500,8 @@ glitz_surface_init (glitz_surface_t *surface,
                     const glitz_surface_backend_t *backend,
                     glitz_gl_proc_address_list_t *gl,
                     glitz_format_t *format,
+                    glitz_format_t *formats,
+                    int n_formats,
                     int width,
                     int height,
                     glitz_programs_t *programs,
@@ -562,12 +565,16 @@ glitz_surface_setup_environment (glitz_surface_t *surface);
 extern glitz_status_t __internal_linkage
 glitz_status_pop_from_mask (unsigned long *mask);
 
+typedef enum {
+  GLITZ_INTERMEDIATE_ALPHA,
+  GLITZ_INTERMEDIATE_RGBA
+} glitz_intermediate_t;
+
 extern glitz_surface_t *__internal_linkage
-glitz_int_surface_create_similar (glitz_surface_t *templ,
-                                  glitz_format_name_t format_name,
-                                  glitz_bool_t drawable,
-                                  int width,
-                                  int height);
+glitz_surface_create_intermediate (glitz_surface_t *templ,
+                                   glitz_intermediate_t type,
+                                   int width,
+                                   int height);
 
 extern void __internal_linkage
 glitz_int_surface_clip_rectangles (glitz_surface_t *surface,
@@ -749,7 +756,7 @@ typedef void (*glitz_function_pointer_t) (void);
 
 /* Avoid unnecessary PLT entries.  */
 
-slim_hidden_proto(glitz_surface_create_similar)
+slim_hidden_proto(glitz_surface_find_similar_standard_format)
 slim_hidden_proto(glitz_surface_create_solid)
 slim_hidden_proto(glitz_surface_create_linear)
 slim_hidden_proto(glitz_surface_create_radial)

@@ -129,7 +129,7 @@ glitz_agl_context_update (glitz_agl_surface_t *surface,
                           glitz_constraint_t constraint)
 {
   AGLContext context = aglGetCurrentContext ();
-  
+
   switch (constraint) {
   case GLITZ_CN_NONE:
     break;

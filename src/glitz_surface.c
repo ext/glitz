@@ -39,6 +39,8 @@ glitz_surface_init (glitz_surface_t *surface,
                     const glitz_surface_backend_t *backend,
                     glitz_gl_proc_address_list_t *gl,
                     glitz_format_t *format,
+                    glitz_format_t *formats,
+                    int n_formats,
                     int width,
                     int height,
                     glitz_programs_t *programs,
@@ -52,6 +54,8 @@ glitz_surface_init (glitz_surface_t *surface,
 
   surface->programs = programs;
   surface->format = format;
+  surface->formats = formats;
+  surface->n_formats = n_formats;
   surface->width = width;
   surface->height = height;
   surface->gl = gl;
@@ -84,37 +88,83 @@ glitz_surface_fini (glitz_surface_t *surface)
     free (surface->convolution);
 }
 
-glitz_surface_t *
-glitz_int_surface_create_similar (glitz_surface_t *templ,
-                                  glitz_format_name_t format_name,
-                                  glitz_bool_t drawable,
-                                  int width,
-                                  int height)
+glitz_format_t *
+glitz_surface_find_similar_standard_format (glitz_surface_t *surface,
+                                            unsigned long option_mask,
+                                            glitz_format_name_t format_name)
 {
-  glitz_surface_t *surface;
+  return
+    glitz_format_find_standard (surface->formats, surface->n_formats,
+                                option_mask, format_name);
+}
+slim_hidden_def(glitz_surface_find_similar_standard_format);
 
-  if (width < 1 || height < 1)
-    return NULL;
-  
-  surface = templ->backend->create_similar (templ, format_name, drawable,
-                                            width, height);
-  
-  if (surface)
-    surface->polyedge = templ->polyedge;
-  
-  return surface;
+glitz_format_t *
+glitz_surface_find_similar_format (glitz_surface_t *surface,
+                                   unsigned long mask,
+                                   const glitz_format_t *templ,
+                                   int count)
+{
+  return glitz_format_find (surface->formats, surface->n_formats,
+                            mask, templ, count);
 }
 
 glitz_surface_t *
 glitz_surface_create_similar (glitz_surface_t *templ,
-                              glitz_format_name_t format_name,
+                              glitz_format_t *format,
                               int width,
                               int height)
 {
-  return
-    glitz_int_surface_create_similar (templ, format_name, 0, width, height);
+  if (width < 1 || height < 1)
+    return NULL;
+  
+  return templ->backend->create_similar (templ, format, width, height);
 }
-slim_hidden_def(glitz_surface_create_similar);
+
+glitz_surface_t *
+glitz_surface_create_intermediate (glitz_surface_t *surface,
+                                   glitz_intermediate_t type,
+                                   int width,
+                                   int height)
+{
+  glitz_format_t templ;
+  glitz_format_t *format;
+  glitz_surface_t *intermediate;
+  unsigned long mask;
+  
+  templ.draw.offscreen = 1;
+  mask = GLITZ_FORMAT_DRAW_OFFSCREEN_MASK;
+
+  /* component size 8 should instead be 1 but first need to add a
+     GLITZ_FORMAT_MINIMUM_MASK. */
+  switch (type) {
+  case GLITZ_INTERMEDIATE_RGBA:
+    templ.red_size = 8;
+    templ.green_size = 8;
+    templ.blue_size = 8;
+    mask |= (GLITZ_FORMAT_RED_SIZE_MASK |
+             GLITZ_FORMAT_GREEN_SIZE_MASK |
+             GLITZ_FORMAT_BLUE_SIZE_MASK);
+    /* fall through */
+  case GLITZ_INTERMEDIATE_ALPHA:
+    templ.alpha_size = 8;
+    mask |= GLITZ_FORMAT_ALPHA_SIZE_MASK;
+    break;
+  }
+
+  format = glitz_surface_find_similar_format (surface, mask, &templ, 0);
+  if (!format) {
+    glitz_surface_status_add (surface, GLITZ_STATUS_NOT_SUPPORTED_MASK);
+    return NULL;
+  }
+    
+  intermediate = glitz_surface_create_similar (surface, format, width, height);
+  
+  if (!intermediate)
+    glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
+
+  return intermediate;
+}
 
 glitz_surface_t *
 glitz_surface_create_solid (glitz_color_t *color)

@@ -162,10 +162,12 @@ typedef enum {
 #define GLITZ_FORMAT_DEPTH_SIZE_MASK          (1L << 10)
 #define GLITZ_FORMAT_STENCIL_SIZE_MASK        (1L << 11)
 #define GLITZ_FORMAT_DOUBLEBUFFER_MASK        (1L << 12)
-#define GLITZ_FORMAT_ONSCREEN_MASK            (1L << 13)
-#define GLITZ_FORMAT_OFFSCREEN_MASK           (1L << 14)
-#define GLITZ_FORMAT_MULTISAMPLE_MASK         (1L << 15)
-#define GLITZ_FORMAT_MULTISAMPLE_SAMPLES_MASK (1L << 16)
+#define GLITZ_FORMAT_READ_ONSCREEN_MASK       (1L << 13)
+#define GLITZ_FORMAT_READ_OFFSCREEN_MASK      (1L << 14)
+#define GLITZ_FORMAT_DRAW_ONSCREEN_MASK       (1L << 15)
+#define GLITZ_FORMAT_DRAW_OFFSCREEN_MASK      (1L << 16)
+#define GLITZ_FORMAT_MULTISAMPLE_MASK         (1L << 17)
+#define GLITZ_FORMAT_MULTISAMPLE_SAMPLES_MASK (1L << 18)
 
 typedef unsigned long int glitz_format_id_t;
 
@@ -197,7 +199,8 @@ typedef struct _glitz_format_t {
   unsigned short stencil_size;
   
   glitz_bool_t doublebuffer;
-  glitz_drawable_type_t drawable;
+  glitz_drawable_type_t read;
+  glitz_drawable_type_t draw;
   glitz_multisample_format_t multisample;
 } glitz_format_t;
 
@@ -207,6 +210,7 @@ typedef struct _glitz_format_t {
 #define GLITZ_FORMAT_OPTION_OFFSCREEN_MASK      (1L << 3)
 #define GLITZ_FORMAT_OPTION_MULTISAMPLE_MASK    (1L << 4)
 #define GLITZ_FORMAT_OPTION_NO_MULTISAMPLE_MASK (1L << 5)
+#define GLITZ_FORMAT_OPTION_READONLY_MASK       (1L << 6)
 
 /* glitz_status.c */
   
@@ -394,12 +398,23 @@ glitz_surface_get_features (glitz_surface_t *surface);
 glitz_format_t *
 glitz_surface_get_format (glitz_surface_t *surface);
 
+glitz_format_t *
+glitz_surface_find_similar_standard_format (glitz_surface_t *surface,
+                                            unsigned long option_mask,
+                                            glitz_format_name_t format_name);
+
+glitz_format_t *
+glitz_surface_find_similar_format (glitz_surface_t *surface,
+                                   unsigned long mask,
+                                   const glitz_format_t *templ,
+                                   int count);
+
 glitz_surface_t *
 glitz_surface_create_similar (glitz_surface_t *templ,
-                              glitz_format_name_t format,
+                              glitz_format_t *format,
                               int width,
                               int height);
-  
+
 #define GLITZ_HINT_CLIPPING_MASK     (1L << 0)
 #define GLITZ_HINT_OFFSCREEN_MASK    (1L << 1)
 #define GLITZ_HINT_PROGRAMMATIC_MASK (1L << 2)

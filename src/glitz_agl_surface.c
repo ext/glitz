@@ -35,8 +35,7 @@ extern glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address;
 
 static glitz_surface_t *
 _glitz_agl_surface_create_similar (void *abstract_templ,
-                                   glitz_format_name_t format_name,
-                                   glitz_bool_t drawable,
+                                   glitz_format_t *format,
                                    int width,
                                    int height);
 
@@ -118,7 +117,7 @@ _glitz_agl_surface_get_texture (void *abstract_surface) {
                                 surface->base.read_buffer);
         surface->bound_buffer = surface->base.read_buffer;
       }
-      
+
       return &surface->base.texture;
     } else 
       glitz_texture_copy_surface (&surface->base.texture, &surface->base,
@@ -201,6 +200,8 @@ _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
                       &glitz_agl_surface_backend,
                       &_glitz_agl_gl_proc_address,
                       format,
+                      thread_info->formats,
+                      thread_info->n_formats,
                       width,
                       height,
                       &thread_info->programs,
@@ -213,7 +214,7 @@ _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
 
   _glitz_agl_set_features (surface);
 
-  if (thread_info->feature_mask & GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK) {
+  if (surface->base.format->draw.offscreen) {
     surface->pbuffer = glitz_agl_pbuffer_create (&surface->base.texture);
     if (surface->pbuffer) {
       glitz_surface_push_current (&surface->base,
@@ -263,6 +264,8 @@ glitz_agl_surface_create_for_window (glitz_format_t *format,
                       &glitz_agl_surface_backend,
                       &_glitz_agl_gl_proc_address,
                       format,
+                      thread_info->formats,
+                      thread_info->n_formats,
                       width,
                       height,
                       &thread_info->programs,
@@ -281,29 +284,16 @@ slim_hidden_def(glitz_agl_surface_create_for_window);
 
 static glitz_surface_t *
 _glitz_agl_surface_create_similar (void *abstract_templ,
-                                   glitz_format_name_t format_name,
-                                   glitz_bool_t drawable,
+                                   glitz_format_t *format,
                                    int width,
                                    int height)
 {
   glitz_agl_surface_t *templ = (glitz_agl_surface_t *) abstract_templ;
-  
-  if ((!drawable) ||
-      (templ->thread_info->agl_feature_mask &
-       GLITZ_AGL_FEATURE_PBUFFER_MASK)) {
-    glitz_format_t *format;
 
-    format = glitz_format_find_standard (templ->thread_info->formats,
-                                         templ->thread_info->n_formats,
-                                         GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
-                                         format_name);
-    
-    if (format)
-      return _glitz_agl_surface_create (templ->thread_info, format,
-                                        width, height);
-  }
-      
-  return NULL;
+  if (!format->read.offscreen)
+    return NULL;
+  
+  return _glitz_agl_surface_create (templ->thread_info, format, width, height);
 }
 
 static void
@@ -320,10 +310,10 @@ _glitz_agl_surface_destroy (void *abstract_surface)
       aglGetPBuffer (context, &pbuffer, &unused, &unused, &unused);
       
       if (pbuffer == surface->pbuffer)
-        glitz_agl_context_make_current (surface);
+        glitz_agl_context_make_current (surface, 0);
     } else if (surface->drawable) {
       if (aglGetDrawable (context) == surface->drawable)
-        glitz_agl_context_make_current (surface);
+        glitz_agl_context_make_current (surface, 0);
     }
   }
   
