@@ -412,7 +412,7 @@ glitz_glx_create_root_context (glitz_glx_screen_info_t *screen_info)
 
   screen_info->root_context.backend.formats = NULL;
   screen_info->root_context.backend.n_formats = 0;
-  screen_info->root_context.backend.program_map = &screen_info->program_map;
+  screen_info->root_context.backend.program_map = NULL;
   screen_info->root_context.backend.feature_mask = 0;
   
   screen_info->root_context.backend.gl.need_lookup = 1;
@@ -470,6 +470,8 @@ glitz_glx_screen_info_get (Display *display,
 
   screen_info->root_context.backend.formats = screen_info->formats;
   screen_info->root_context.backend.n_formats = screen_info->n_formats;
+  screen_info->root_context.backend.program_map = &screen_info->program_map;
+  screen_info->root_context.backend.feature_mask = screen_info->feature_mask;
   
   screen_info->context_stack_size = 1;
   screen_info->context_stack->surface = NULL;

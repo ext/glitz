@@ -92,15 +92,13 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_copy_tex_sub_image_2d_t) glCopyTexSubImage2D,
   (glitz_gl_get_integer_v_t) glGetIntegerv,
   
-  (glitz_gl_active_texture_t) glActiveTextureARB,
-  (glitz_gl_gen_programs_t) glGenProgramsARB,
-  (glitz_gl_delete_programs_t) glDeleteProgramsARB,
-  (glitz_gl_program_string_t) glProgramStringARB,
-  (glitz_gl_bind_program_t) glBindProgramARB,
-  (glitz_gl_program_local_param_4fv_t) glProgramLocalParameter4fvARB,
-  (glitz_gl_get_program_iv_t) glGetProgramivARB,
-
-  /* TODO: lookup all symbols not part of OpenGL 1.2 */
+  (glitz_gl_active_texture_t) 0,
+  (glitz_gl_gen_programs_t) 0,
+  (glitz_gl_delete_programs_t) 0,
+  (glitz_gl_program_string_t) 0,
+  (glitz_gl_bind_program_t) 0,
+  (glitz_gl_program_local_param_4fv_t) 0,
+  (glitz_gl_get_program_iv_t) 0,
   (glitz_gl_gen_buffers_t) 0,
   (glitz_gl_delete_buffers_t) 0,
   (glitz_gl_bind_buffer_t) 0,
@@ -110,8 +108,78 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_map_buffer_t) 0,
   (glitz_gl_unmap_buffer_t) 0,
   
-  0
+  1
 };
+
+CFBundleRef
+glitz_agl_get_bundle (const char *name)
+{
+  CFBundleRef bundle = 0;
+  FSRefParam ref_param;
+  unsigned char framework_name[256];
+
+  framework_name[0] = strlen (name);
+  strcpy (&framework_name[1], name);
+  
+  memset (&ref_param, 0, sizeof (ref_param));
+
+  if (FindFolder (kSystemDomain,
+                  kFrameworksFolderType,
+                  kDontCreateFolder,
+                  &ref_param.ioVRefNum,
+                  &ref_param.ioDirID) == noErr) {
+    FSRef ref;
+
+    memset (&ref, 0, sizeof (ref));
+
+    ref_param.ioNamePtr = framework_name;
+    ref_param.newRef = &ref;
+
+    if (PBMakeFSRefSync (&ref_param) == noErr) {
+      CFURLRef url;
+
+      url = CFURLCreateFromFSRef (kCFAllocatorDefault, &ref);
+      if (url) {
+        bundle = CFBundleCreate (kCFAllocatorDefault, url);
+        CFRelease (url);
+
+        if (!CFBundleLoadExecutable (bundle)) {
+          CFRelease (bundle);
+          return (CFBundleRef) 0;
+        }
+      }
+    }
+  }
+    
+  return bundle;
+}
+
+void
+glitz_agl_release_bundle (CFBundleRef bundle)
+{
+  if (bundle) {
+    CFBundleUnloadExecutable (bundle);
+    CFRelease (bundle);
+  }
+}
+
+glitz_function_pointer_t
+glitz_agl_get_proc_address (CFBundleRef bundle, const char *name)
+{
+  glitz_function_pointer_t address = NULL;
+  CFStringRef str;
+  
+  if (bundle) {
+    str = CFStringCreateWithCString (kCFAllocatorDefault, name,
+                                     kCFStringEncodingMacRoman);
+
+    address = CFBundleGetFunctionPointerForName (bundle, str);
+
+    CFRelease (str);
+  }
+  
+  return address;
+}
 
 static void
 glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info);
@@ -235,8 +303,11 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
 
       aglSetCurrentContext (thread_info->root_context.context);
   
-      if (glitz_agl_query_extensions (thread_info) == GLITZ_STATUS_SUCCESS)
+      if (glitz_agl_query_extensions (thread_info) == GLITZ_STATUS_SUCCESS) {
+        glitz_agl_context_proc_address_lookup (thread_info,
+                                               &thread_info->root_context);
         glitz_agl_query_formats (thread_info);
+      }
     }
   }
 
@@ -250,8 +321,8 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
   thread_info->root_context.backend.n_formats = thread_info->n_formats;
   thread_info->root_context.backend.program_map = &thread_info->program_map;
   thread_info->root_context.backend.feature_mask = thread_info->feature_mask;
-
-  thread_info->root_context.backend.gl.need_lookup = 0;
+  
+  thread_info->root_context.backend.gl.need_lookup = 1;
 
   thread_info->context_stack_size = 1;
   thread_info->context_stack->surface = NULL;
@@ -265,7 +336,7 @@ glitz_agl_thread_info_fini (glitz_agl_thread_info_t *thread_info)
 
   if (thread_info->root_context.context) {
     aglSetCurrentContext (thread_info->root_context.context);
-    glitz_program_map_fini (&_glitz_agl_gl_proc_address,
+    glitz_program_map_fini (&thread_info->root_context.backend.gl,
                             &thread_info->program_map);
     aglSetCurrentContext (NULL);
   }

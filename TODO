@@ -14,8 +14,6 @@
   filter for alpha-masks and per-component alpha-masks without color
   balancing.
 
-* Improve AGL backend (proc address lookups).
-
 * WGL (Windows GL) backend.
 
 * Mesa-solo backend.

@@ -56,14 +56,10 @@ static glitz_extension_map gl_extensions[] = {
     GLITZ_AGL_FEATURE_MULTISAMPLE_FILTER_HINT_MASK },
   { 0.0, "GL_ARB_multitexture", GLITZ_AGL_FEATURE_MULTITEXTURE_MASK },
   { 0.0, "GL_ARB_fragment_program", GLITZ_AGL_FEATURE_FRAGMENT_PROGRAM_MASK },
-  
-  /* TODO: lookup all symbols not part of OpenGL 1.2
-     { 1.5, "GL_ARB_vertex_buffer_object",
-     GLITZ_GLX_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
-     { 0.0, "GL_EXT_pixel_buffer_object",
-     GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
-  */
-  
+  { 0.0, "GL_ARB_vertex_buffer_object",
+    GLITZ_AGL_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
+  { 0.0, "GL_EXT_pixel_buffer_object",
+    GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
   { 0.0, NULL, 0 }
 };
 
@@ -82,15 +78,14 @@ _glitz_agl_extension_query_gl (glitz_gl_float_t gl_version)
 glitz_status_t
 glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
 {
-  glitz_gl_float_t gl_version;
-
-  gl_version = atof ((const char *) glGetString (GL_VERSION));
-  if (gl_version < 1.2)
+  thread_info->gl_version = atof ((const char *) glGetString (GL_VERSION));
+  if (thread_info->gl_version < 1.2)
     return GLITZ_STATUS_NOT_SUPPORTED;
   
   thread_info->agl_feature_mask = 0;
   
-  thread_info->agl_feature_mask |= _glitz_agl_extension_query_gl (gl_version);
+  thread_info->agl_feature_mask |=
+    _glitz_agl_extension_query_gl (thread_info->gl_version);
 
   thread_info->feature_mask = 0;
 

@@ -188,7 +188,7 @@ glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
   context->backend.formats = screen_info->formats;
   context->backend.n_formats = screen_info->n_formats;
   context->backend.program_map = &screen_info->program_map;
-  context->backend.feature_mask = 0;
+  context->backend.feature_mask = screen_info->feature_mask;
   
   context->backend.gl.need_lookup = 1;
   
@@ -291,8 +291,6 @@ glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
       (glitz_gl_unmap_buffer_t)
       glitz_glx_get_proc_address (thread_info, "glUnmapBufferARB");
   }
-
-  context->backend.feature_mask = screen_info->feature_mask;
 
   context->backend.feature_mask &= ~GLITZ_FEATURE_MULTITEXTURE_MASK;
   context->backend.feature_mask &= ~GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;

@@ -225,6 +225,58 @@ static const char *_gradient_fetch_and_interpolate[] = {
   "LRP color, position.z, second_color, color;", NULL
 };
 
+static struct _glitz_program_query {
+  glitz_gl_enum_t query;
+  glitz_gl_enum_t max_query;
+  glitz_gl_int_t min;
+}  _program_limits[] = {
+  { GLITZ_GL_PROGRAM_INSTRUCTIONS,
+    GLITZ_GL_MAX_PROGRAM_INSTRUCTIONS, 1 },
+  { GLITZ_GL_PROGRAM_NATIVE_INSTRUCTIONS,
+    GLITZ_GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS, 1 },
+  { GLITZ_GL_PROGRAM_PARAMETERS,
+    GLITZ_GL_MAX_PROGRAM_PARAMETERS, 1 },
+  { GLITZ_GL_PROGRAM_NATIVE_PARAMETERS,
+    GLITZ_GL_MAX_PROGRAM_NATIVE_PARAMETERS, 1 },
+  { GLITZ_GL_PROGRAM_ALU_INSTRUCTIONS,
+    GLITZ_GL_MAX_PROGRAM_ALU_INSTRUCTIONS, 0 },
+  { GLITZ_GL_PROGRAM_TEX_INSTRUCTIONS,
+    GLITZ_GL_MAX_PROGRAM_TEX_INSTRUCTIONS, 1 },
+  { GLITZ_GL_PROGRAM_TEX_INDIRECTIONS,
+    GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS, 0 },
+  { GLITZ_GL_PROGRAM_NATIVE_ALU_INSTRUCTIONS,
+    GLITZ_GL_MAX_PROGRAM_NATIVE_ALU_INSTRUCTIONS, 0 },
+  { GLITZ_GL_PROGRAM_NATIVE_TEX_INSTRUCTIONS,
+    GLITZ_GL_MAX_PROGRAM_NATIVE_TEX_INSTRUCTIONS, 0 },
+  { GLITZ_GL_PROGRAM_NATIVE_TEX_INDIRECTIONS,
+    GLITZ_GL_MAX_PROGRAM_NATIVE_TEX_INDIRECTIONS, 0 },
+};
+
+static glitz_bool_t
+_glitz_program_under_limits (glitz_gl_proc_address_list_t *gl)
+{
+  int i, n_limits;
+
+  n_limits = sizeof (_program_limits) / (sizeof (struct _glitz_program_query));
+
+  for (i = 0; i < n_limits; i++) {
+    glitz_gl_int_t value, max;
+
+    gl->get_program_iv (GLITZ_GL_FRAGMENT_PROGRAM,
+                        _program_limits[i].query, &value);
+    gl->get_program_iv (GLITZ_GL_FRAGMENT_PROGRAM,
+                        _program_limits[i].max_query, &max);
+
+    if (value < _program_limits[i].min)
+      return 0;
+    
+    if (value >= max)
+      return 0;
+  }
+
+  return 1;
+}
+
 static glitz_gl_int_t
 _glitz_compile_arb_fragment_program (glitz_gl_proc_address_list_t *gl,
                                      char *program_string,
@@ -235,8 +287,6 @@ _glitz_compile_arb_fragment_program (glitz_gl_proc_address_list_t *gl,
 
   /* clear error flags */
   while (gl->get_error () != GLITZ_GL_NO_ERROR);
-  
-  gl->enable (GLITZ_GL_FRAGMENT_PROGRAM);
 
   gl->gen_programs (1, &program);
   gl->bind_program (GLITZ_GL_FRAGMENT_PROGRAM, program);
@@ -246,24 +296,26 @@ _glitz_compile_arb_fragment_program (glitz_gl_proc_address_list_t *gl,
                       program_string);
   if (gl->get_error () == GLITZ_GL_NO_ERROR) {
     gl->get_integer_v (GLITZ_GL_PROGRAM_ERROR_POSITION, &error);
-
+    
     if (error == -1) {
       glitz_gl_int_t value;
       
       gl->get_program_iv (GLITZ_GL_FRAGMENT_PROGRAM,
-                          GLITZ_GL_PROGRAM_NATIVE_INSTRUCTIONS,
+                          GLITZ_GL_PROGRAM_UNDER_NATIVE_LIMITS,
                           &value);
-      if (value > 0) {
+        
+      if (value == GLITZ_GL_TRUE) {
         gl->get_program_iv (GLITZ_GL_FRAGMENT_PROGRAM,
                             GLITZ_GL_MAX_PROGRAM_LOCAL_PARAMETERS,
                             &value);
-        if (value >= n_parameters)
-          pid = program;
+        
+        if (value >= n_parameters) {
+          if (_glitz_program_under_limits (gl))
+            pid = program;
+        }
       }
     }
   }
-  
-  gl->disable (GLITZ_GL_FRAGMENT_PROGRAM);
   
   if (pid == -1) {
     gl->bind_program (GLITZ_GL_FRAGMENT_PROGRAM, 0);

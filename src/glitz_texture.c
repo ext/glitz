@@ -42,23 +42,22 @@ glitz_texture_init (glitz_texture_t *texture,
   texture->wrap = 0;
   texture->format = texture_format;
   texture->name = 0;
-  texture->flags = GLITZ_TEXTURE_FLAG_REPEATABLE_MASK |
-    GLITZ_TEXTURE_FLAG_PADABLE_MASK;
 
   if (feature_mask & GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK) {
     texture->box.x1 = texture->box.y1 = 0;
     texture->box.x2 = texture->width = width;
     texture->box.y2 = texture->height = height;
+    texture->flags = GLITZ_TEXTURE_FLAG_REPEATABLE_MASK |
+      GLITZ_TEXTURE_FLAG_PADABLE_MASK;
   } else {
     texture->box.x1 = texture->box.y1 = 1;
     texture->box.x2 = width + 1;
     texture->box.y2 = height + 1;
     texture->width = width + 2;
     texture->height = height + 2;
-    texture->flags &= ~(GLITZ_TEXTURE_FLAG_REPEATABLE_MASK |
-                        GLITZ_TEXTURE_FLAG_PADABLE_MASK);
+    texture->flags = 0;
   }
-
+  
   if ((feature_mask & GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK) ||
       (POWER_OF_TWO (texture->width) && POWER_OF_TWO (texture->height))) {
     texture->target = GLITZ_GL_TEXTURE_2D;

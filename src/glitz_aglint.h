@@ -79,6 +79,7 @@ typedef struct _glitz_agl_thread_info_t {
 
   unsigned long feature_mask;
   unsigned long agl_feature_mask;
+  glitz_gl_float_t gl_version;
 
   glitz_program_map_t program_map;
 } glitz_agl_thread_info_t;
@@ -100,6 +101,15 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info);
 extern glitz_agl_thread_info_t *__internal_linkage
 glitz_agl_thread_info_get (void);
 
+extern CFBundleRef __internal_linkage
+glitz_agl_get_bundle (const char *name);
+
+extern void __internal_linkage
+glitz_agl_release_bundle (CFBundleRef bundle);
+
+extern glitz_function_pointer_t __internal_linkage
+glitz_agl_get_proc_address (CFBundleRef bundle, const char *name);
+
 extern glitz_agl_context_t *__internal_linkage
 glitz_agl_context_get (glitz_agl_thread_info_t *thread_info,
                        glitz_format_t *format,
@@ -119,6 +129,10 @@ glitz_agl_context_push_current (glitz_agl_surface_t *surface,
 
 extern glitz_agl_surface_t *__internal_linkage
 glitz_agl_context_pop_current (glitz_agl_surface_t *surface);
+
+extern void __internal_linkage
+glitz_agl_context_proc_address_lookup (glitz_agl_thread_info_t *thread_info,
+                                       glitz_agl_context_t *context);
 
 extern void __internal_linkage
 glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info);

@@ -1,3 +1,39 @@
+2004-09-20  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_texture.c (glitz_texture_init): Initialize texture
+	flags depending on border clamp support.
+
+	* src/glitz_program.c: Added better testing whether fragment program
+	failed to load or not.
+
+	* src/glitz_glx_info.c (glitz_glx_create_root_context): Don't set
+	program map here.
+	(glitz_glx_screen_info_get): Set program_map here.
+
+	* src/glitz_glx_context.c (glitz_glx_context_get): Init feature mask
+	to screen_info feature mask.
+	(glitz_glx_context_proc_address_lookup): No need to init feature mask
+	here.
+
+	* src/glitz_gl.h: Added a bunch of fragment program tokens.
+
+	* src/glitz_aglint.h: Added gl_version to thread_info.
+	Added function address lookup utility functions.
+
+	* src/glitz_agl_surface.c: Push context current if function address
+	lookup is needed.
+
+	* src/glitz_agl_info.c: Added function address lookup.
+
+	* src/glitz_agl_extension.c: Enable VBO and PBO extension
+	checking.
+	(glitz_agl_query_extensions): Store GL_VERSION in thread_info.
+
+	* src/glitz_agl_context.c: Added function address lookup for all
+	functions not part of OpenGL 1.2.
+
+	* TODO: Improved AGL backend.
+
 2004-09-17  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_pixel.c: GLITZ_TRANSFORM_COPY_BOX_MASK is more correct name

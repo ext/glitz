@@ -147,6 +147,11 @@ _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
   if (format->draw.offscreen)
     surface->base.flags |= GLITZ_SURFACE_FLAG_DRAWABLE_MASK;
 
+  if (surface->context->backend.gl.need_lookup) {
+    glitz_agl_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
+    glitz_agl_context_pop_current (surface);
+  }
+
   return &surface->base;
 }
 
@@ -190,6 +195,11 @@ glitz_agl_surface_create_for_window (glitz_format_t *format,
   surface->drawable = GetWindowPort (window);
 
   surface->base.flags |= GLITZ_SURFACE_FLAG_DRAWABLE_MASK;
+
+  if (surface->context->backend.gl.need_lookup) {
+    glitz_agl_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
+    glitz_agl_context_pop_current (surface);
+  }
   
   return &surface->base;
 }
