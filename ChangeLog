@@ -1,5 +1,9 @@
 2004-09-11  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.2.2.
+
+	* configure.in: Bump version to 0.2.2.
+
 	* src/glitz_filter.c (glitz_filter_set_params): Gradient coordinates
 	are now translated 0.5 in both x and y directions within glitz so
 	applications shouldn't have to think about this anymore. e.g.
