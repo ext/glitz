@@ -222,7 +222,7 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
     glitz_surface_push_current (&surface->base, GLITZ_CN_ANY_CONTEXT_CURRENT);
     
     surface->drawable = surface->pbuffer =
-      glitz_glx_pbuffer_create (screen_info->display_info->display,
+      glitz_glx_pbuffer_create (screen_info->display_info,
                                 surface->context->fbconfig,
                                 &surface->base.texture);
     
@@ -325,7 +325,7 @@ _glitz_glx_surface_destroy (void *abstract_surface)
   glitz_surface_push_current (&surface->base, GLITZ_CN_ANY_CONTEXT_CURRENT);
 
   if (surface->pbuffer)
-    glitz_glx_pbuffer_destroy (surface->screen_info->display_info->display,
+    glitz_glx_pbuffer_destroy (surface->screen_info->display_info,
                                surface->pbuffer);
   
   glitz_surface_pop_current (&surface->base);

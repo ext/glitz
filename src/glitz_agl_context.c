@@ -75,6 +75,14 @@ glitz_agl_context_get (glitz_agl_thread_info_t *thread_info,
   return context;
 }
 
+void
+glitz_agl_context_destroy (glitz_agl_thread_info_t *thread_info,
+                           glitz_agl_context_t *context)
+{
+  aglDestroyContext (context->context);
+  free (context);
+}
+
 static void
 glitz_agl_context_set_surface_anti_aliasing (glitz_agl_surface_t *surface)
 {

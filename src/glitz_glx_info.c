@@ -31,6 +31,7 @@
 
 #include "glitz_glxint.h"
 
+#include <string.h>
 #include <dlfcn.h>
 
 glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
@@ -98,61 +99,85 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   1
 };
 
-glitz_glx_static_proc_address_list_t _glitz_glx_proc_address = {
-  (glitz_glx_get_fbconfigs_t) 0,
-  (glitz_glx_get_fbconfig_attrib_t) 0,
-  (glitz_glx_get_visual_from_fbconfig_t) 0,
-  (glitz_glx_create_pbuffer_t) 0,
-  (glitz_glx_destroy_pbuffer_t) 0,
-  1
-};
-
-typedef void *(* glitz_glx_get_proc_address_arb_t)(glitz_gl_ubyte_t *);
-
-glitz_glx_get_proc_address_arb_t glitz_glx_get_proc_address_arb = NULL;
-
 void *
-glitz_glx_get_proc_address (const char *name)
+glitz_glx_get_proc_address (glitz_glx_thread_info_t *info, const char *name)
 {
   void *address = NULL;
   
-  if (glitz_glx_get_proc_address_arb)
-    address = glitz_glx_get_proc_address_arb ((glitz_gl_ubyte_t *) name);
+  if (info->glx.get_proc_address_arb)
+    address = info->glx.get_proc_address_arb ((glitz_gl_ubyte_t *) name);
   
   if (!address) {
-    void *dlhand;
+    if (!info->dlhand)
+      info->dlhand = dlopen (info->gl_library, RTLD_LAZY);
     
-    if ((dlhand = dlopen (NULL, RTLD_LAZY))) {
-      address = dlsym (dlhand, name);
-      dlclose (dlhand);
-    }
+    address = dlsym (info->dlhand, name);
   }
   
   return address;
 }
 
 static void
-glitz_glx_proc_address_lookup (void)
+glitz_glx_proc_address_lookup (glitz_glx_thread_info_t *info)
 {
-  glitz_glx_get_proc_address_arb =
-    (glitz_glx_get_proc_address_arb_t)
-    glitz_glx_get_proc_address ("glXGetProcAddressARB");
-  _glitz_glx_proc_address.get_fbconfigs =
-    (glitz_glx_get_fbconfigs_t)
-    glitz_glx_get_proc_address ("glXGetFBConfigs");
-  _glitz_glx_proc_address.get_fbconfig_attrib =
-    (glitz_glx_get_fbconfig_attrib_t)
-    glitz_glx_get_proc_address ("glXGetFBConfigAttrib");
-  _glitz_glx_proc_address.get_visual_from_fbconfig =
-    (glitz_glx_get_visual_from_fbconfig_t)
-    glitz_glx_get_proc_address ("glXGetVisualFromFBConfig");
-  _glitz_glx_proc_address.create_pbuffer =
-    (glitz_glx_create_pbuffer_t)
-    glitz_glx_get_proc_address ("glXCreatePbuffer");
-  _glitz_glx_proc_address.destroy_pbuffer =
-    (glitz_glx_destroy_pbuffer_t)
-    glitz_glx_get_proc_address ("glXDestroyPbuffer");
-  _glitz_glx_proc_address.need_lookup = 0;
+  info->glx.get_proc_address_arb = (glitz_glx_get_proc_address_arb_t)
+    glitz_glx_get_proc_address (info, "glXGetProcAddressARB");
+  info->glx.get_fbconfigs = (glitz_glx_get_fbconfigs_t)
+    glitz_glx_get_proc_address (info, "glXGetFBConfigs");
+  info->glx.get_fbconfig_attrib = (glitz_glx_get_fbconfig_attrib_t)
+    glitz_glx_get_proc_address (info, "glXGetFBConfigAttrib");
+  info->glx.get_visual_from_fbconfig = (glitz_glx_get_visual_from_fbconfig_t)
+    glitz_glx_get_proc_address (info, "glXGetVisualFromFBConfig");
+  info->glx.create_pbuffer = (glitz_glx_create_pbuffer_t)
+    glitz_glx_get_proc_address (info, "glXCreatePbuffer");
+  info->glx.destroy_pbuffer = (glitz_glx_destroy_pbuffer_t)
+    glitz_glx_get_proc_address (info, "glXDestroyPbuffer");
+  
+  info->glx.need_lookup = 0;
+}
+
+static void
+glitz_glx_display_destroy (glitz_glx_display_info_t *display_info);
+
+static void
+glitz_glx_screen_destroy (glitz_glx_screen_info_t *screen_info);
+
+static void
+glitz_glx_thread_info_init (glitz_glx_thread_info_t *thread_info)
+{
+  thread_info->displays = NULL;
+  thread_info->n_displays = 0;
+  memset (&thread_info->glx, 0, sizeof (glitz_glx_static_proc_address_list_t));
+  thread_info->glx.need_lookup = 1;
+  thread_info->gl_library = NULL;
+  thread_info->dlhand = NULL;
+}
+
+static void
+glitz_glx_thread_info_fini (glitz_glx_thread_info_t *thread_info)
+{
+  int i;
+  
+  for (i = 0; i < thread_info->n_displays; i++)
+    glitz_glx_display_destroy (thread_info->displays[i]);
+
+  free (thread_info->displays);
+  
+  thread_info->displays = NULL;
+  thread_info->n_displays = 0;
+
+  memset (&thread_info->glx, 0, sizeof (glitz_glx_static_proc_address_list_t));
+  thread_info->glx.need_lookup = 1;
+
+  if (thread_info->gl_library) {
+    free (thread_info->gl_library);
+    thread_info->gl_library = NULL;
+  }
+
+  if (thread_info->dlhand) {
+    dlclose (thread_info->dlhand);
+    thread_info->dlhand = NULL;
+  }
 }
 
 #ifdef XTHREADS
@@ -164,26 +189,41 @@ glitz_glx_proc_address_lookup (void)
 static int tsd_initialized = 0;
 static xthread_key_t info_tsd;
 
-glitz_glx_thread_info_t *
-glitz_glx_thread_info_get (void)
+static void
+glitz_glx_thread_info_destroy (void *p)
 {
+  glitz_glx_thread_info_fini ((glitz_glx_thread_info_t *) p);
+  free (p);
+}
+
+static glitz_glx_thread_info_t *
+glitz_glx_thread_info_get (const char *gl_library)
+{
+  glitz_glx_thread_info_t *thread_info;
+    
   if (!tsd_initialized) {
-    glitz_glx_thread_info_t *info = (glitz_glx_thread_info_t *)
-      malloc (sizeof (glitz_glx_thread_info_t));
-    info->displays = NULL;
-    info->n_displays = 0;
-    if (_glitz_glx_proc_address.need_lookup)
-      glitz_glx_proc_address_lookup ();
-    xthread_key_create (&info_tsd, NULL);
-    xthread_set_specific (info_tsd, info);
+    thread_info = malloc (sizeof (glitz_glx_thread_info_t));
+    glitz_glx_thread_info_init (thread_info);
+      
+    xthread_key_create (&info_tsd, glitz_glx_thread_info_destroy);
+    xthread_set_specific (info_tsd, thread_info);
+    
     tsd_initialized = 1;
-    return info;
   } else {
     void *p;
 
     xthread_get_specific (info_tsd, &p);
-    return (glitz_glx_thread_info_t *) p;
+    thread_info = (glitz_glx_thread_info_t *) p;
   }
+  
+  if (thread_info->glx.need_lookup) {
+    if (gl_library)
+      thread_info->gl_library = strdup (gl_library);
+    
+    glitz_glx_proc_address_lookup (thread_info);
+  }
+
+  return thread_info;
 }
 
 #else
@@ -191,25 +231,32 @@ glitz_glx_thread_info_get (void)
 /* not thread safe */
 static glitz_glx_thread_info_t thread_info = {
   NULL,
-  0
+  0,
+  { 0, 0, 0, 0, 0, 0, 1 },
+  NULL,
+  NULL
 };
 
-glitz_glx_thread_info_t *
-glitz_glx_thread_info_get (void)
+static glitz_glx_thread_info_t *
+glitz_glx_thread_info_get (char *gl_library)
 {
-  if (!_glitz_glx_proc_address.supported)
-    glitz_glx_proc_address_lookup ();
+  if (!thread_info.glx.need_lookup) {
+    if (gl_library)
+      thread_info->gl_library = strdup (gl_library);
+    
+    glitz_glx_proc_address_lookup (&thread_info);
+  }
   
   return &thread_info;
 }
 
 #endif
 
-glitz_glx_display_info_t *
+static glitz_glx_display_info_t *
 glitz_glx_display_info_get (Display *display)
 {
   glitz_glx_display_info_t *display_info;
-  glitz_glx_thread_info_t *thread_info = glitz_glx_thread_info_get ();
+  glitz_glx_thread_info_t *thread_info = glitz_glx_thread_info_get (NULL);
   glitz_glx_display_info_t **displays = thread_info->displays;
   int index, n_displays = thread_info->n_displays;
 
@@ -232,6 +279,17 @@ glitz_glx_display_info_get (Display *display)
   display_info->n_screens = 0;
   
   return display_info;
+}
+
+static void
+glitz_glx_display_destroy (glitz_glx_display_info_t *display_info)
+{
+  int i;
+  
+  for (i = 0; i < display_info->n_screens; i++)
+    glitz_glx_screen_destroy (display_info->screens[i]);
+
+  free (display_info->screens);
 }
 
 static void
@@ -288,7 +346,7 @@ glitz_glx_create_root_context (glitz_glx_screen_info_t *screen_info)
     screen_info->root_context.id = 0;
   }
 
-  screen_info->root_context.fbconfig = (XID) 0;  
+  screen_info->root_context.fbconfig = (XID) 0;
     
   memcpy (&screen_info->root_context.gl,
           &_glitz_gl_proc_address,
@@ -349,8 +407,9 @@ glitz_glx_screen_info_get (Display *display,
     glPixelStorei (GL_PACK_ALIGNMENT, 4);
     glPixelStorei (GL_UNPACK_ALIGNMENT, 4);
 
-    glitz_glx_context_proc_address_lookup (&screen_info->root_context);
-
+    glitz_glx_context_proc_address_lookup
+      (screen_info->display_info->thread_info, &screen_info->root_context);
+    
     glitz_glx_query_extensions (screen_info);
     glitz_glx_query_formats (screen_info);
   }
@@ -362,3 +421,60 @@ glitz_glx_screen_info_get (Display *display,
   
   return screen_info;
 }
+
+static void
+glitz_glx_screen_destroy (glitz_glx_screen_info_t *screen_info)
+{
+  int i;
+  Display *display = screen_info->display_info->display;
+
+  if (screen_info->root_context.context &&
+      glXMakeCurrent (screen_info->display_info->display,
+                      screen_info->root_drawable,
+                      screen_info->root_context.context)) {
+    glitz_programs_fini (&screen_info->root_context.gl,
+                         &screen_info->programs);
+  }
+
+  glXMakeCurrent (display, None, NULL);
+  
+  if (screen_info->context_stack)
+    free (screen_info->context_stack);
+
+  for (i = 0; i < screen_info->n_contexts; i++)
+    glitz_glx_context_destroy (screen_info, screen_info->contexts[i]);
+
+  if (screen_info->contexts)
+    free (screen_info->contexts);
+  
+  if (screen_info->formats)
+    free (screen_info->formats);
+
+  if (screen_info->format_ids)
+    free (screen_info->format_ids);
+  
+  if (screen_info->root_context.context)
+    glXDestroyContext (display, screen_info->root_context.context);
+  
+  if (screen_info->root_drawable)
+    XDestroyWindow (display, screen_info->root_drawable);
+
+  free (screen_info);
+}
+
+void
+glitz_glx_init (const char *gl_library)
+{
+  glitz_glx_thread_info_get (gl_library);
+}
+slim_hidden_def(glitz_glx_init);
+
+void
+glitz_glx_fini (void)
+{
+  glitz_glx_thread_info_t *info =
+    glitz_glx_thread_info_get (NULL);
+
+  glitz_glx_thread_info_fini (info);
+}
+slim_hidden_def(glitz_glx_fini);

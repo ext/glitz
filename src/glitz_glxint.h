@@ -54,6 +54,7 @@ typedef struct _glitz_glx_screen_info_t glitz_glx_screen_info_t;
 typedef struct _glitz_glx_display_info_t glitz_glx_display_info_t;
 
 typedef struct _glitz_glx_static_proc_address_list_t {
+  glitz_glx_get_proc_address_arb_t get_proc_address_arb;
   glitz_glx_get_fbconfigs_t get_fbconfigs;
   glitz_glx_get_fbconfig_attrib_t get_fbconfig_attrib;
   glitz_glx_get_visual_from_fbconfig_t get_visual_from_fbconfig;
@@ -71,6 +72,9 @@ typedef struct _glitz_glx_proc_address_list_t {
 typedef struct _glitz_glx_thread_info_t {
   glitz_glx_display_info_t **displays;
   int n_displays;
+  glitz_glx_static_proc_address_list_t glx;
+  char *gl_library;
+  void *dlhand;
 } glitz_glx_thread_info_t;
 
 struct _glitz_glx_display_info_t {
@@ -131,22 +135,20 @@ struct _glitz_glx_surface {
 extern void __internal_linkage
 glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info);
 
-extern glitz_glx_thread_info_t *__internal_linkage
-glitz_glx_thread_info_get (void);
-
-extern glitz_glx_display_info_t *__internal_linkage
-glitz_glx_display_info_get (Display *display);
-
 extern glitz_glx_screen_info_t *__internal_linkage
 glitz_glx_screen_info_get (Display *display,
                            int screen);
 
 extern void *__internal_linkage
-glitz_glx_get_proc_address (const char *name);
+glitz_glx_get_proc_address (glitz_glx_thread_info_t *info, const char *name);
 
 extern glitz_glx_context_t *__internal_linkage
 glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
                        glitz_format_t *format);
+
+extern void __internal_linkage
+glitz_glx_context_destroy (glitz_glx_screen_info_t *screen_info,
+                           glitz_glx_context_t *context);
 
 extern int __internal_linkage
 glitz_glx_ensure_pbuffer_support (glitz_glx_screen_info_t *screen_info,
@@ -166,22 +168,25 @@ extern glitz_glx_surface_t *__internal_linkage
 glitz_glx_context_pop_current (glitz_glx_surface_t *surface);
 
 extern void __internal_linkage
-glitz_glx_context_proc_address_lookup (glitz_glx_context_t *context);
+glitz_glx_context_proc_address_lookup (glitz_glx_thread_info_t *thread_info,
+                                       glitz_glx_context_t *context);
 
 extern void __internal_linkage
 glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info);
 
 extern GLXPbuffer __internal_linkage
-glitz_glx_pbuffer_create (Display *display,
+glitz_glx_pbuffer_create (glitz_glx_display_info_t *display_info,
                           GLXFBConfig fbconfig,
                           glitz_texture_t *texture);
 
 extern void __internal_linkage
-glitz_glx_pbuffer_destroy (Display *display,
+glitz_glx_pbuffer_destroy (glitz_glx_display_info_t *display_info,
                            GLXPbuffer pbuffer);
 
 /* Avoid unnecessary PLT entries.  */
 
+slim_hidden_proto(glitz_glx_init)
+slim_hidden_proto(glitz_glx_fini)
 slim_hidden_proto(glitz_glx_find_format)
 slim_hidden_proto(glitz_glx_find_standard_format)
 slim_hidden_proto(glitz_glx_get_visual_info_from_format)

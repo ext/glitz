@@ -33,8 +33,6 @@
 
 #include <stdlib.h>
 
-extern glitz_glx_static_proc_address_list_t _glitz_glx_proc_address;
-
 static void
 _glitz_glx_context_create_glx12 (glitz_glx_screen_info_t *screen_info,
                                  XID visualid,
@@ -68,28 +66,30 @@ _glitz_glx_context_create_glx13 (glitz_glx_screen_info_t *screen_info,
   GLXFBConfig *fbconfigs;
   int i, n_fbconfigs;
   XVisualInfo *vinfo = NULL;
+  glitz_glx_static_proc_address_list_t *glx =
+    &screen_info->display_info->thread_info->glx;
 
-  fbconfigs = _glitz_glx_proc_address.get_fbconfigs
-    (screen_info->display_info->display, screen_info->screen, &n_fbconfigs);
+  fbconfigs = glx->get_fbconfigs (screen_info->display_info->display,
+                                  screen_info->screen, &n_fbconfigs);
   for (i = 0; i < n_fbconfigs; i++) {
     int value;
     
-    _glitz_glx_proc_address.get_fbconfig_attrib
-      (screen_info->display_info->display, fbconfigs[i],
-       GLX_FBCONFIG_ID, &value);
+    glx->get_fbconfig_attrib (screen_info->display_info->display, fbconfigs[i],
+                              GLX_FBCONFIG_ID, &value);
     if (value == (int) fbconfigid)
       break;
   }
 
   if (i < n_fbconfigs)
-    vinfo = _glitz_glx_proc_address.get_visual_from_fbconfig
-      (screen_info->display_info->display, fbconfigs[i]);
+    vinfo = glx->get_visual_from_fbconfig (screen_info->display_info->display,
+                                           fbconfigs[i]);
   
   if (vinfo) {
     context->context = glXCreateContext (screen_info->display_info->display,
                                          vinfo, share_list, 1);
     context->id = fbconfigid;
     context->fbconfig = fbconfigs[i];
+    XFree (vinfo);
   } else {
     context->context = NULL;
     context->id = fbconfigid;
@@ -106,15 +106,17 @@ glitz_glx_ensure_pbuffer_support (glitz_glx_screen_info_t *screen_info,
 {
   GLXFBConfig *fbconfigs;
   int i, n_fbconfigs;
+  glitz_glx_static_proc_address_list_t *glx =
+    &screen_info->display_info->thread_info->glx;
+  int status = 1;
   
-  fbconfigs = _glitz_glx_proc_address.get_fbconfigs
-    (screen_info->display_info->display, screen_info->screen, &n_fbconfigs);
+  fbconfigs = glx->get_fbconfigs (screen_info->display_info->display,
+                                  screen_info->screen, &n_fbconfigs);
   for (i = 0; i < n_fbconfigs; i++) {
     int value;
     
-    _glitz_glx_proc_address.get_fbconfig_attrib
-      (screen_info->display_info->display, fbconfigs[i],
-       GLX_FBCONFIG_ID, &value);
+    glx->get_fbconfig_attrib (screen_info->display_info->display, fbconfigs[i],
+                              GLX_FBCONFIG_ID, &value);
     if (value == (int) fbconfigid)
       break;
   }
@@ -124,18 +126,20 @@ glitz_glx_ensure_pbuffer_support (glitz_glx_screen_info_t *screen_info,
     glitz_texture_t texture;
     
     texture.width = texture.height = 1;
-    pbuffer =
-      glitz_glx_pbuffer_create (screen_info->display_info->display,
-                                fbconfigs[i],
-                                &texture);
+    pbuffer = glitz_glx_pbuffer_create (screen_info->display_info,
+                                        fbconfigs[i],
+                                        &texture);
     if (pbuffer) {
-      glitz_glx_pbuffer_destroy (screen_info->display_info->display, pbuffer);
+      glitz_glx_pbuffer_destroy (screen_info->display_info, pbuffer);
       
-      return 0;
+      status = 0;
     }
   }
+
+  if (fbconfigs)
+    XFree (fbconfigs);
   
-  return 1;
+  return status;
 }
 
 glitz_glx_context_t *
@@ -184,40 +188,50 @@ glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
 }
 
 void
-glitz_glx_context_proc_address_lookup (glitz_glx_context_t *context)
+glitz_glx_context_destroy (glitz_glx_screen_info_t *screen_info,
+                           glitz_glx_context_t *context)
+{
+  glXDestroyContext (screen_info->display_info->display,
+                     context->context);
+  free (context);
+}
+
+void
+glitz_glx_context_proc_address_lookup (glitz_glx_thread_info_t *thread_info,
+                                       glitz_glx_context_t *context)
 {
   context->glx.bind_tex_image_arb =
     (glitz_glx_bind_tex_image_arb_t)
-    glitz_glx_get_proc_address ("glXBindTexImageARB");
+    glitz_glx_get_proc_address (thread_info, "glXBindTexImageARB");
   context->glx.release_tex_image_arb =
     (glitz_glx_release_tex_image_arb_t)
-    glitz_glx_get_proc_address ("glXReleaseTexImageARB");
+    glitz_glx_get_proc_address (thread_info, "glXReleaseTexImageARB");
 
   context->gl.active_texture_arb =
     (glitz_gl_active_texture_arb_t)
-    glitz_glx_get_proc_address ("glActiveTextureARB");
+    glitz_glx_get_proc_address (thread_info, "glActiveTextureARB");
   context->gl.multi_tex_coord_2d_arb =
     (glitz_gl_multi_tex_coord_2d_arb_t)
-    glitz_glx_get_proc_address ("glMultiTexCoord2dARB");
+    glitz_glx_get_proc_address (thread_info, "glMultiTexCoord2dARB");
 
   context->gl.gen_programs_arb =
     (glitz_gl_gen_programs_arb_t)
-    glitz_glx_get_proc_address ("glGenProgramsARB");
+    glitz_glx_get_proc_address (thread_info, "glGenProgramsARB");
   context->gl.delete_programs_arb =
     (glitz_gl_delete_programs_arb_t)
-    glitz_glx_get_proc_address ("glDeleteProgramsARB");
+    glitz_glx_get_proc_address (thread_info, "glDeleteProgramsARB");
   context->gl.program_string_arb =
     (glitz_gl_program_string_arb_t)
-    glitz_glx_get_proc_address ("glProgramStringARB");
+    glitz_glx_get_proc_address (thread_info, "glProgramStringARB");
   context->gl.bind_program_arb =
     (glitz_gl_bind_program_arb_t)
-    glitz_glx_get_proc_address ("glBindProgramARB");
+    glitz_glx_get_proc_address (thread_info, "glBindProgramARB");
   context->gl.program_local_param_4d_arb =
     (glitz_gl_program_local_param_4d_arb_t)
-    glitz_glx_get_proc_address ("glProgramLocalParameter4dARB");
+    glitz_glx_get_proc_address (thread_info, "glProgramLocalParameter4dARB");
   context->gl.get_program_iv_arb =
     (glitz_gl_get_program_iv_arb_t)
-    glitz_glx_get_proc_address ("glGetProgramivARB");
+    glitz_glx_get_proc_address (thread_info, "glGetProgramivARB");
 
   if (context->gl.get_program_iv_arb) {
     context->gl.get_program_iv_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB,
@@ -261,7 +275,8 @@ glitz_glx_context_make_current (glitz_glx_surface_t *surface)
                   drawable, context);
 
   if (surface->context->gl.need_lookup)
-    glitz_glx_context_proc_address_lookup (surface->context);
+    glitz_glx_context_proc_address_lookup
+      (surface->screen_info->display_info->thread_info, surface->context);
 }
 
 static void

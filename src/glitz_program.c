@@ -389,7 +389,7 @@ char *_glitz_fragment_program_programmatic[] = {
   "END"
 };
 
-static unsigned int
+static glitz_gl_uint_t
 glitz_program_compile_vertex_arb (glitz_gl_proc_address_list_t *gl,
                                   char *program_string)
 {
@@ -409,10 +409,10 @@ glitz_program_compile_vertex_arb (glitz_gl_proc_address_list_t *gl,
     program = 0;
   }
   
-  return (unsigned int) program;
+  return program;
 }
 
-static unsigned int
+static glitz_gl_uint_t
 glitz_program_compile_fragment_arb (glitz_gl_proc_address_list_t *gl,
                                     char *program_string)
 {
@@ -432,7 +432,7 @@ glitz_program_compile_fragment_arb (glitz_gl_proc_address_list_t *gl,
     program = 0;
   }
   
-  return (unsigned int) program;
+  return program;
 }
 
 static int
@@ -468,7 +468,7 @@ _glitz_program_offset (glitz_texture_t *src_texture,
   return offset;
 }
 
-static unsigned long
+static glitz_gl_uint_t
 glitz_program_compile_simple (glitz_gl_proc_address_list_t *gl,
                               int offset)
 {
@@ -484,7 +484,7 @@ glitz_program_compile_simple (glitz_gl_proc_address_list_t *gl,
   return glitz_program_compile_fragment_arb (gl, program_buffer);
 }
 
-static unsigned long
+static glitz_gl_uint_t
 glitz_program_compile_vertex_convolution (glitz_gl_proc_address_list_t *gl,
                                           int offset)
 {
@@ -500,7 +500,7 @@ glitz_program_compile_vertex_convolution (glitz_gl_proc_address_list_t *gl,
   return glitz_program_compile_vertex_arb (gl, program_buffer);
 }
 
-static unsigned long
+static glitz_gl_uint_t
 glitz_program_compile_convolution (glitz_gl_proc_address_list_t *gl,
                                    int offset,
                                    int solid_offset)
@@ -538,7 +538,7 @@ glitz_program_compile_convolution (glitz_gl_proc_address_list_t *gl,
   return glitz_program_compile_fragment_arb (gl, program_buffer);
 }
 
-static unsigned long
+static glitz_gl_uint_t
 glitz_program_compile_programmatic (glitz_programmatic_surface_type_t type,
                                     glitz_gl_proc_address_list_t *gl,
                                     int offset)
@@ -880,5 +880,32 @@ glitz_program_disable (glitz_program_type_t type,
     dst->gl->disable (GLITZ_GL_FRAGMENT_PROGRAM_ARB);
     dst->gl->bind_program_arb (GLITZ_GL_VERTEX_PROGRAM_ARB, 0);
     dst->gl->disable (GLITZ_GL_VERTEX_PROGRAM_ARB);
+  }
+}
+
+void
+glitz_programs_fini (glitz_gl_proc_address_list_t *gl,
+                     glitz_programs_t *programs)
+{
+  int i;
+  
+  for (i = 0; i < GLITZ_VERTEX_PROGRAM_TYPES; i++) {
+    if (programs->vertex_convolution[i])
+      gl->delete_programs_arb (1, &programs->vertex_convolution[i]);
+  }
+
+  for (i = 0; i < GLITZ_FRAGMENT_PROGRAM_TYPES; i++) {
+    if (programs->fragment_simple[i])
+      gl->delete_programs_arb (1, &programs->fragment_simple[i]);
+  }
+
+  for (i = 0; i < (GLITZ_FRAGMENT_PROGRAM_TYPES * 3); i++) {
+    if (programs->fragment_convolution[i])
+      gl->delete_programs_arb (1, &programs->fragment_convolution[i]);
+  }
+
+  for (i = 0; i < GLITZ_FRAGMENT_PROGRAMMATIC_PROGRAM_TYPES; i++) {
+    if (programs->fragment_programmatic[i])
+      gl->delete_programs_arb (1, &programs->fragment_programmatic[i]);
   }
 }

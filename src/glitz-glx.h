@@ -36,6 +36,15 @@ extern "C" {
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+
+/* glitz_glx_info.c */
+
+void
+glitz_glx_init (const char *gl_library);
+
+void
+glitz_glx_fini (void);
+  
   
 /* glitz_glx_format.c */
 

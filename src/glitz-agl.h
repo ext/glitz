@@ -35,6 +35,15 @@ extern "C" {
 #endif
 
 #include <Carbon/Carbon.h>
+
+/* glitz_agl_info.c */
+
+void
+glitz_agl_init (void);
+
+void
+glitz_agl_fini (void);
+  
   
 /* glitz_agl_format.c */
 

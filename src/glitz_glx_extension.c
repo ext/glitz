@@ -31,8 +31,6 @@
 
 #include "glitz_glxint.h"
 
-extern glitz_glx_static_proc_address_list_t _glitz_glx_proc_address;
-
 static glitz_extension_map client_glx_extensions[] = {
   /* NYI: Don't know of any driver that supports GLX_ARB_render_texture 
     { "GLX_ARB_render_texture", GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK },
@@ -78,16 +76,19 @@ _glitz_glx_extension_query_gl (void)
 void
 glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
 {
+  glitz_glx_static_proc_address_list_t *glx =
+    &screen_info->display_info->thread_info->glx;
+  
   screen_info->glx_feature_mask |=
     _glitz_glx_extension_query_client_glx (screen_info->display_info->display);
   
   screen_info->glx_feature_mask |= _glitz_glx_extension_query_gl ();
 
-  if (_glitz_glx_proc_address.get_fbconfigs &&
-      _glitz_glx_proc_address.get_fbconfig_attrib &&
-      _glitz_glx_proc_address.get_visual_from_fbconfig &&
-      _glitz_glx_proc_address.create_pbuffer &&
-      _glitz_glx_proc_address.destroy_pbuffer) {
+  if (glx->get_fbconfigs &&
+      glx->get_fbconfig_attrib &&
+      glx->get_visual_from_fbconfig &&
+      glx->create_pbuffer &&
+      glx->destroy_pbuffer) {
     screen_info->feature_mask |= GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
     screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_GLX13_MASK;
   }

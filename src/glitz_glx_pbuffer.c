@@ -31,10 +31,8 @@
 
 #include "glitz_glxint.h"
 
-extern glitz_glx_static_proc_address_list_t _glitz_glx_proc_address;
-
 GLXPbuffer
-glitz_glx_pbuffer_create (Display *display,
+glitz_glx_pbuffer_create (glitz_glx_display_info_t *display_info,
                           GLXFBConfig fbconfig,
                           glitz_texture_t *texture)
 {
@@ -51,12 +49,14 @@ glitz_glx_pbuffer_create (Display *display,
   pbuffer_attr[i++] = 0;
     
   return
-    _glitz_glx_proc_address.create_pbuffer (display, fbconfig, pbuffer_attr);
+    display_info->thread_info->glx.create_pbuffer (display_info->display,
+                                                   fbconfig, pbuffer_attr);
 }
 
 void 
-glitz_glx_pbuffer_destroy (Display *display,
+glitz_glx_pbuffer_destroy (glitz_glx_display_info_t *display_info,
                            GLXPbuffer pbuffer)
 {
-  _glitz_glx_proc_address.destroy_pbuffer (display, pbuffer);
+  display_info->thread_info->glx.destroy_pbuffer (display_info->display,
+                                                  pbuffer);
 }

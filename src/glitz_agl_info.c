@@ -99,7 +99,10 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
 };
 
 static void
-_glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info);
+glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info);
+
+static void
+glitz_agl_thread_info_fini (glitz_agl_thread_info_t *thread_info);
 
 #ifdef PTHREADS
 
@@ -110,17 +113,24 @@ _glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info);
 static int tsd_initialized = 0;
 static pthread_key_t info_tsd;
 
+static void
+glitz_agl_thread_info_destroy (void *p)
+{
+  glitz_agl_thread_info_fini ((glitz_agl_thread_info_t *) p);
+  free (p);
+}
+
 glitz_agl_thread_info_t *
 glitz_agl_thread_info_get (void)
 {
   if (!tsd_initialized) {
-    glitz_agl_thread_info_t *info = (glitz_agl_thread_info_t *)
-      malloc (sizeof (glitz_agl_thread_info_t));
-    pthread_key_create (&info_tsd, NULL);
-    pthread_setspecific (info_tsd, info);
-    tsd_initialized = 1;
-    _glitz_agl_thread_info_init (info);
+    glitz_agl_thread_info_t *info = malloc (sizeof (glitz_agl_thread_info_t));
+    glitz_agl_thread_info_init (info);
     
+    pthread_key_create (&info_tsd, glitz_agl_thread_info_destroy);
+    pthread_setspecific (info_tsd, info);
+    
+    tsd_initialized = 1;
     return info;
   } else
     return (glitz_agl_thread_info_t *) pthread_getspecific (info_tsd);
@@ -149,7 +159,7 @@ glitz_agl_thread_info_t *
 glitz_agl_thread_info_get (void)
 {
   if (_thread_info.context_stack == NULL)
-    _glitz_agl_thread_info_init (&_thread_info);
+    glitz_agl_thread_info_init (&_thread_info);
       
   return &_thread_info;
 }
@@ -157,7 +167,7 @@ glitz_agl_thread_info_get (void)
 #endif
 
 static void
-_glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
+glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
 {
   GLint attrib[] = {
     AGL_RGBA,
@@ -207,3 +217,50 @@ _glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
   thread_info->context_stack->surface = NULL;
   thread_info->context_stack->constraint = GLITZ_CN_NONE;
 }
+
+static void
+glitz_agl_thread_info_fini (glitz_agl_thread_info_t *thread_info)
+{
+  int i;
+  
+  aglSetCurrentContext (thread_info->root_context.context);
+  glitz_programs_fini (&_glitz_agl_gl_proc_address,
+                       &thread_info->programs);
+  aglSetCurrentContext (NULL);
+
+  if (thread_info->context_stack)
+    free (thread_info->context_stack);
+
+  for (i = 0; i < thread_info->n_contexts; i++)
+    glitz_agl_context_destroy (thread_info, thread_info->contexts[i]);
+
+  for (i = 0; i < thread_info->n_formats; i++)
+    aglDestroyPixelFormat (thread_info->format_ids[i]);
+
+  if (thread_info->formats)
+    free (thread_info->formats);
+  
+  if (thread_info->format_ids)
+    free (thread_info->format_ids);
+
+  aglDestroyContext (thread_info->root_context.context);
+
+  free (thread_info);
+}
+
+void
+glitz_agl_init (void)
+{
+  glitz_agl_thread_info_get ();
+}
+slim_hidden_def(glitz_agl_init);
+
+void
+glitz_agl_fini (void)
+{
+  glitz_agl_thread_info_t *info =
+    glitz_agl_thread_info_get ();
+
+  glitz_agl_thread_info_fini (info);
+}
+slim_hidden_def(glitz_agl_fini);

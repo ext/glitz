@@ -94,6 +94,7 @@ typedef XID GLXPbuffer;
 
 #endif
 
+typedef void *(* glitz_glx_get_proc_address_arb_t)(glitz_gl_ubyte_t *);
 typedef GLXFBConfig *(* glitz_glx_get_fbconfigs_t)
      (Display *display, int screen, int *n_elements);
 typedef int (* glitz_glx_get_fbconfig_attrib_t)

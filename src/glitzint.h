@@ -185,10 +185,11 @@ typedef enum {
   (GLITZ_FRAGMENT_PROGRAM_TYPES * GLITZ_PROGRAMMATIC_SURFACE_NUM)
 
 typedef struct _glitz_programs_t {
-  unsigned long vertex_convolution[GLITZ_VERTEX_PROGRAM_TYPES];
-  unsigned long fragment_simple[GLITZ_FRAGMENT_PROGRAM_TYPES];
-  unsigned long fragment_convolution[GLITZ_FRAGMENT_PROGRAM_TYPES * 3];
-  unsigned long fragment_programmatic[GLITZ_FRAGMENT_PROGRAMMATIC_PROGRAM_TYPES];
+  glitz_gl_uint_t vertex_convolution[GLITZ_VERTEX_PROGRAM_TYPES];
+  glitz_gl_uint_t fragment_simple[GLITZ_FRAGMENT_PROGRAM_TYPES];
+  glitz_gl_uint_t fragment_convolution[GLITZ_FRAGMENT_PROGRAM_TYPES * 3];
+  glitz_gl_uint_t
+  fragment_programmatic[GLITZ_FRAGMENT_PROGRAMMATIC_PROGRAM_TYPES];
 } glitz_programs_t;
 
 typedef enum {
@@ -596,6 +597,10 @@ glitz_program_enable (glitz_program_type_t type,
 extern void __internal_linkage
 glitz_program_disable (glitz_program_type_t type,
                        glitz_surface_t *dst);
+
+extern void __internal_linkage
+glitz_programs_fini (glitz_gl_proc_address_list_t *gl,
+                     glitz_programs_t *programs);
 
 extern void __internal_linkage
 glitz_programmatic_surface_setup (glitz_surface_t *abstract_surface,

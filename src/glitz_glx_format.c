@@ -34,8 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern glitz_glx_static_proc_address_list_t _glitz_glx_proc_address;
-
 static int
 _glitz_glx_format_compare (const void *elem1,
                            const void *elem2)
@@ -112,15 +110,13 @@ glitz_glx_query_formats_glx12 (glitz_glx_screen_info_t *screen_info)
   glitz_format_t format;
   XVisualInfo visual_templ;
   XVisualInfo *visuals;
-  long int mask;
   int i, num_visuals;
   
   display = screen_info->display_info->display;
 
   visual_templ.screen = screen_info->screen;
-  mask = VisualScreenMask;
-  visuals =
-    XGetVisualInfo (display, VisualScreenMask, &visual_templ, &num_visuals);
+  visuals = XGetVisualInfo (display, VisualScreenMask,
+                            &visual_templ, &num_visuals);
 
   /* Offscreen drawing never supported if GLX is older than 1.3 */
   format.drawable.offscreen = 0;
@@ -197,15 +193,14 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
   glitz_format_t format;
   GLXFBConfig *fbconfigs;
   int i, num_configs;
+  glitz_glx_static_proc_address_list_t *glx =
+    &screen_info->display_info->thread_info->glx;
   
   display = screen_info->display_info->display;
 
-  fbconfigs =
-    _glitz_glx_proc_address.get_fbconfigs (display,
-                                           screen_info->screen,
-                                           &num_configs);
-  /* GLX 1.3 is not support, falling back to GLX 1.2 */
+  fbconfigs = glx->get_fbconfigs (display, screen_info->screen, &num_configs);
   if (!fbconfigs) {
+    /* GLX 1.3 is not support, falling back to GLX 1.2 */
     screen_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
     screen_info->glx_feature_mask &= ~GLITZ_GLX_FEATURE_GLX13_MASK;
     return 1;
@@ -214,58 +209,48 @@ glitz_glx_query_formats_glx13 (glitz_glx_screen_info_t *screen_info)
   for (i = 0; i < num_configs; i++) {
     int value;
     
-    if ((_glitz_glx_proc_address.get_fbconfig_attrib
-         (display, fbconfigs[i], GLX_RENDER_TYPE, &value) != 0) ||
+    if ((glx->get_fbconfig_attrib (display, fbconfigs[i],
+                                   GLX_RENDER_TYPE, &value) != 0) ||
         (!(value & GLX_RGBA_BIT)))
       continue;
 
     /* Stereo is not supported yet */
-    _glitz_glx_proc_address.get_fbconfig_attrib
-      (display, fbconfigs[i], GLX_STEREO, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_STEREO, &value);
     if (value != 0)
       continue;
 
-    _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                 GLX_DRAWABLE_TYPE, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i],
+                              GLX_DRAWABLE_TYPE, &value);
     if (!((value & GLX_WINDOW_BIT) || (value & GLX_PBUFFER_BIT)))
       continue;
     
     format.drawable.onscreen = (value & GLX_WINDOW_BIT)? 1: 0;
     format.drawable.offscreen = (value & GLX_PBUFFER_BIT)? 1: 0;
     
-    _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                 GLX_FBCONFIG_ID, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_FBCONFIG_ID, &value);
     format.id = (XID) value;
     
-    _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                 GLX_RED_SIZE, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_RED_SIZE, &value);
     format.red_size = (unsigned short) value;
-    _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                 GLX_GREEN_SIZE, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_GREEN_SIZE, &value);
     format.green_size = (unsigned short) value;
-    _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                 GLX_BLUE_SIZE, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_BLUE_SIZE, &value);
     format.blue_size = (unsigned short) value;
-    _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                 GLX_ALPHA_SIZE, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_ALPHA_SIZE, &value);
     format.alpha_size = (unsigned short) value;
-    _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                 GLX_DEPTH_SIZE, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_DEPTH_SIZE, &value);
     format.depth_size = (unsigned short) value;
-    _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                 GLX_STENCIL_SIZE, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_STENCIL_SIZE, &value);
     format.stencil_size = (unsigned short) value;
-    _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                 GLX_DOUBLEBUFFER, &value);
+    glx->get_fbconfig_attrib (display, fbconfigs[i], GLX_DOUBLEBUFFER, &value);
     format.doublebuffer = (value)? 1: 0;
     
     if (screen_info->feature_mask & GLITZ_FEATURE_MULTISAMPLE_MASK) {
-      _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                   GLX_SAMPLE_BUFFERS_ARB,
-                                                   &value);
+      glx->get_fbconfig_attrib (display, fbconfigs[i],
+                                GLX_SAMPLE_BUFFERS_ARB, &value);
       format.multisample.supported = (value)? 1: 0;
-      _glitz_glx_proc_address.get_fbconfig_attrib (display, fbconfigs[i],
-                                                   GLX_SAMPLES_ARB, &value);
+      glx->get_fbconfig_attrib (display, fbconfigs[i],
+                                GLX_SAMPLES_ARB, &value);
       format.multisample.samples = (unsigned short) value;
     } else {
       format.multisample.supported = 0;
@@ -385,28 +370,26 @@ glitz_glx_get_visual_info_from_format (Display *display,
   XVisualInfo *vinfo = NULL;
   glitz_glx_screen_info_t *screen_info =
     glitz_glx_screen_info_get (display, screen);
+  glitz_glx_static_proc_address_list_t *glx =
+    &screen_info->display_info->thread_info->glx;
 
   if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_GLX13_MASK) {
-
     GLXFBConfig *fbconfigs;
     int i, n_fbconfigs;
     int fbconfigid = screen_info->format_ids[format->id];
 
-    fbconfigs =
-      _glitz_glx_proc_address.get_fbconfigs (display, screen, &n_fbconfigs);
+    fbconfigs = glx->get_fbconfigs (display, screen, &n_fbconfigs);
     for (i = 0; i < n_fbconfigs; i++) {
       int value;
       
-      _glitz_glx_proc_address.get_fbconfig_attrib
-        (display, fbconfigs[i], GLX_FBCONFIG_ID, &value);
+      glx->get_fbconfig_attrib (display, fbconfigs[i],
+                                GLX_FBCONFIG_ID, &value);
       if (value == fbconfigid)
         break;
     }
     
     if (i < n_fbconfigs)
-      vinfo =
-        _glitz_glx_proc_address.get_visual_from_fbconfig (display,
-                                                          fbconfigs[i]);
+      vinfo = glx->get_visual_from_fbconfig (display, fbconfigs[i]);
     
     if (fbconfigs)
       XFree (fbconfigs);

@@ -1,3 +1,50 @@
+2004-05-09  David Reveman  <c99drn@cs.umu.se>
+
+	* TODO: Added library cleanup functions.
+	
+	* src/glitzint.h: Fixed program identifier types. Added
+	glitz_programs_fini.
+
+	* src/glitz_program.c: Fixed program identifier types. Added 
+	glitz_programs_fini.
+
+	* src/glitz_glxint.h: GLX procedure addresses are now thread
+	specific. Added glitz_glx_context_destroy.
+
+	* src/glitz_glxext.h: GLX procedure addresses are now thread
+	specific.
+
+	* src/glitz_glx_surface.c: GLX procedure addresses are now thread
+	specific.
+
+	* src/glitz_glx_pbuffer.c: GLX procedure addresses are now thread
+	specific.
+
+	* src/glitz_glx_info.c: GLX procedure addresses are now thread
+	specific. Added glitz_glx_thread_info_init,
+	glitz_glx_thread_info_fini, glitz_glx_screen_destroy,
+	glitz_glx_display_destroy, glitz_glx_init and glitz_glx_fini.
+
+	* src/glitz_glx_format.c: GLX procedure addresses are now thread
+	specific.
+
+	* src/glitz_glx_extension.c (glitz_glx_query_extensions): GLX 
+	procedure addresses are now thread specific.
+
+	* src/glitz_glx_context.c: GLX procedure addresses are now thread
+	specific. Added glitz_glx_context_destroy.
+	(_glitz_glx_context_create_glx13): Free visual info structure.
+	(glitz_glx_ensure_pbuffer_support): Free fbconfigs.
+
+	* src/glitz_aglint.h: Added glitz_agl_context_destroy.
+
+	* src/glitz_agl_info.c: Added glitz_agl_thread_info_fini,
+	glitz_agl_init and glitz_agl_fini.
+
+	* src/glitz_agl_context.c: Added glitz_agl_context_destroy.
+
+	* src/glitz-agl.h: Added glitz_agl_init and glitz_agl_fini.
+
 2004-05-06  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: Better texture handling.

@@ -102,6 +102,10 @@ glitz_agl_context_get (glitz_agl_thread_info_t *thread_info,
                        glitz_bool_t offscreen);
 
 extern void __internal_linkage
+glitz_agl_context_destroy (glitz_agl_thread_info_t *thread_info,
+                           glitz_agl_context_t *context);
+
+extern void __internal_linkage
 glitz_agl_context_make_current (glitz_agl_surface_t *surface);
 
 extern glitz_agl_surface_t *__internal_linkage
@@ -129,6 +133,8 @@ glitz_agl_pbuffer_destroy (AGLPbuffer pbuffer);
 
 /* Avoid unnecessary PLT entries.  */
 
+slim_hidden_proto(glitz_agl_init)
+slim_hidden_proto(glitz_agl_fini)
 slim_hidden_proto(glitz_agl_find_format)
 slim_hidden_proto(glitz_agl_find_standard_format)
 slim_hidden_proto(glitz_agl_surface_create)
