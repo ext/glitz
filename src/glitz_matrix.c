@@ -88,7 +88,7 @@ glitz_matrix_transform_bounding_box (glitz_matrix_t *matrix,
   }
   
   *x1 = min_x;
-  *y2 = min_y;
+  *y1 = min_y;
   *x2 = max_x;
   *y2 = max_y;
 }
