@@ -1,5 +1,12 @@
 2004-05-13  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz.c (glitz_copy_area): Fixed obvious memory leak.
+	(glitz_copy_area): Fixed default texture to drawable copy.
+
+	* src/glitz_glx_surface.c (_glitz_glx_surface_make_current_read): 
+	Temporarily disabled glXMakeContextCurrent until I get it working
+	properly.
+
 	* TODO: Added copy area operation.
 
 	* src/glitz.h: Added copy area operation.

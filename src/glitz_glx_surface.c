@@ -87,18 +87,24 @@ _glitz_glx_surface_pop_current (void *abstract_surface)
 static glitz_bool_t
 _glitz_glx_surface_make_current_read (void *abstract_surface)
 {
+  /* This doesn't seem to work. 
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
   glitz_glx_static_proc_address_list_t *glx =
     &surface->screen_info->display_info->thread_info->glx;
+    
+  if (glx->make_context_current && surface->drawable) {
+    GLXContext context = glXGetCurrentContext ();
 
-  if (glx->make_context_current && surface->drawable)
-    return
-      glx->make_context_current (surface->screen_info->display_info->display,
-                                 glXGetCurrentDrawable (),
-                                 surface->drawable,
-                                 glXGetCurrentContext ());
-  else
-    return 0;
+    if (context == surface->context->context)
+      return
+        glx->make_context_current (surface->screen_info->display_info->display,
+                                   glXGetCurrentDrawable (),
+                                   surface->drawable,
+                                   context);
+  }
+  */
+
+  return 0;
 }
 
 static const struct glitz_surface_backend glitz_glx_surface_backend = {

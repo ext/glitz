@@ -885,11 +885,14 @@ glitz_copy_area (glitz_surface_t *src,
                  int x_dst,
                  int y_dst)
 {
+  glitz_gl_proc_address_list_t *gl;
   glitz_bounding_box_t box, src_box, dst_box;
   int status;
   
   if (SURFACE_PROGRAMMATIC (dst) || SURFACE_PROGRAMMATIC (src))
     return;
+
+  gl = dst->gl;
 
   box.x1 = x_src;
   box.y1 = y_src;
@@ -935,21 +938,63 @@ glitz_copy_area (glitz_surface_t *src,
 
     if (status) {
       if (src->format->doublebuffer)
-        dst->gl->read_buffer (GLITZ_GL_BACK);
+        gl->read_buffer (GLITZ_GL_BACK);
       if (dst->format->doublebuffer)
-        dst->gl->draw_buffer (GLITZ_GL_BACK);
+        gl->draw_buffer (GLITZ_GL_BACK);
       
-      dst->gl->disable (GLITZ_GL_SCISSOR_TEST);
-      dst->gl->disable (GLITZ_GL_DITHER);    
-      glitz_set_operator (dst->gl, GLITZ_OPERATOR_SRC);
+      gl->disable (GLITZ_GL_SCISSOR_TEST);
+      gl->disable (GLITZ_GL_DITHER);    
+      glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
       
-      dst->gl->pixel_zoom (1.0, 1.0);
-      glitz_set_raster_pos (dst->gl, x_dst, dst->height - (y_dst + height));
-      dst->gl->copy_pixels (x_src, src->height - (y_src + height),
-                            width, height, GLITZ_GL_COLOR);
-    } else
-      glitz_composite (GLITZ_OPERATOR_SRC, src, NULL, dst,
-                       x_src, y_src, 0, 0, x_dst, y_dst, width, height);
+      gl->pixel_zoom (1.0, 1.0);
+      glitz_set_raster_pos (gl, x_dst, dst->height - (y_dst + height));
+      gl->copy_pixels (x_src, src->height - (y_src + height),
+                       width, height, GLITZ_GL_COLOR);
+    } else {
+      glitz_texture_t *texture = glitz_surface_get_texture (src);
+      if (texture) {
+        glitz_point_t tl, br;
+          
+        gl->disable (GLITZ_GL_SCISSOR_TEST);
+        gl->disable (GLITZ_GL_DITHER);
+        
+        glitz_texture_bind (gl, texture);
+        
+        gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
+                       GLITZ_GL_TEXTURE_ENV_MODE,
+                       GLITZ_GL_REPLACE);
+
+        glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
+        
+        glitz_texture_ensure_repeat (gl, texture, 0);
+        glitz_texture_ensure_filter (gl, texture, GLITZ_FILTER_NEAREST);
+        
+        tl.x = (x_src / (double) src->width) * texture->texcoord_width;
+        tl.y = (y_src / (double) src->height) * texture->texcoord_height;
+
+        br.x = ((x_src + width) / (double) src->width) *
+          texture->texcoord_width;
+        br.y = ((y_src + height) / (double) src->height) *
+          texture->texcoord_height;
+
+        tl.y = texture->texcoord_height - tl.y;
+        br.y = texture->texcoord_height - br.y;
+
+        gl->begin (GLITZ_GL_QUADS);
+        gl->tex_coord_2d (tl.x, tl.y);
+        gl->vertex_2d (x_dst, y_dst);
+        gl->tex_coord_2d (br.x, tl.y);
+        gl->vertex_2d (x_dst + width, y_dst);
+        gl->tex_coord_2d (br.x, br.y);
+        gl->vertex_2d (x_dst + width, y_dst + height);
+        gl->tex_coord_2d (tl.x, br.y);
+        gl->vertex_2d (x_dst, y_dst + height);
+        gl->end ();
+
+        glitz_texture_unbind (gl, texture);
+      }
+      gl->flush ();
+    }
     status = 1;
     glitz_surface_pop_current (dst);
   }
@@ -968,7 +1013,7 @@ glitz_copy_area (glitz_surface_t *src,
     int rowstride, bytes_per_pixel;
     char *pixel_buf;
     
-    bytes_per_pixel = MAX ((dst->format->bpp / 8), (src->format->bpp / 8));
+    bytes_per_pixel = MAX (dst->format->bpp, src->format->bpp) / 8;
     
     rowstride = width * bytes_per_pixel;
     rowstride = (rowstride + 3) & -4;
@@ -979,6 +1024,7 @@ glitz_copy_area (glitz_surface_t *src,
     }
     glitz_surface_read_pixels (src, x_src, y_src, width, height, pixel_buf);
     glitz_surface_draw_pixels (dst, x_dst, y_dst, width, height, pixel_buf);
+    free (pixel_buf);
   }
   
   glitz_surface_dirty (dst, &dst_box);
