@@ -1,3 +1,7 @@
+2005-03-01  David Reveman  <davidr@novell.com>
+
+	* src/glitz_pixel.c (glitz_set_pixels): Rectangular clipping.
+
 2005-02-09  David Reveman  <davidr@novell.com>
 
 	* Add preliminary support for EXT_framebuffer_object.
