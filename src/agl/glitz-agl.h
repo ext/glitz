@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifndef GLITZ_AGL_H_INCLUDED
@@ -57,13 +57,13 @@ glitz_agl_find_drawable_format (unsigned long                 mask,
 glitz_drawable_t *
 glitz_agl_create_drawable_for_window (glitz_drawable_format_t *format,
                                       WindowRef               window,
-                                      int                     width,
-                                      int                     height);
+                                      unsigned int            width,
+                                      unsigned int            height);
 
 glitz_drawable_t *
-glitz_agl_create_pbuffer_drawable (glitz_drawable_format_t    *format,
-                                   glitz_pbuffer_attributes_t *attributes,
-                                   unsigned long              mask);
+glitz_agl_create_pbuffer_drawable (glitz_drawable_format_t *format,
+                                   unsigned int            width,
+                                   unsigned int            height);
 
 
 #if defined(__cplusplus) || defined(c_plusplus)

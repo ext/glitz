@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -41,8 +41,8 @@ _glitz_agl_create_drawable (glitz_agl_thread_info_t *thread_info,
                             glitz_drawable_format_t *format,
                             AGLDrawable             agl_drawable,
                             AGLPbuffer              agl_pbuffer,
-                            int                     width,
-                            int                     height)
+                            unsigned int            width,
+                            unsigned int            height)
 {
   glitz_agl_drawable_t *drawable;
   
@@ -80,15 +80,14 @@ _glitz_agl_create_drawable (glitz_agl_thread_info_t *thread_info,
 }
 
 static glitz_drawable_t *
-_glitz_agl_create_pbuffer_drawable (glitz_agl_thread_info_t    *thread_info,
-                                    glitz_drawable_format_t    *format,
-                                    glitz_pbuffer_attributes_t *attributes,
-                                    unsigned long              mask)
+_glitz_agl_create_pbuffer_drawable (glitz_agl_thread_info_t *thread_info,
+                                    glitz_drawable_format_t *format,
+                                    unsigned int            width,
+                                    unsigned int            height)
 {
   glitz_agl_drawable_t *drawable;
   glitz_agl_context_t *context;
   AGLPbuffer pbuffer;
-  int width, height;
 
   if (!format->types.pbuffer)
     return NULL;
@@ -97,8 +96,7 @@ _glitz_agl_create_pbuffer_drawable (glitz_agl_thread_info_t    *thread_info,
   if (!context)
     return NULL;
 
-  pbuffer = glitz_agl_pbuffer_create (thread_info, attributes, mask,
-                                      &width, &height);
+  pbuffer = glitz_agl_pbuffer_create (thread_info, (int) width, (int) height);
   if (!pbuffer)
     return NULL;
   
@@ -114,22 +112,22 @@ _glitz_agl_create_pbuffer_drawable (glitz_agl_thread_info_t    *thread_info,
 }
 
 glitz_drawable_t *
-glitz_agl_create_pbuffer (void                       *abstract_templ,
-                          glitz_drawable_format_t    *format,
-                          glitz_pbuffer_attributes_t *attributes,
-                          unsigned long              mask)
+glitz_agl_create_pbuffer (void                    *abstract_templ,
+                          glitz_drawable_format_t *format,
+                          unsigned int            width,
+                          unsigned int            height)
 {
   glitz_agl_drawable_t *templ = (glitz_agl_drawable_t *) abstract_templ;
 
   return _glitz_agl_create_pbuffer_drawable (templ->thread_info, format,
-                                             attributes, mask);
+                                             width, height);
 }
 
 glitz_drawable_t *
 glitz_agl_create_drawable_for_window (glitz_drawable_format_t *format,
                                       WindowRef               window,
-                                      int                     width,
-                                      int                     height)
+                                      unsigned int            width,
+                                      unsigned int            height)
 {
   glitz_agl_drawable_t *drawable;
   glitz_agl_thread_info_t *thread_info;
@@ -159,9 +157,9 @@ glitz_agl_create_drawable_for_window (glitz_drawable_format_t *format,
 slim_hidden_def(glitz_agl_create_drawable_for_window);
 
 glitz_drawable_t *
-glitz_agl_create_pbuffer_drawable (glitz_drawable_format_t    *format,
-                                   glitz_pbuffer_attributes_t *attributes,
-                                   unsigned long              mask)
+glitz_agl_create_pbuffer_drawable (glitz_drawable_format_t *format,
+                                   unsigned int            width,
+                                   unsigned int            height)
 {
   glitz_agl_thread_info_t *thread_info;
 
@@ -170,7 +168,7 @@ glitz_agl_create_pbuffer_drawable (glitz_drawable_format_t    *format,
     return NULL;
 
   return _glitz_agl_create_pbuffer_drawable (thread_info, format,
-                                             attributes, mask);
+                                             width, height);
 }
 slim_hidden_def(glitz_agl_create_pbuffer_drawable);
 

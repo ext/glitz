@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -42,6 +42,7 @@ glitz_gl_proc_address_list_t _glitz_glx_gl_proc_address = {
   (glitz_gl_enable_client_state_t) glEnableClientState,
   (glitz_gl_disable_client_state_t) glDisableClientState,
   (glitz_gl_vertex_pointer_t) glVertexPointer,
+  (glitz_gl_tex_coord_pointer_t) glTexCoordPointer,
   (glitz_gl_draw_arrays_t) glDrawArrays,
   (glitz_gl_tex_env_f_t) glTexEnvf,
   (glitz_gl_tex_env_fv_t) glTexEnvfv,
@@ -96,6 +97,8 @@ glitz_gl_proc_address_list_t _glitz_glx_gl_proc_address = {
   /* extensions */
   (glitz_gl_blend_color_t) 0,
   (glitz_gl_active_texture_t) 0,
+  (glitz_gl_client_active_texture_t) 0,
+  (glitz_gl_multi_draw_arrays_t) 0,
   (glitz_gl_gen_programs_t) 0,
   (glitz_gl_delete_programs_t) 0,
   (glitz_gl_program_string_t) 0,

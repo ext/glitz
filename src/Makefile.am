@@ -21,6 +21,8 @@ libglitz_la_SOURCES =	 \
 	glitz_buffer.c	 \
 	glitz_geometry.c \
 	glitz_pixel.c	 \
+	glitz_trap.c	 \
+	glitz_trapimp.h	 \
 	glitz_gl.h	 \
 	glitzint.h
 

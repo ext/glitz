@@ -1,3 +1,16 @@
+2005-01-25  David Reveman  <davidr@novell.com>
+
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.0.
+
+	* configure.in: Bump version to 0.4.0.
+
+	Add anti-aliased trapezoids, rectangular clipping, multiple
+	geometry arrays, bitmap geometry, mask surface convolution filtering.
+
+2004-12-07  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Moved misplaced __internal_linkage.
+
 2004-12-03  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_compose.c (glitz_composite_op_init): Make sure some

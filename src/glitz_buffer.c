@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -36,84 +36,92 @@ _glitz_buffer_init (glitz_buffer_t      *buffer,
                     unsigned int        size,
                     glitz_buffer_hint_t hint)
 {
-  glitz_gl_enum_t usage;
-
-  buffer->ref_count = 1;
-  buffer->name = 0;
-
-  switch (hint) {
-  case GLITZ_BUFFER_HINT_STREAM_DRAW:
-    usage = GLITZ_GL_STREAM_DRAW;
-    break;
-  case GLITZ_BUFFER_HINT_STREAM_READ:
-    usage = GLITZ_GL_STREAM_READ;
-    break;
-  case GLITZ_BUFFER_HINT_STREAM_COPY:
-    usage = GLITZ_GL_STREAM_COPY;
-    break;
-  case GLITZ_BUFFER_HINT_STATIC_DRAW:
-    usage = GLITZ_GL_STATIC_DRAW;
-    break;
-  case GLITZ_BUFFER_HINT_STATIC_READ:
-    usage = GLITZ_GL_STATIC_READ;
-    break;
-  case GLITZ_BUFFER_HINT_STATIC_COPY:
-    usage = GLITZ_GL_STATIC_COPY;
-    break;
-  case GLITZ_BUFFER_HINT_DYNAMIC_DRAW:
-    usage = GLITZ_GL_DYNAMIC_DRAW;
-    break;
-  case GLITZ_BUFFER_HINT_DYNAMIC_READ:
-    usage = GLITZ_GL_DYNAMIC_READ;
-    break;
-  default:
-    usage = GLITZ_GL_DYNAMIC_COPY;
-    break;
-  }
-  
-  if (drawable) {
-
-    GLITZ_GL_DRAWABLE (drawable);
+    glitz_gl_enum_t usage;
     
-    buffer->drawable = drawable;
-    glitz_drawable_reference (drawable);
+    buffer->ref_count = 1;
+    buffer->name = 0;
 
-    drawable->backend->push_current (drawable, NULL,
-                                     GLITZ_ANY_CONTEXT_CURRENT);
+    if (drawable)
+    {
+        GLITZ_GL_DRAWABLE (drawable);
+      
+        switch (hint) {
+        case GLITZ_BUFFER_HINT_STREAM_DRAW:
+            usage = GLITZ_GL_STREAM_DRAW;
+            break;
+        case GLITZ_BUFFER_HINT_STREAM_READ:
+            usage = GLITZ_GL_STREAM_READ;
+            break;
+        case GLITZ_BUFFER_HINT_STREAM_COPY:
+            usage = GLITZ_GL_STREAM_COPY;
+            break;
+        case GLITZ_BUFFER_HINT_STATIC_DRAW:
+            usage = GLITZ_GL_STATIC_DRAW;
+            break;
+        case GLITZ_BUFFER_HINT_STATIC_READ:
+            usage = GLITZ_GL_STATIC_READ;
+            break;
+        case GLITZ_BUFFER_HINT_STATIC_COPY:
+            usage = GLITZ_GL_STATIC_COPY;
+            break;
+        case GLITZ_BUFFER_HINT_DYNAMIC_DRAW:
+            usage = GLITZ_GL_DYNAMIC_DRAW;
+            break;
+        case GLITZ_BUFFER_HINT_DYNAMIC_READ:
+            usage = GLITZ_GL_DYNAMIC_READ;
+            break;
+        default:
+            usage = GLITZ_GL_DYNAMIC_COPY;
+            break;
+        }
 
-    gl->gen_buffers (1, &buffer->name);
-    if (buffer->name) {
-      gl->bind_buffer (buffer->target, buffer->name);
-      gl->buffer_data (buffer->target, size, data, usage);
-      gl->bind_buffer (buffer->target, 0);
+        buffer->owns_data = 1;
+        buffer->drawable = drawable;
+        glitz_drawable_reference (drawable);
+        
+        drawable->backend->push_current (drawable, NULL,
+                                         GLITZ_ANY_CONTEXT_CURRENT);
+        
+        gl->gen_buffers (1, &buffer->name);
+        if (buffer->name) {
+            gl->bind_buffer (buffer->target, buffer->name);
+            gl->buffer_data (buffer->target, size, data, usage);
+            gl->bind_buffer (buffer->target, 0);
+        }
+        
+        drawable->backend->pop_current (drawable);
+    }
+    else
+    {
+        buffer->drawable = NULL;
+        usage = GLITZ_GL_DYNAMIC_COPY;
     }
     
-    drawable->backend->pop_current (drawable);
-  } else
-    buffer->drawable = NULL;
+    if (size > 0 && buffer->name == 0)
+    {
+        buffer->data = malloc (size);
+        if (buffer->data == NULL)
+            return GLITZ_STATUS_NO_MEMORY;
+        
+        if (data)
+            memcpy (buffer->data, data, size);
+        
+        buffer->owns_data = 1;
+    }
+    else
+    {
+        buffer->owns_data = 0;
+        buffer->data = data;
+    }
   
-  if (size > 0 && buffer->name == 0) {
-    buffer->data = malloc (size);
-    if (buffer->data == NULL)
-      return GLITZ_STATUS_NO_MEMORY;
-    
-    if (data)
-      memcpy (buffer->data, data, size);
-    
-    buffer->owns_data = 1;
-  } else {
-    buffer->owns_data = 0;
-    buffer->data = data;
-  }
-  
-  return GLITZ_STATUS_SUCCESS;
+    return GLITZ_STATUS_SUCCESS;
 }
 
 glitz_buffer_t *
-glitz_geometry_buffer_create (glitz_drawable_t    *drawable,
-                              void                *data,
-                              unsigned int        size,
-                              glitz_buffer_hint_t hint)
+glitz_vertex_buffer_create (glitz_drawable_t    *drawable,
+                            void                *data,
+                            unsigned int        size,
+                            glitz_buffer_hint_t hint)
 {
   glitz_buffer_t *buffer;
   glitz_status_t status;
@@ -186,9 +194,6 @@ glitz_buffer_create_for_data (void *data)
 {
   glitz_buffer_t *buffer;
   
-  if (data == NULL)
-    return NULL;
-  
   buffer = (glitz_buffer_t *) malloc (sizeof (glitz_buffer_t));
   if (buffer == NULL)
     return NULL;
@@ -226,7 +231,7 @@ glitz_buffer_destroy (glitz_buffer_t *buffer)
 void
 glitz_buffer_reference (glitz_buffer_t *buffer)
 {
-  if (buffer == NULL)
+  if (!buffer)
     return;
 
   buffer->ref_count++;

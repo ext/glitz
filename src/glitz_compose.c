@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -53,7 +53,7 @@ _glitz_combine_argb_argb (glitz_composite_op_t *op)
                      GLITZ_GL_SRC_COLOR);
   op->gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_OPERAND1_RGB,
                      GLITZ_GL_SRC_ALPHA);
-  
+
   op->gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_COMBINE_ALPHA,
                      GLITZ_GL_MODULATE);
   op->gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_SOURCE0_ALPHA,
@@ -141,6 +141,18 @@ _glitz_combine_argb_argbc (glitz_composite_op_t *op)
     op->gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                        GLITZ_GL_MODULATE);
   }
+}
+
+static void
+_glitz_combine_argb_argbf (glitz_composite_op_t *op)
+{
+  glitz_set_operator (op->gl, op->render_op);
+  glitz_filter_enable (op->mask, op);
+  
+  op->gl->color_4us (op->alpha_mask.red,
+                     op->alpha_mask.green,
+                     op->alpha_mask.blue,
+                     op->alpha_mask.alpha);
 }
 
 static void
@@ -314,6 +326,18 @@ _glitz_combine_solid_argbc (glitz_composite_op_t *op)
                      solid.alpha);
 }
 
+static void
+_glitz_combine_solid_argbf (glitz_composite_op_t *op)
+{
+  glitz_set_operator (op->gl, op->render_op);
+  glitz_filter_enable (op->mask, op);
+
+  op->gl->color_4us (SHORT_MULT (op->solid->red, op->alpha_mask.alpha),
+                     SHORT_MULT (op->solid->green, op->alpha_mask.alpha),
+                     SHORT_MULT (op->solid->blue, op->alpha_mask.alpha),
+                     SHORT_MULT (op->solid->alpha, op->alpha_mask.alpha));
+}
+
 /* This only works with the OVER operator. */
 static void
 _glitz_combine_solid_solidc (glitz_composite_op_t *op)
@@ -350,14 +374,14 @@ _glitz_combine_map[GLITZ_SURFACE_TYPES][GLITZ_SURFACE_TYPES] = {
     { GLITZ_COMBINE_TYPE_ARGB,        _glitz_combine_argb_solid,  1, 0 },
     { GLITZ_COMBINE_TYPE_ARGB_ARGB,   _glitz_combine_argb_argb,   2, 0 },
     { GLITZ_COMBINE_TYPE_ARGB_ARGBC,  _glitz_combine_argb_argbc,  3, 0 },
-    { GLITZ_COMBINE_TYPE_NA,          NULL,                       0, 0 },
+    { GLITZ_COMBINE_TYPE_ARGB_ARGBF,  _glitz_combine_argb_argbf,  2, 2 },
     { GLITZ_COMBINE_TYPE_ARGB_SOLID,  _glitz_combine_argb_solid,  1, 0 },
     { GLITZ_COMBINE_TYPE_ARGB_SOLIDC, _glitz_combine_argb_solidc, 1, 0 }
   }, {
     { GLITZ_COMBINE_TYPE_ARGB,        _glitz_combine_argb_solid,  1, 0 },
     { GLITZ_COMBINE_TYPE_ARGB_ARGB,   _glitz_combine_argb_argb,   2, 0 },
     { GLITZ_COMBINE_TYPE_ARGB_ARGBC,  _glitz_combine_argb_argbc,  3, 0 },
-    { GLITZ_COMBINE_TYPE_NA,          NULL,                       0, 0 },
+    { GLITZ_COMBINE_TYPE_ARGB_ARGBF,  _glitz_combine_argb_argbf,  2, 2 },
     { GLITZ_COMBINE_TYPE_ARGB_SOLID,  _glitz_combine_argb_solid,  1, 0 },
     { GLITZ_COMBINE_TYPE_ARGB_SOLIDC, _glitz_combine_argb_solidc, 1, 0 }
   }, {
@@ -371,14 +395,14 @@ _glitz_combine_map[GLITZ_SURFACE_TYPES][GLITZ_SURFACE_TYPES] = {
     { GLITZ_COMBINE_TYPE_SOLID,        _glitz_combine_solid_solid,  0, 0 },
     { GLITZ_COMBINE_TYPE_SOLID_ARGB,   _glitz_combine_solid_argb,   1, 0 },
     { GLITZ_COMBINE_TYPE_SOLID_ARGBC,  _glitz_combine_solid_argbc,  1, 0 },
-    { GLITZ_COMBINE_TYPE_NA,           NULL,                        0, 0 },
+    { GLITZ_COMBINE_TYPE_SOLID_ARGBF,  _glitz_combine_solid_argbf,  1, 2 },
     { GLITZ_COMBINE_TYPE_SOLID_SOLID,  _glitz_combine_solid_solid,  0, 0 },
     { GLITZ_COMBINE_TYPE_SOLID_SOLIDC, _glitz_combine_solid_solidc, 1, 0 }
   }, {
     { GLITZ_COMBINE_TYPE_SOLID,        _glitz_combine_solid_solid,  0, 0 },
     { GLITZ_COMBINE_TYPE_SOLID_ARGB,   _glitz_combine_solid_argb,   1, 0 },
     { GLITZ_COMBINE_TYPE_SOLID_ARGBC,  _glitz_combine_solid_argbc,  1, 0 },
-    { GLITZ_COMBINE_TYPE_NA,           NULL,                        0, 0 },
+    { GLITZ_COMBINE_TYPE_SOLID_ARGBF,  _glitz_combine_solid_argbf,  1, 2 },
     { GLITZ_COMBINE_TYPE_SOLID_SOLID,  _glitz_combine_solid_solid,  0, 0 },
     { GLITZ_COMBINE_TYPE_SOLID_SOLIDC, _glitz_combine_solid_solidc, 1, 0 }
   }
@@ -466,9 +490,6 @@ glitz_composite_op_init (glitz_composite_op_t *op,
 
   feature_mask = dst->attached->backend->feature_mask;
 
-  if (dst->indirect && (dst->attached->format->stencil_size < 1))
-    return;
-  
   src_type = _glitz_get_surface_type (src, feature_mask);
   if (src_type < 1)
     return;
@@ -493,6 +514,15 @@ glitz_composite_op_init (glitz_composite_op_t *op,
   combine = &_glitz_combine_map[src_type][mask_type];
   if (!combine->type)
     return;
+  
+  if (dst->geometry.type == GLITZ_GEOMETRY_TYPE_BITMAP)
+  {
+      /* We can't do anything but solid colors with bitmaps yet. */
+      if (src_type != GLITZ_SURFACE_TYPE_SOLID ||
+          (mask_type != GLITZ_SURFACE_TYPE_NULL &&
+           mask_type != GLITZ_SURFACE_TYPE_SOLID))
+          return;
+  }
   
   if (src_type == GLITZ_SURFACE_TYPE_SOLID) {
     if (SURFACE_SOLID_DAMAGE (src)) {
@@ -523,17 +553,20 @@ glitz_composite_op_init (glitz_composite_op_t *op,
     op->mask = NULL;
     
     if (op->src) {
-      op->per_component = 4;
-      op->combine = combine;
+        op->per_component = 4;
+        op->combine = combine;
     } else if (feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK)
       op->combine = combine;
     
   } else if (mask_type != GLITZ_SURFACE_TYPE_NULL) {
     if (mask_type == GLITZ_SURFACE_TYPE_ARGBC) {
       if (op->src) {
-        op->per_component = 4;
-        if (feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
-          op->combine = combine;
+          /* we can't do component alpha with alpha only surfaces */
+        if (op->src->format->color.red_size) {
+          op->per_component = 4;
+          if (feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
+            op->combine = combine;
+        }
       } else if (feature_mask & GLITZ_FEATURE_BLEND_COLOR_MASK)
         op->combine = combine;
     } else if (feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK)
@@ -552,8 +585,11 @@ glitz_composite_op_init (glitz_composite_op_t *op,
   
   if (op->combine == combine) {
     op->type = combine->type;
-    if (combine->fragment_processing) {
-      op->fp = glitz_filter_get_fragment_program (src, op);
+    if (combine->source_shader) {
+      if (combine->source_shader == 1)
+        op->fp = glitz_filter_get_fragment_program (src, op);
+      else
+        op->fp = glitz_filter_get_fragment_program (mask, op);
       if (op->fp == 0)
         op->type = GLITZ_COMBINE_TYPE_NA;
     }

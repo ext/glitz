@@ -1,21 +1,5 @@
 * API documentation.
 
-* Allow the fragment filters to be applied to mask surfaces
-  and not only source surfaces. The filter system and the fragment
-  programs are design to work both with source and mask surfaces,
-  so this should be really easy. Most of the work will be to validate
-  that it works correct in all cases.
-
-* Add low-pass sub-pixel filters for HW accelerated color balancing 
-  of per-component alpha masks.
-
-* Gamma correction. Software multi-sampling using stencil bits
-  can easily be gamma corrected without any performance penelty.
-  The above mentioned sub-pixel filters should include gamma
-  correction and I should probably also add a gamma correction
-  filter for alpha-masks and per-component alpha-masks without color
-  balancing.
-
 * WGL (Windows GL) backend.
 
 * Mesa-solo backend.

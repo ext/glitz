@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004 David Reveman, Peter Nilsson
+ * Copyright Â© 2004 David Reveman, Peter Nilsson
  *
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
@@ -21,7 +21,7 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
- * Authors: David Reveman <c99drn@cs.umu.se>
+ * Authors: David Reveman <davidr@novell.com>
  *          Peter Nilsson <c99pnn@cs.umu.se>
  */
 
@@ -39,6 +39,7 @@ typedef int glitz_gl_sizei_t;
 typedef double glitz_gl_double_t;
 typedef float glitz_gl_float_t;
 typedef unsigned short glitz_gl_ushort_t;
+typedef short glitz_gl_short_t;
 typedef unsigned int glitz_gl_bitfield_t;
 typedef double glitz_gl_clampd_t;
 typedef float glitz_gl_clampf_t;
@@ -57,7 +58,6 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_EXTENSIONS                  0x1F03
 
 #define GLITZ_GL_UNSIGNED_BYTE               0x1401
-#define GLITZ_GL_FLOAT                       0x1406
 #define GLITZ_GL_UNSIGNED_BYTE_3_3_2         0x8032
 #define GLITZ_GL_UNSIGNED_BYTE_2_3_3_REV     0x8362
 #define GLITZ_GL_UNSIGNED_SHORT_5_6_5        0x8363
@@ -89,7 +89,8 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_QUAD_STRIP     0x0008
 #define GLITZ_GL_POLYGON        0x0009
 
-#define GLITZ_GL_VERTEX_ARRAY   0x8074
+#define GLITZ_GL_VERTEX_ARRAY        0x8074
+#define GLITZ_GL_TEXTURE_COORD_ARRAY 0x8078
 
 #define GLITZ_GL_FILL           0x1B02
 #define GLITZ_GL_FRONT          0x0404
@@ -225,10 +226,12 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_CONSTANT_COLOR      0x8001
 
 #define GLITZ_GL_PACK_ALIGNMENT      0x0D05
+#define GLITZ_GL_PACK_LSB_FIRST      0x0D01
 #define GLITZ_GL_PACK_ROW_LENGTH     0x0D02
 #define GLITZ_GL_PACK_SKIP_PIXELS    0x0D04
 #define GLITZ_GL_PACK_SKIP_ROWS      0x0D03
 #define GLITZ_GL_UNPACK_ALIGNMENT    0x0CF5
+#define GLITZ_GL_UNPACK_LSB_FIRST    0x0CF1
 #define GLITZ_GL_UNPACK_ROW_LENGTH   0x0CF2
 #define GLITZ_GL_UNPACK_SKIP_PIXELS  0x0CF4
 #define GLITZ_GL_UNPACK_SKIP_ROWS    0x0CF3
@@ -282,9 +285,9 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_MAX_PROGRAM_NATIVE_TEX_INSTRUCTIONS 0x880F
 #define GLITZ_GL_MAX_PROGRAM_NATIVE_TEX_INDIRECTIONS 0x8810
 
-#define GLITZ_GL_ARRAY_BUFFER        0x8892
-#define GLITZ_GL_PIXEL_PACK_BUFFER   0x88EB
-#define GLITZ_GL_PIXEL_UNPACK_BUFFER 0x88EC
+#define GLITZ_GL_ARRAY_BUFFER         0x8892
+#define GLITZ_GL_PIXEL_PACK_BUFFER    0x88EB
+#define GLITZ_GL_PIXEL_UNPACK_BUFFER  0x88EC
 
 #define GLITZ_GL_STREAM_DRAW  0x88E0
 #define GLITZ_GL_STREAM_READ  0x88E1
@@ -316,8 +319,14 @@ typedef glitz_gl_void_t (* glitz_gl_disable_client_state_t)
 typedef glitz_gl_void_t (* glitz_gl_vertex_pointer_t)
      (glitz_gl_int_t size, glitz_gl_enum_t type, glitz_gl_sizei_t stride,
       const glitz_gl_void_t *ptr);
+typedef glitz_gl_void_t (* glitz_gl_tex_coord_pointer_t)
+     (glitz_gl_int_t size, glitz_gl_enum_t type, glitz_gl_sizei_t stride,
+      const glitz_gl_void_t *ptr);
 typedef glitz_gl_void_t (* glitz_gl_draw_arrays_t)
      (glitz_gl_enum_t mode, glitz_gl_int_t first, glitz_gl_sizei_t count);
+typedef glitz_gl_void_t (* glitz_gl_multi_draw_arrays_t)
+     (glitz_gl_enum_t mode, glitz_gl_int_t *first, glitz_gl_sizei_t *count,
+      glitz_gl_sizei_t primcount);
 typedef glitz_gl_void_t (* glitz_gl_tex_env_f_t)
      (glitz_gl_enum_t target, glitz_gl_enum_t pname, glitz_gl_float_t param);
 typedef glitz_gl_void_t (* glitz_gl_tex_env_fv_t)
@@ -456,6 +465,8 @@ typedef glitz_gl_void_t (* glitz_gl_get_integer_v_t)
 typedef glitz_gl_void_t (* glitz_gl_get_pointer_v_t)
      (glitz_gl_enum_t pname, glitz_gl_void_t **params);
 typedef glitz_gl_void_t (* glitz_gl_active_texture_t)
+     (glitz_gl_enum_t);
+typedef glitz_gl_void_t (* glitz_gl_client_active_texture_t)
      (glitz_gl_enum_t);
 typedef glitz_gl_void_t (* glitz_gl_gen_programs_t)
      (glitz_gl_sizei_t, glitz_gl_uint_t *);

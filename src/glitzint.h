@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifndef GLITZINT_H_INCLUDED
@@ -29,8 +29,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <math.h>
 
 #include "glitz.h"
+
+#if defined(__APPLE__) || defined(__sun__)
+# define floorf(a)    floor (a)
+# define ceilf(a)     ceil (a)
+# define sinf(a)      sin (a)
+# define cosf(a)      cos (a)
+# define tanf(a)      tan (a)
+# define asinf(a)     asin (a)
+# define acosf(a)     acos (a)
+# define atanf(a)     atan (a)
+# define atan2f(a, b) atan2 (a, b)
+# define sqrtf(a)     sqrt (a)
+#endif
 
 #if __GNUC__ >= 3 && defined(__ELF__)
 # define slim_hidden_proto(name)	slim_hidden_proto1(name, INT_##name)
@@ -71,9 +85,6 @@
 
 #include "glitz_gl.h"
 
-#define GLITZ_DEFAULT_PBUFFER_WIDTH  512
-#define GLITZ_DEFAULT_PBUFFER_HEIGHT 512
-
 #define GLITZ_CONTEXT_STACK_SIZE 16
 
 typedef void (*glitz_function_pointer_t) (void);
@@ -88,6 +99,7 @@ typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_enable_client_state_t        enable_client_state;
   glitz_gl_disable_client_state_t       disable_client_state;
   glitz_gl_vertex_pointer_t             vertex_pointer;
+  glitz_gl_tex_coord_pointer_t          tex_coord_pointer;
   glitz_gl_draw_arrays_t                draw_arrays;
   glitz_gl_tex_env_f_t                  tex_env_f;
   glitz_gl_tex_env_fv_t                 tex_env_fv;
@@ -142,6 +154,8 @@ typedef struct _glitz_gl_proc_address_list_t {
   /* extensions */
   glitz_gl_blend_color_t                blend_color;
   glitz_gl_active_texture_t             active_texture;
+  glitz_gl_client_active_texture_t      client_active_texture;
+  glitz_gl_multi_draw_arrays_t          multi_draw_arrays;
   glitz_gl_gen_programs_t               gen_programs;
   glitz_gl_delete_programs_t            delete_programs;
   glitz_gl_program_string_t             program_string;
@@ -175,19 +189,22 @@ typedef int glitz_combine_type_t;
 #define GLITZ_COMBINE_TYPE_ARGB           1
 #define GLITZ_COMBINE_TYPE_ARGB_ARGB      2
 #define GLITZ_COMBINE_TYPE_ARGB_ARGBC     3
-#define GLITZ_COMBINE_TYPE_ARGB_SOLID     4
-#define GLITZ_COMBINE_TYPE_ARGB_SOLIDC    5
-#define GLITZ_COMBINE_TYPE_ARGBF          6
-#define GLITZ_COMBINE_TYPE_ARGBF_ARGB     7
-#define GLITZ_COMBINE_TYPE_ARGBF_ARGBC    8
-#define GLITZ_COMBINE_TYPE_ARGBF_SOLID    9
-#define GLITZ_COMBINE_TYPE_ARGBF_SOLIDC  10
-#define GLITZ_COMBINE_TYPE_SOLID         11
-#define GLITZ_COMBINE_TYPE_SOLID_ARGB    12
-#define GLITZ_COMBINE_TYPE_SOLID_ARGBC   13
-#define GLITZ_COMBINE_TYPE_SOLID_SOLID   14
-#define GLITZ_COMBINE_TYPE_SOLID_SOLIDC  15
-#define GLITZ_COMBINE_TYPES              16
+#define GLITZ_COMBINE_TYPE_ARGB_ARGBF     4
+#define GLITZ_COMBINE_TYPE_ARGB_SOLID     5
+#define GLITZ_COMBINE_TYPE_ARGB_SOLIDC    6
+#define GLITZ_COMBINE_TYPE_ARGBF          7
+#define GLITZ_COMBINE_TYPE_ARGBF_ARGB     8
+#define GLITZ_COMBINE_TYPE_ARGBF_ARGBC    9
+#define GLITZ_COMBINE_TYPE_ARGBF_ARGBF   10
+#define GLITZ_COMBINE_TYPE_ARGBF_SOLID   11
+#define GLITZ_COMBINE_TYPE_ARGBF_SOLIDC  12
+#define GLITZ_COMBINE_TYPE_SOLID         13
+#define GLITZ_COMBINE_TYPE_SOLID_ARGB    14
+#define GLITZ_COMBINE_TYPE_SOLID_ARGBC   15
+#define GLITZ_COMBINE_TYPE_SOLID_ARGBF   16
+#define GLITZ_COMBINE_TYPE_SOLID_SOLID   17
+#define GLITZ_COMBINE_TYPE_SOLID_SOLIDC  18
+#define GLITZ_COMBINE_TYPES              19
 
 #define GLITZ_TEXTURE_NONE 0
 #define GLITZ_TEXTURE_2D   1
@@ -224,10 +241,6 @@ typedef enum {
   GLITZ_CONTEXT_CURRENT,
   GLITZ_DRAWABLE_CURRENT
 } glitz_constraint_t;
-
-typedef struct _glitz_box_t {
-  short x1, y1, x2, y2;
-} glitz_box_t;
 
 typedef struct _glitz_region_t {
   glitz_box_t extents;
@@ -295,10 +308,10 @@ glitz_region_union (glitz_region_t *region,
 
 typedef struct glitz_backend {
   glitz_drawable_t *
-  (*create_pbuffer)            (void                       *drawable,
-                                glitz_drawable_format_t    *format,
-                                glitz_pbuffer_attributes_t *attributes,
-                                unsigned long              mask);
+  (*create_pbuffer)            (void                    *drawable,
+                                glitz_drawable_format_t *format,
+                                unsigned int            width,
+                                unsigned int            height);
   
   void
   (*destroy)                   (void *drawable);
@@ -347,11 +360,11 @@ struct _glitz_drawable {
 #define GLITZ_GL_DRAWABLE(drawable) \
   glitz_gl_proc_address_list_t *gl = &(drawable)->backend->gl;
 
-typedef struct _glitz_point_t {
-  glitz_float_t x, y;
-} glitz_point_t;
+typedef struct _glitz_vec2_t {
+  glitz_float_t v[2];
+} glitz_vec2_t;
 
-typedef struct _glitz_vec_t {
+typedef struct _glitz_vec4_t {
   glitz_float_t v[4];
 } glitz_vec4_t;
 
@@ -399,15 +412,50 @@ struct _glitz_buffer {
   glitz_drawable_t *drawable;
 };
 
+struct _glitz_multi_array {
+  int ref_count;
+  int size;
+  int n_arrays;
+  int *first;
+  int *sizes;
+  int *count;
+  int *span, *current_span;
+  glitz_vec2_t *off;
+};
+
+typedef struct _glitz_int_coordinate {
+  glitz_gl_enum_t type;
+  int             size, offset;
+} glitz_int_coordinate_t;
+
+typedef struct _glitz_vertex_info {
+  glitz_gl_enum_t        prim;
+  glitz_gl_enum_t        type;
+  glitz_int_coordinate_t src;
+  glitz_int_coordinate_t mask;
+} glitz_vertex_info_t;
+
+typedef struct _glitz_bitmap_info {
+  glitz_bool_t     top_down;
+  glitz_gl_int_t   pad;
+  glitz_gl_ubyte_t *base;
+} glitz_bitmap_info_t;
+
 typedef struct _glitz_geometry {
-  glitz_gl_enum_t  primitive;
-  glitz_gl_enum_t  type;
-  glitz_gl_int_t   first;
-  glitz_gl_sizei_t count;
-  glitz_buffer_t   *buffer;
-  glitz_float_t    x_offset;
-  glitz_float_t    y_offset;
-  glitz_gl_float_t data[8];
+  glitz_geometry_type_t type;
+  glitz_buffer_t        *buffer;
+  glitz_gl_sizei_t      stride;
+  glitz_gl_float_t      data[8];
+  glitz_gl_int_t        first;
+  glitz_gl_int_t        size;
+  glitz_gl_sizei_t      count;
+  glitz_vec2_t          off;
+  glitz_multi_array_t   *array;
+  unsigned long         attributes;
+  union {
+    glitz_vertex_info_t v;
+    glitz_bitmap_info_t b;
+  } u;
 } glitz_geometry_t;
 
 #define GLITZ_SURFACE_FLAG_SOLID_MASK                   (1L <<  0)
@@ -425,6 +473,12 @@ typedef struct _glitz_geometry {
 #define GLITZ_SURFACE_FLAG_EYE_COORDS_MASK              (1L << 12)
 #define GLITZ_SURFACE_FLAG_TRANSFORM_MASK               (1L << 13)
 #define GLITZ_SURFACE_FLAG_PROJECTIVE_TRANSFORM_MASK    (1L << 14)
+#define GLITZ_SURFACE_FLAG_GEN_S_COORDS_MASK            (1L << 15)
+#define GLITZ_SURFACE_FLAG_GEN_T_COORDS_MASK            (1L << 16)
+
+#define GLITZ_SURFACE_FLAGS_GEN_COORDS_MASK  \
+    (GLITZ_SURFACE_FLAG_GEN_S_COORDS_MASK | \
+     GLITZ_SURFACE_FLAG_GEN_T_COORDS_MASK)
 
 #define SURFACE_SOLID(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_SOLID_MASK)
@@ -446,12 +500,6 @@ typedef struct _glitz_geometry {
 #define SURFACE_DITHER(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_DITHER_MASK)
 
-#define SURFACE_MULTISAMPLE(surface) \
-  ((surface)->flags & GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK)
-
-#define SURFACE_NICEST_MULTISAMPLE(surface) \
-  ((surface)->flags & GLITZ_SURFACE_FLAG_NICEST_MULTISAMPLE_MASK)
-
 #define SURFACE_SOLID_DAMAGE(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK)
 
@@ -469,17 +517,6 @@ typedef struct _glitz_geometry {
 
 #define SURFACE_PROJECTIVE_TRANSFORM(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_PROJECTIVE_TRANSFORM_MASK)
-
-typedef struct _glitz_sample_offset {
-  glitz_float_t x;
-  glitz_float_t y;
-} glitz_sample_offset_t;
-
-typedef struct _glitz_multi_sample_info {
-  glitz_sample_offset_t *offsets;
-  unsigned short        *weights;
-  int                   n_samples;
-} glitz_sample_info_t;
 
 typedef struct _glitz_filter_params_t glitz_filter_params_t;
 
@@ -503,12 +540,23 @@ struct _glitz_surface {
   glitz_filter_params_t *filter_params;
   glitz_matrix_t        *transform;
   int                   x, y;
-  int                   width, height;
+  glitz_box_t           box;
+  short                 x_clip, y_clip;
+  glitz_box_t           *clip;
+  int                   n_clip;
   glitz_gl_enum_t       buffer;
   unsigned long         flags;
-  glitz_sample_info_t   *indirect;
   glitz_color_t         solid;
   glitz_geometry_t      geometry;
+  void                  *arrays;
+  int                   n_arrays;
+  int                   *first;
+  unsigned int          *count;
+  glitz_vec2_t          *off;
+  int                   default_first;
+  unsigned int          default_count;
+  glitz_vec2_t          default_off;
+  int                   *primcount;
   glitz_region_t        texture_damage;
   glitz_region_t        drawable_damage;
 };
@@ -524,7 +572,7 @@ typedef struct _glitz_combine_t {
   glitz_combine_type_t     type;
   glitz_combine_function_t enable;
   int                      texture_units;
-  int                      fragment_processing;
+  int                      source_shader;
 } glitz_combine_t;
 
 struct _glitz_composite_op_t {
@@ -570,8 +618,8 @@ glitz_uint_to_power_of_two (unsigned int x);
 
 extern void __internal_linkage
 glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
-                      int                          x,
-                      int                          y);
+                      glitz_float_t                x,
+                      glitz_float_t                y);
 
 extern void __internal_linkage
 glitz_clamp_value (glitz_float_t *value,
@@ -599,7 +647,8 @@ glitz_texture_init (glitz_texture_t *texture,
                     int             width,
                     int             height,
                     glitz_gl_int_t  texture_format,
-                    unsigned long   feature_mask);
+                    unsigned long   feature_mask,
+                    glitz_bool_t    unnormalized);
 
 void
 glitz_texture_fini (glitz_gl_proc_address_list_t *gl,
@@ -618,7 +667,7 @@ glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
 extern void __internal_linkage
 glitz_texture_ensure_filter (glitz_gl_proc_address_list_t *gl,
                              glitz_texture_t              *texture,
-                             glitz_filter_t               filter);
+                             glitz_gl_enum_t              filter);
 
 extern void __internal_linkage
 glitz_texture_ensure_wrap (glitz_gl_proc_address_list_t *gl,
@@ -647,11 +696,13 @@ glitz_texture_copy_drawable (glitz_gl_proc_address_list_t *gl,
 void
 glitz_texture_set_tex_gen (glitz_gl_proc_address_list_t *gl,
                            glitz_texture_t              *texture,
+                           glitz_geometry_t             *geometry,
                            int                          x_src,
                            int                          y_src,
-                           unsigned long                flags);
+                           unsigned long                flags,
+                           glitz_int_coordinate_t       *coord);
 
-extern glitz_texture_t *__internal_linkage
+extern glitz_texture_t __internal_linkage *
 glitz_surface_get_texture (glitz_surface_t *surface,
                            glitz_bool_t    allocate);
 
@@ -708,7 +759,7 @@ glitz_composite_enable (glitz_composite_op_t *op);
 extern void __internal_linkage
 glitz_composite_disable (glitz_composite_op_t *op);
 
-extern void *__internal_linkage
+extern void __internal_linkage *
 glitz_buffer_bind (glitz_buffer_t  *buffer,
                    glitz_gl_enum_t target);
 
@@ -725,9 +776,6 @@ extern void __internal_linkage
 glitz_filter_set_type (glitz_surface_t *surface,
                        glitz_filter_t  filter);
 
-extern void __internal_linkage
-glitz_filter_params_destroy (glitz_filter_params_t *params);
-
 extern glitz_gl_uint_t __internal_linkage
 glitz_filter_get_vertex_program (glitz_surface_t      *surface,
                                  glitz_composite_op_t *op);
@@ -741,22 +789,24 @@ glitz_filter_enable (glitz_surface_t      *surface,
                      glitz_composite_op_t *op);
 
 extern void __internal_linkage
-glitz_geometry_enable_default (glitz_gl_proc_address_list_t *gl,
-                               glitz_surface_t              *dst,
-                               glitz_box_t                  *box);
+glitz_geometry_enable_none (glitz_gl_proc_address_list_t *gl,
+                            glitz_surface_t              *dst,
+                            glitz_box_t                  *box);
 
 extern void __internal_linkage
 glitz_geometry_enable (glitz_gl_proc_address_list_t *gl,
                        glitz_surface_t              *dst,
-                       glitz_gl_enum_t              *primitive,
-                       glitz_gl_int_t               *first,
-                       glitz_gl_sizei_t             *count,
                        glitz_box_t                  *box);
 
 extern void __internal_linkage
-glitz_geometry_disable (glitz_gl_proc_address_list_t *gl,
-                        glitz_surface_t              *dst);
+glitz_geometry_disable (glitz_surface_t *dst);
 
+extern void __internal_linkage
+glitz_geometry_draw_arrays (glitz_gl_proc_address_list_t *gl,
+                            glitz_surface_t              *dst,
+                            glitz_geometry_type_t        type,
+                            glitz_box_t                  *bounds,
+                            int                          damage);
 
 #define MAXSHORT SHRT_MAX
 #define MINSHORT SHRT_MIN
@@ -856,9 +906,16 @@ slim_hidden_proto(glitz_surface_get_status)
 slim_hidden_proto(glitz_surface_get_format)
 slim_hidden_proto(glitz_surface_get_drawable)
 slim_hidden_proto(glitz_surface_get_attached_drawable)
+slim_hidden_proto(glitz_surface_translate_point)
+slim_hidden_proto(glitz_surface_set_clip_region)
 slim_hidden_proto(glitz_set_rectangle)
 slim_hidden_proto(glitz_set_rectangles)
 slim_hidden_proto(glitz_set_geometry)
+slim_hidden_proto(glitz_set_array)
+slim_hidden_proto(glitz_multi_array_create)
+slim_hidden_proto(glitz_multi_array_add)
+slim_hidden_proto(glitz_multi_array_reset)
+slim_hidden_proto(glitz_set_multi_array)
 slim_hidden_proto(glitz_buffer_set_data)
 slim_hidden_proto(glitz_buffer_get_data)
 

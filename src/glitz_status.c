@@ -1,5 +1,5 @@
 /*
- * Copyright © 2004 David Reveman, Peter Nilsson
+ * Copyright Â© 2004 David Reveman, Peter Nilsson
  *
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
@@ -21,7 +21,7 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
- * Authors: David Reveman <c99drn@cs.umu.se>
+ * Authors: David Reveman <davidr@novell.com>
  *          Peter Nilsson <c99pnn@cs.umu.se>
  */
 

@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -32,69 +32,110 @@
 #include <stdio.h>
 
 #define EXPAND_NONE ""
-#define EXPAND_2D "2D"
+#define EXPAND_2D   "2D"
 #define EXPAND_RECT "RECT"
+#define EXPAND_NA   "NA"
 
-#define EXPAND_NO_IN_OP \
-  "MUL result.color, color, fragment.color.a;"
+#define EXPAND_X_IN_SOLID_OP \
+  { "", "", "MUL result.color, color, fragment.color.a;" }
 
+#define EXPAND_SOLID_IN_X_OP \
+  { "", "", "MUL result.color, fragment.color, color.a;" }
+      
 #define EXPAND_SRC_DECL "TEMP src;"
 #define EXPAND_SRC_2D_IN_OP \
-  "TXP src, fragment.texcoord[1], texture[1], 2D;" \
-  "DP4 color.a, color, fragment.color;" \
-  "MUL result.color, src, color.a;"
+  { "TXP src, fragment.texcoord[1], texture[1], 2D;", \
+    "DP4 color.a, color, fragment.color;", \
+    "MUL result.color, src, color.a;" }
+      
 #define EXPAND_SRC_RECT_IN_OP \
-  "TXP src, fragment.texcoord[1], texture[1], RECT;" \
-  "DP4 color.a, color, fragment.color;" \
-  "MUL result.color, src, color.a;"
+  { "TXP src, fragment.texcoord[1], texture[1], RECT;", \
+    "DP4 color.a, color, fragment.color;", \
+    "MUL result.color, src, color.a;" }
 
 #define EXPAND_MASK_DECL "TEMP mask;"
 #define EXPAND_MASK_2D_IN_OP \
-  "TXP mask, fragment.texcoord[0], texture[0], 2D;" \
-  "DP4 mask.a, mask, fragment.color;" \
-  "MUL result.color, color, mask.a;"
+  { "TXP mask, fragment.texcoord[0], texture[0], 2D;", \
+    "DP4 mask.a, mask, fragment.color;", \
+    "MUL result.color, color, mask.a;" }
 
 #define EXPAND_MASK_RECT_IN_OP \
-  "TXP mask, fragment.texcoord[0], texture[0], RECT;" \
-  "DP4 mask.a, mask, fragment.color;" \
-  "MUL result.color, color, mask.a;"
+  { "TXP mask, fragment.texcoord[0], texture[0], RECT;", \
+    "DP4 mask.a, mask, fragment.color;", \
+    "MUL result.color, color, mask.a;" }
+
+#define EXPAND_IN_NA \
+  { "NA", "NA", "NA" }
 
 typedef struct _glitz_program_expand_t glitz_program_expand_t;
 
+typedef struct _glitz_inop {
+    char *fetch;
+    char *dot_product;
+    char *mult;
+} glitz_in_op_t;
+
 static const struct _glitz_program_expand_t {
-  char *texture;
-  char *declarations;
-  char *in;
-} _program_expand_map[GLITZ_TEXTURE_LAST][GLITZ_TEXTURE_LAST] = {
+  char          *texture;
+  char          *declarations;
+  glitz_in_op_t in;
+} _program_expand_map[GLITZ_TEXTURE_LAST][GLITZ_TEXTURE_LAST][2] = {
   {
     /* [GLITZ_TEXTURE_NONE][GLITZ_TEXTURE_NONE] */
-    { EXPAND_NONE, EXPAND_NONE, EXPAND_NO_IN_OP },
+    {
+      { EXPAND_NA, EXPAND_NA, EXPAND_IN_NA },
+      { EXPAND_NA, EXPAND_NA, EXPAND_IN_NA }
+    },
     
     /* [GLITZ_TEXTURE_NONE][GLITZ_TEXTURE_2D] */
-    { EXPAND_NONE, EXPAND_MASK_DECL, EXPAND_MASK_2D_IN_OP },
+    {
+      { EXPAND_NA,   EXPAND_NA,   EXPAND_IN_NA         },
+      { EXPAND_2D,   EXPAND_NONE, EXPAND_SOLID_IN_X_OP }
+    },
     
     /* [GLITZ_TEXTURE_NONE][GLITZ_TEXTURE_RECT] */
-    { EXPAND_NONE, EXPAND_MASK_DECL, EXPAND_MASK_RECT_IN_OP }
+    {
+      { EXPAND_NA,   EXPAND_NA,   EXPAND_IN_NA         },
+      { EXPAND_RECT, EXPAND_NONE, EXPAND_SOLID_IN_X_OP }
+    }
   }, {
     
     /* [GLITZ_TEXTURE_2D][GLITZ_TEXTURE_NONE] */
-    { EXPAND_2D, EXPAND_NONE, EXPAND_NO_IN_OP },
+    {
+      { EXPAND_2D, EXPAND_NONE, EXPAND_X_IN_SOLID_OP },
+      { EXPAND_NA, EXPAND_NA,   EXPAND_IN_NA         }
+    },
     
     /* [GLITZ_TEXTURE_2D][GLITZ_TEXTURE_2D] */
-    { EXPAND_2D, EXPAND_MASK_DECL, EXPAND_MASK_2D_IN_OP },
+    {
+      { EXPAND_2D, EXPAND_MASK_DECL, EXPAND_MASK_2D_IN_OP },
+      { EXPAND_2D, EXPAND_SRC_DECL,  EXPAND_SRC_2D_IN_OP  }
+    },
     
     /* [GLITZ_TEXTURE_2D][GLITZ_TEXTURE_RECT] */
-    { EXPAND_2D, EXPAND_MASK_DECL, EXPAND_MASK_RECT_IN_OP }
+    {
+      { EXPAND_2D,   EXPAND_MASK_DECL, EXPAND_MASK_RECT_IN_OP },
+      { EXPAND_RECT, EXPAND_SRC_DECL,  EXPAND_SRC_2D_IN_OP    }
+    }
   }, {
-    
+      
     /* [GLITZ_TEXTURE_RECT][GLITZ_TEXTURE_NONE] */
-    { EXPAND_RECT, EXPAND_NONE, EXPAND_NO_IN_OP },
+    {
+      { EXPAND_RECT, EXPAND_NONE, EXPAND_X_IN_SOLID_OP },
+      { EXPAND_NA,   EXPAND_NA,   EXPAND_IN_NA         }
+    },
     
     /* [GLITZ_TEXTURE_RECT][GLITZ_TEXTURE_2D] */
-    { EXPAND_RECT, EXPAND_MASK_DECL, EXPAND_MASK_2D_IN_OP },
+    {
+      { EXPAND_RECT, EXPAND_MASK_DECL, EXPAND_MASK_2D_IN_OP },
+      { EXPAND_2D,   EXPAND_SRC_DECL,  EXPAND_SRC_2D_IN_OP  }
+    },
     
     /* [GLITZ_TEXTURE_RECT][GLITZ_TEXTURE_RECT] */
-    { EXPAND_RECT, EXPAND_MASK_DECL, EXPAND_MASK_RECT_IN_OP }
+    {
+      { EXPAND_RECT, EXPAND_MASK_DECL, EXPAND_MASK_RECT_IN_OP },
+      { EXPAND_RECT, EXPAND_SRC_DECL,  EXPAND_SRC_RECT_IN_OP  }
+    }   
   }
 };
 
@@ -106,7 +147,7 @@ static const char *_convolution_header[] = {
   "ATTRIB pos = fragment.texcoord[%s];",
   "TEMP color, in, coord, position;",
 
-  /* extra declerations */
+  /* extra declarations */
   "%s"
   
   /* perspective divide */
@@ -139,7 +180,7 @@ static const char *_gradient_header[] = {
   "ATTRIB pos = fragment.texcoord[%s];",
   "TEMP color, second_color, stop0, stop1, position;",
 
-  /* extra declerations */
+  /* extra declarations */
   "%s",
 
   /* perspective divide */
@@ -352,22 +393,35 @@ _glitz_create_fragment_program (glitz_composite_op_t         *op,
                                 const glitz_program_expand_t *expand)
 {
   char buffer[1024], *program = NULL, *tex, *p = NULL;
+  char *texture_type, *extra_declarations;
+  const glitz_in_op_t *in;
   glitz_gl_uint_t fp;
   int i;
-  
+
   switch (op->type) {
   case GLITZ_COMBINE_TYPE_ARGBF:
   case GLITZ_COMBINE_TYPE_ARGBF_SOLID:
   case GLITZ_COMBINE_TYPE_ARGBF_SOLIDC:
+    i = 0;
+    tex = "0";
+    break;
+  case GLITZ_COMBINE_TYPE_ARGB_ARGBF:
+  case GLITZ_COMBINE_TYPE_SOLID_ARGBF:
+    i = 1;
     tex = "0";
     break;
   case GLITZ_COMBINE_TYPE_ARGBF_ARGB:
   case GLITZ_COMBINE_TYPE_ARGBF_ARGBC:
+    i = 0;
     tex = "1";
     break;
   default:
     return 0;
   }
+
+  texture_type       = expand[i].texture;
+  extra_declarations = expand[i].declarations;
+  in                 = &expand[i].in;
 
   switch (fp_type) {
   case GLITZ_FP_CONVOLUTION:
@@ -380,14 +434,14 @@ _glitz_create_fragment_program (glitz_composite_op_t         *op,
     p += sprintf (p, "!!ARBfp1.0");
     
     _string_array_to_char_array (buffer, _convolution_header);
-    p += sprintf (p, buffer, id, id - 1, tex, expand->declarations);
+    p += sprintf (p, buffer, id, id - 1, tex, extra_declarations);
     
     _string_array_to_char_array (buffer, _convolution_sample_first);
-    p += sprintf (p, buffer, tex, expand->texture);
+    p += sprintf (p, buffer, tex, texture_type);
     
     _string_array_to_char_array (buffer, _convolution_sample);
     for (i = 1; i < id; i++)
-      p += sprintf (p, buffer, i, i, tex, expand->texture, i);
+      p += sprintf (p, buffer, i, i, tex, texture_type, i);
     
     break;
   case GLITZ_FP_LINEAR_GRADIENT_TRANSPARENT:
@@ -409,7 +463,7 @@ _glitz_create_fragment_program (glitz_composite_op_t         *op,
     p += sprintf (p, "!!ARBfp1.0");
     
     _string_array_to_char_array (buffer, _gradient_header);
-    p += sprintf (p, buffer, id, id, tex, expand->declarations);
+    p += sprintf (p, buffer, id, id, tex, extra_declarations);
     
     switch (fp_type) {
     case GLITZ_FP_LINEAR_GRADIENT_TRANSPARENT:
@@ -452,7 +506,7 @@ _glitz_create_fragment_program (glitz_composite_op_t         *op,
       p += sprintf (p, buffer, id - i - 1, id - i - 1);
     
     _string_array_to_char_array (buffer, _gradient_fetch_and_interpolate);
-    p += sprintf (p, buffer, tex, expand->texture, tex, expand->texture);
+    p += sprintf (p, buffer, tex, texture_type, tex, texture_type);
     
     id++;
     break;
@@ -463,7 +517,10 @@ _glitz_create_fragment_program (glitz_composite_op_t         *op,
   if (program == NULL)
     return 0;
   
-  p += sprintf (p, "%s", expand->in);
+  p += sprintf (p, "%s", in->fetch);
+  if (op->per_component)
+      p += sprintf (p, "%s", in->dot_product);
+  p += sprintf (p, "%s", in->mult);
   sprintf (p, "END");
 
   fp = _glitz_compile_arb_fragment_program (op->gl, program, id);
@@ -549,7 +606,7 @@ glitz_get_fragment_program (glitz_composite_op_t *op,
     
     program->name[id - 1] =
       _glitz_create_fragment_program (op, fp_type, id,
-                                      &_program_expand_map[t0][t1]);
+                                      _program_expand_map[t0][t1]);
     
     glitz_surface_pop_current (op->dst);
   }

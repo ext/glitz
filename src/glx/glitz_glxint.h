@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifndef GLITZ_GLXINT_H_INCLUDED
@@ -121,7 +121,7 @@ extern void __internal_linkage
 glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info,
                             glitz_gl_float_t        glx_version);
 
-extern glitz_glx_screen_info_t *__internal_linkage
+extern glitz_glx_screen_info_t __internal_linkage *
 glitz_glx_screen_info_get (Display *display,
                            int     screen);
 
@@ -129,7 +129,7 @@ extern glitz_function_pointer_t __internal_linkage
 glitz_glx_get_proc_address (const char *name,
                             void       *closure);
 
-extern glitz_glx_context_t *__internal_linkage
+extern glitz_glx_context_t __internal_linkage *
 glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
                        glitz_drawable_format_t *format);
 
@@ -143,27 +143,25 @@ glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info);
 extern GLXPbuffer __internal_linkage
 glitz_glx_pbuffer_create (glitz_glx_screen_info_t    *screen_info,
                           GLXFBConfig                fbconfig,
-                          glitz_pbuffer_attributes_t *attributes,
-                          unsigned long              mask,
-                          unsigned int               *width,
-                          unsigned int               *height);
+                          int                        width,
+                          int                        height);
 
 extern void __internal_linkage
 glitz_glx_pbuffer_destroy (glitz_glx_screen_info_t *screen_info,
                            GLXPbuffer              pbuffer);
 
-extern glitz_drawable_t *__internal_linkage
-glitz_glx_create_pbuffer (void                       *abstract_templ,
-                          glitz_drawable_format_t    *format,
-                          glitz_pbuffer_attributes_t *attributes,
-                          unsigned long              mask);
+extern glitz_drawable_t __internal_linkage *
+glitz_glx_create_pbuffer (void                    *abstract_templ,
+                          glitz_drawable_format_t *format,
+                          unsigned int            width,
+                          unsigned int            height);
 
 extern void __internal_linkage
 glitz_glx_push_current (void               *abstract_drawable,
                         glitz_surface_t    *surface,
                         glitz_constraint_t constraint);
 
-extern glitz_surface_t * __internal_linkage
+extern glitz_surface_t __internal_linkage *
 glitz_glx_pop_current (void *abstract_drawable);
 
 extern glitz_status_t __internal_linkage

@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -599,8 +599,8 @@ glitz_set_pixels (glitz_surface_t      *dst,
 
   GLITZ_GL_SURFACE (dst);
 
-  if (x_dst < 0 || x_dst > (dst->width - width) ||
-      y_dst < 0 || y_dst > (dst->height - height)) {
+  if (x_dst < 0 || x_dst > (dst->box.x2 - width) ||
+      y_dst < 0 || y_dst > (dst->box.y2 - height)) {
     glitz_surface_status_add (dst, GLITZ_STATUS_BAD_COORDINATE_MASK);
     return;
   }
@@ -612,6 +612,7 @@ glitz_set_pixels (glitz_surface_t      *dst,
 
   if (SURFACE_SOLID (dst)) {
     glitz_image_t src_image, dst_image;
+    glitz_color_t old = dst->solid;
 
     dst_image.width = dst_image.height = 1;
 
@@ -620,7 +621,7 @@ glitz_set_pixels (glitz_surface_t      *dst,
     src_image.format = format;
     src_image.width = src_image.height = 1;
 
-    if (format->masks.alpha_mask) {
+    if (format->masks.alpha_mask && dst->format->color.alpha_size) {
       dst_image.data = (void *) &dst->solid.alpha;
       dst_image.format = &_solid_format[SOLID_ALPHA];
 
@@ -630,7 +631,7 @@ glitz_set_pixels (glitz_surface_t      *dst,
     } else
       dst->solid.alpha = 0xffff;
 
-    if (format->masks.red_mask) {
+    if (format->masks.red_mask && dst->format->color.red_size) {
       dst_image.data = (void *) &dst->solid.red;
       dst_image.format = &_solid_format[SOLID_RED];
 
@@ -640,7 +641,7 @@ glitz_set_pixels (glitz_surface_t      *dst,
     } else
       dst->solid.red = 0;
 
-    if (format->masks.green_mask) {
+    if (format->masks.green_mask && dst->format->color.green_size) {
       dst_image.data = (void *) &dst->solid.green;
       dst_image.format = &_solid_format[SOLID_GREEN];
 
@@ -650,7 +651,7 @@ glitz_set_pixels (glitz_surface_t      *dst,
     } else
       dst->solid.green = 0;
 
-    if (format->masks.blue_mask) {
+    if (format->masks.blue_mask && dst->format->color.blue_size) {
       dst_image.data = (void *) &dst->solid.blue;
       dst_image.format = &_solid_format[SOLID_BLUE];
 
@@ -662,10 +663,23 @@ glitz_set_pixels (glitz_surface_t      *dst,
 
     glitz_buffer_unmap (buffer);
 
-    dst->flags &= ~GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK;
-    glitz_surface_damage (dst, &box,
-                          GLITZ_DAMAGE_TEXTURE_MASK |
-                          GLITZ_DAMAGE_DRAWABLE_MASK);
+    if (dst->flags & GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK)
+    {
+        dst->flags &= ~GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK;
+        glitz_surface_damage (dst, &box,
+                              GLITZ_DAMAGE_TEXTURE_MASK |
+                              GLITZ_DAMAGE_DRAWABLE_MASK);
+    }
+    else
+    {
+        if (dst->solid.red   != old.red   ||
+            dst->solid.green != old.green ||
+            dst->solid.blue  != old.blue  ||
+            dst->solid.alpha != old.alpha)
+            glitz_surface_damage (dst, &box,
+                                  GLITZ_DAMAGE_TEXTURE_MASK |
+                                  GLITZ_DAMAGE_DRAWABLE_MASK);
+    }
     return;
   }
 
@@ -750,12 +764,10 @@ glitz_set_pixels (glitz_surface_t      *dst,
   if (bytes_per_line) {
     if ((bytes_per_line % 4) == 0)
       gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 4);
-    else if ((bytes_per_line % 3) == 0)
-      gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 3);
     else if ((bytes_per_line % 2) == 0)
       gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 2);
     else
-      gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 2);
+      gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 1);
 
     gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH, bytes_per_line / (bpp / 8));
   } else {
@@ -808,8 +820,8 @@ glitz_get_pixels (glitz_surface_t      *src,
 
   GLITZ_GL_SURFACE (src);
   
-  if (x_src < 0 || x_src > (src->width - width) ||
-      y_src < 0 || y_src > (src->height - height)) {
+  if (x_src < 0 || x_src > (src->box.x2 - width) ||
+      y_src < 0 || y_src > (src->box.y2 - height)) {
     glitz_surface_status_add (src, GLITZ_STATUS_BAD_COORDINATE_MASK);
     return;
   }
@@ -969,12 +981,10 @@ glitz_get_pixels (glitz_surface_t      *src,
   if (bytes_per_line) {
     if ((bytes_per_line % 4) == 0)
       gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 4);
-    else if ((bytes_per_line % 3) == 0)
-      gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 3);
     else if ((bytes_per_line % 2) == 0)
       gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 2);
     else
-      gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 2);
+      gl->pixel_store_i (GLITZ_GL_PACK_ALIGNMENT, 1);
     
     gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, bytes_per_line / (bpp / 8));
   } else {
@@ -982,7 +992,7 @@ glitz_get_pixels (glitz_surface_t      *src,
     gl->pixel_store_i (GLITZ_GL_PACK_ROW_LENGTH, 0);
   }
 
-  if (from_drawable) {    
+  if (from_drawable) {
     gl->read_buffer (src->buffer);
     
     gl->disable (GLITZ_GL_SCISSOR_TEST);

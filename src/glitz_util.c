@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -51,9 +51,12 @@ static glitz_extension_map gl_extensions[] = {
   { 0.0, "GL_NV_multisample_filter_hint",
     GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK },
   { 0.0, "GL_ARB_multitexture", GLITZ_FEATURE_MULTITEXTURE_MASK },
+  { 0.0, "GL_EXT_multi_draw_arrays", GLITZ_FEATURE_MULTI_DRAW_ARRAYS_MASK },
   { 0.0, "GL_ARB_fragment_program", GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK },
   { 0.0, "GL_ARB_vertex_buffer_object",
     GLITZ_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
+  { 0.0, "GL_ARB_pixel_buffer_object",
+    GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
   { 0.0, "GL_EXT_pixel_buffer_object",
     GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
   { 0.0, "GL_EXT_blend_color", GLITZ_FEATURE_BLEND_COLOR_MASK },
@@ -154,15 +157,28 @@ _glitz_gl_proc_address_lookup (glitz_backend_t               *backend,
     if (backend->gl_version >= 1.3f) {
       backend->gl.active_texture = (glitz_gl_active_texture_t)
         get_proc_address ("glActiveTexture", closure);
+      backend->gl.client_active_texture = (glitz_gl_client_active_texture_t)
+        get_proc_address ("glClientActiveTexture", closure);
     } else {
       backend->gl.active_texture = (glitz_gl_active_texture_t)
         get_proc_address ("glActiveTextureARB", closure);
+      backend->gl.client_active_texture = (glitz_gl_client_active_texture_t)
+        get_proc_address ("glClientActiveTextureARB", closure);
     }
 
-    if (!backend->gl.active_texture) {
+    if ((!backend->gl.active_texture) ||
+        (!backend->gl.client_active_texture)) {
       backend->feature_mask &= ~GLITZ_FEATURE_MULTITEXTURE_MASK;
       backend->feature_mask &= ~GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK;
     }
+  }
+
+  if (backend->feature_mask & GLITZ_FEATURE_MULTI_DRAW_ARRAYS_MASK) {
+    backend->gl.multi_draw_arrays = (glitz_gl_multi_draw_arrays_t)
+      get_proc_address ("glMultiDrawArraysEXT", closure);
+
+    if (!backend->gl.multi_draw_arrays)
+      backend->feature_mask &= ~GLITZ_FEATURE_MULTI_DRAW_ARRAYS_MASK;
   }
 
   if (backend->feature_mask & GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK) {
@@ -278,8 +294,8 @@ glitz_uint_to_power_of_two (unsigned int x)
 
 void
 glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
-                      int                          x,
-                      int                          y)
+                      glitz_float_t                x,
+                      glitz_float_t                y)
 {
   gl->push_attrib (GLITZ_GL_TRANSFORM_BIT | GLITZ_GL_VIEWPORT_BIT);
   gl->matrix_mode (GLITZ_GL_PROJECTION);

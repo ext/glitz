@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifndef GLITZ_H_INCLUDED
@@ -37,7 +37,7 @@
 #endif
 
 #define GLITZ_MAJOR    0
-#define GLITZ_MINOR    3
+#define GLITZ_MINOR    4
 #define GLITZ_REVISION 0
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -55,6 +55,33 @@ typedef struct _glitz_rectangle_t {
   short          x, y;
   unsigned short width, height;
 } glitz_rectangle_t;
+
+typedef struct _glitz_box_t {
+  short x1, y1, x2, y2;
+} glitz_box_t;
+
+typedef struct _glitz_point_fixed_t {
+  glitz_fixed16_16_t x;
+  glitz_fixed16_16_t y;
+} glitz_point_fixed_t;
+
+typedef struct _glitz_line_fixed_t {
+  glitz_point_fixed_t p1;
+  glitz_point_fixed_t p2;
+} glitz_line_fixed_t;
+
+typedef struct _glitz_trapezoid_t {
+  glitz_fixed16_16_t top, bottom;
+  glitz_line_fixed_t left, right;
+} glitz_trapezoid_t;
+
+typedef struct _glitz_span_fixed_t {
+  glitz_fixed16_16_t left, right, y;
+} glitz_span_fixed_t;
+  
+typedef struct _glitz_trap_t {
+  glitz_span_fixed_t top, bottom;
+} glitz_trap_t;
 
 typedef struct _glitz_transform_t {
   glitz_fixed16_16_t matrix[3][3];
@@ -107,6 +134,7 @@ typedef enum {
 #define GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK  (1L << 12)
 #define GLITZ_FEATURE_BLEND_COLOR_MASK              (1L << 13)
 #define GLITZ_FEATURE_PACKED_PIXELS_MASK            (1L << 14)
+#define GLITZ_FEATURE_MULTI_DRAW_ARRAYS_MASK        (1L << 15)
 
 typedef enum {
   GLITZ_STANDARD_ARGB32,
@@ -176,14 +204,6 @@ typedef struct _glitz_drawable_format_t {
   glitz_drawable_types_t types;
 } glitz_drawable_format_t;
 
-#define GLITZ_PBUFFER_WIDTH_MASK  (1L << 0)
-#define GLITZ_PBUFFER_HEIGHT_MASK (1L << 1)
-
-typedef struct _glitz_pbuffer_attributes_t {
-  unsigned int width;
-  unsigned int height;
-} glitz_pbuffer_attributes_t;
-    
 glitz_drawable_format_t *
 glitz_find_similar_drawable_format (glitz_drawable_t              *other,
                                     unsigned long                 mask,
@@ -191,10 +211,10 @@ glitz_find_similar_drawable_format (glitz_drawable_t              *other,
                                     int                           count);
     
 glitz_drawable_t *
-glitz_create_pbuffer_drawable (glitz_drawable_t           *other,
-                               glitz_drawable_format_t    *format,
-                               glitz_pbuffer_attributes_t *attributes,
-                               unsigned long              mask);
+glitz_create_pbuffer_drawable (glitz_drawable_t        *other,
+                               glitz_drawable_format_t *format,
+                               unsigned int            width,
+                               unsigned int            height);
 
 void
 glitz_drawable_destroy (glitz_drawable_t *drawable);
@@ -257,12 +277,20 @@ glitz_find_format (glitz_drawable_t     *drawable,
 /* glitz_surface.c */
 
 typedef struct _glitz_surface glitz_surface_t;
+
+#define GLITZ_SURFACE_UNNORMALIZED_MASK (1L << 0)
+
+typedef struct _glitz_surface_attributes_t {
+  glitz_bool_t unnormalized;
+} glitz_surface_attributes_t;
   
 glitz_surface_t *
-glitz_surface_create (glitz_drawable_t *drawable,
-                      glitz_format_t   *format,
-                      unsigned int     width,
-                      unsigned int     height);
+glitz_surface_create (glitz_drawable_t           *drawable,
+                      glitz_format_t             *format,
+                      unsigned int               width,
+                      unsigned int               height,
+                      unsigned long              mask,
+                      glitz_surface_attributes_t *attributes);
 
 void
 glitz_surface_destroy (glitz_surface_t *surface);
@@ -330,6 +358,18 @@ glitz_surface_get_status (glitz_surface_t *surface);
 glitz_format_t *
 glitz_surface_get_format (glitz_surface_t *surface);
 
+void
+glitz_surface_translate_point (glitz_surface_t     *surface,
+                               glitz_point_fixed_t *src,
+                               glitz_point_fixed_t *dst);
+
+void
+glitz_surface_set_clip_region (glitz_surface_t *surface,
+                               int             x_origin,
+                               int             y_origin,
+                               glitz_box_t     *box,
+                               int             n_box);
+
   
 /* glitz_rect.c */
 
@@ -371,10 +411,10 @@ typedef enum {
 } glitz_buffer_access_t;
 
 glitz_buffer_t *
-glitz_geometry_buffer_create (glitz_drawable_t    *drawable,
-                              void                *data,
-                              unsigned int        size,
-                              glitz_buffer_hint_t hint);
+glitz_vertex_buffer_create (glitz_drawable_t    *drawable,
+                            void                *data,
+                            unsigned int        size,
+                            glitz_buffer_hint_t hint);
 
 glitz_buffer_t *
 glitz_pixel_buffer_create (glitz_drawable_t    *drawable,
@@ -456,30 +496,18 @@ glitz_get_pixels (glitz_surface_t      *src,
 /* glitz_geometry.c */
 
 typedef enum {
-  GLITZ_GEOMETRY_MODE_DIRECT,
-  GLITZ_GEOMETRY_MODE_INDIRECT
-} glitz_geometry_mode_t;
+  GLITZ_PRIMITIVE_POINTS,
+  GLITZ_PRIMITIVE_LINES,
+  GLITZ_PRIMITIVE_LINE_STRIP,
+  GLITZ_PRIMITIVE_LINE_LOOP,
+  GLITZ_PRIMITIVE_TRIANGLES,
+  GLITZ_PRIMITIVE_TRIANGLE_STRIP,
+  GLITZ_PRIMITIVE_TRIANGLE_FAN,
+  GLITZ_PRIMITIVE_QUADS,
+  GLITZ_PRIMITIVE_QUAD_STRIP,
+  GLITZ_PRIMITIVE_POLYGON
+} glitz_primitive_t;
 
-typedef enum {
-  GLITZ_GEOMETRY_EDGE_HINT_SHARP,
-  GLITZ_GEOMETRY_EDGE_HINT_FAST_SMOOTH,
-  GLITZ_GEOMETRY_EDGE_HINT_GOOD_SMOOTH,
-  GLITZ_GEOMETRY_EDGE_HINT_BEST_SMOOTH
-} glitz_geometry_edge_hint_t;
-
-typedef enum {
-  GLITZ_GEOMETRY_PRIMITIVE_POINTS,
-  GLITZ_GEOMETRY_PRIMITIVE_LINES,
-  GLITZ_GEOMETRY_PRIMITIVE_LINE_STRIP,
-  GLITZ_GEOMETRY_PRIMITIVE_LINE_LOOP,
-  GLITZ_GEOMETRY_PRIMITIVE_TRIANGLES,
-  GLITZ_GEOMETRY_PRIMITIVE_TRIANGLE_STRIP,
-  GLITZ_GEOMETRY_PRIMITIVE_TRIANGLE_FAN,
-  GLITZ_GEOMETRY_PRIMITIVE_QUADS,
-  GLITZ_GEOMETRY_PRIMITIVE_QUAD_STRIP,
-  GLITZ_GEOMETRY_PRIMITIVE_POLYGON
-} glitz_geometry_primitive_t;
-  
 typedef enum {
   GLITZ_DATA_TYPE_SHORT,
   GLITZ_DATA_TYPE_INT,
@@ -487,22 +515,111 @@ typedef enum {
   GLITZ_DATA_TYPE_DOUBLE
 } glitz_data_type_t;
 
-typedef struct _glitz_geometry_format {
-  glitz_geometry_mode_t      mode;
-  glitz_geometry_edge_hint_t edge_hint;
-  glitz_geometry_primitive_t primitive;
-  glitz_data_type_t          type;
-  int                        first;
-  unsigned int               count;
+typedef enum {
+  GLITZ_COORDINATE_SIZE_X,
+  GLITZ_COORDINATE_SIZE_XY
+} glitz_coordinate_size_t;
+    
+typedef struct _glitz_coordinate_attribute {
+    glitz_data_type_t       type;
+    glitz_coordinate_size_t size;
+    int                     offset;
+} glitz_coordinate_attribute_t;
+
+#define GLITZ_VERTEX_ATTRIBUTE_SRC_COORD_MASK  (1L << 0)
+#define GLITZ_VERTEX_ATTRIBUTE_MASK_COORD_MASK (1L << 1)
+
+typedef struct _glitz_vertex_format {
+  glitz_primitive_t            primitive;
+  glitz_data_type_t            type;
+  unsigned int                 bytes_per_vertex;
+  unsigned long                attributes;
+  glitz_coordinate_attribute_t src;
+  glitz_coordinate_attribute_t mask;
+} glitz_vertex_format_t;
+
+typedef struct _glitz_bitmap_format {
+  glitz_pixel_scanline_order_t scanline_order;
+  unsigned int                 bytes_per_line;
+  int                          pad;
+} glitz_bitmap_format_t;
+
+typedef enum {
+  GLITZ_GEOMETRY_TYPE_NONE,
+  GLITZ_GEOMETRY_TYPE_VERTEX,
+  GLITZ_GEOMETRY_TYPE_BITMAP
+} glitz_geometry_type_t;
+
+typedef union _glitz_geometry_format {
+  glitz_vertex_format_t vertex;
+  glitz_bitmap_format_t bitmap;
 } glitz_geometry_format_t;
 
 void
 glitz_set_geometry (glitz_surface_t         *dst,
-                    glitz_fixed16_16_t      x_dst,
-                    glitz_fixed16_16_t      y_dst,
+                    glitz_geometry_type_t   type,
                     glitz_geometry_format_t *format,
                     glitz_buffer_t          *buffer);
-  
+
+void
+glitz_set_array (glitz_surface_t    *dst,
+                 int                first,
+                 int                size,
+                 unsigned int       count,
+                 glitz_fixed16_16_t x_off,
+                 glitz_fixed16_16_t y_off);
+
+typedef struct _glitz_multi_array glitz_multi_array_t;
+
+glitz_multi_array_t *
+glitz_multi_array_create (unsigned int size);
+
+void
+glitz_multi_array_destroy (glitz_multi_array_t *array);
+
+void
+glitz_multi_array_reference (glitz_multi_array_t *array);
+
+void
+glitz_multi_array_add (glitz_multi_array_t *array,
+                       int                 first,
+                       int                 size,
+                       unsigned int        count,
+                       glitz_fixed16_16_t  x_off,
+                       glitz_fixed16_16_t  y_off);
+
+void
+glitz_multi_array_reset (glitz_multi_array_t *array);
+
+void
+glitz_set_multi_array (glitz_surface_t     *dst,
+                       glitz_multi_array_t *array,
+                       glitz_fixed16_16_t  x_off,
+                       glitz_fixed16_16_t  y_off);
+
+
+/* glitz_trap.c */
+
+int
+glitz_add_trapezoids (glitz_buffer_t    *buffer,
+                      int               offset,
+                      unsigned int      size,
+                      glitz_data_type_t type,
+                      glitz_surface_t   *mask,
+                      glitz_trapezoid_t *traps,
+                      int               n_traps,
+                      int               *n_added);
+
+int
+glitz_add_traps (glitz_buffer_t    *buffer,
+                 int               offset,
+                 unsigned int      size,
+                 glitz_data_type_t type,
+                 glitz_surface_t   *mask,
+                 glitz_trap_t      *traps,
+                 int               n_traps,
+                 int               *n_added);
+
 
 /* glitz.c */
 

@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -30,27 +30,14 @@
 #include "glitz_aglint.h"
 
 AGLPbuffer
-glitz_agl_pbuffer_create (glitz_agl_thread_info_t    *thread_info,
-                          glitz_pbuffer_attributes_t *attributes,
-                          unsigned long              mask,
-                          int                        *width,
-                          int                        *height)
+glitz_agl_pbuffer_create (glitz_agl_thread_info_t *thread_info,
+                          int                     width,
+                          int                     height)
 {
   AGLPbuffer pbuffer;
   glitz_gl_enum_t target;
-  int w, h;
 
-  if (mask & GLITZ_PBUFFER_WIDTH_MASK)
-    w = attributes->width;
-  else
-    w = GLITZ_DEFAULT_PBUFFER_WIDTH;
-
-  if (mask & GLITZ_PBUFFER_HEIGHT_MASK)
-    h = attributes->height;
-  else
-    h = GLITZ_DEFAULT_PBUFFER_HEIGHT;
-
-  if (!POWER_OF_TWO (w) || !POWER_OF_TWO (h)) {
+  if (!POWER_OF_TWO (width) || !POWER_OF_TWO (height)) {
     if (thread_info->agl_feature_mask &
         GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK)
       target = GLITZ_GL_TEXTURE_RECTANGLE;
@@ -59,10 +46,7 @@ glitz_agl_pbuffer_create (glitz_agl_thread_info_t    *thread_info,
   } else
     target = GLITZ_GL_TEXTURE_2D;
 
-  aglCreatePBuffer (w, h, target, GLITZ_GL_RGBA, 0, &pbuffer);
-
-  *width = w;
-  *height = h;
+  aglCreatePBuffer (width, height, target, GLITZ_GL_RGBA, 0, &pbuffer);
 
   return pbuffer;
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright © 2004 David Reveman
+ * Copyright Â© 2004 David Reveman
  * 
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
  * fee, provided that the above copyright notice appear in all copies
  * and that both that copyright notice and this permission notice
- * appear in supporting documentation, and that the names of
+ * appear in supporting documentation, and that the name of
  * David Reveman not be used in advertising or publicity pertaining to
  * distribution of the software without specific, written prior permission.
  * David Reveman makes no representations about the suitability of this
@@ -20,7 +20,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Author: David Reveman <c99drn@cs.umu.se>
+ * Author: David Reveman <davidr@novell.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -35,26 +35,39 @@
           ((1L << (size)) - 1L)) : \
          dst)
 
-static void
-glitz_rectangle_bounds (const glitz_rectangle_t *rects,
-                        int                     n_rects,
-                        glitz_box_t             *box)
+static glitz_buffer_t *
+_glitz_minimum_buffer (glitz_surface_t         *surface,
+                       const glitz_rectangle_t *rects,
+                       int                     n_rects,
+                       unsigned int            pixel)
 {
-  box->x1 = MAXSHORT;
-  box->x2 = MINSHORT;
-  box->y1 = MAXSHORT;
-  box->y2 = MINSHORT;
+    glitz_buffer_t *buffer;
+    int            i, size = 0;
+    unsigned int   *data;
   
-  for (; n_rects; n_rects--, rects++) {
-    if (rects->x < box->x1)
-      box->x1 = rects->x;
-    if ((rects->x + rects->width) > box->x2)
-      box->x2 = rects->x + rects->width;
-    if (rects->y < box->y1)
-      box->y1 = rects->y;
-    if ((rects->y + rects->height) > box->y2)
-      box->y2 = rects->y + rects->height;
-  }
+    while (n_rects--)
+    {
+        i = rects->width * rects->height;
+        if (i > size)
+            size = i;
+        
+        rects++;
+    }
+    
+    buffer = glitz_pixel_buffer_create (surface->drawable, NULL,
+                                        size * sizeof (unsigned int),
+                                        GLITZ_BUFFER_HINT_STATIC_DRAW);
+    if (!buffer)
+        return NULL;
+    
+    data = glitz_buffer_map (buffer, GLITZ_BUFFER_ACCESS_WRITE_ONLY);
+    
+    while (size--)
+        *data++ = pixel;
+
+    glitz_buffer_unmap (buffer);
+    
+    return buffer;
 }
 
 void
@@ -63,99 +76,171 @@ glitz_set_rectangles (glitz_surface_t         *dst,
                       const glitz_rectangle_t *rects,
                       int                     n_rects)
 {
-  glitz_box_t bounds;
+    GLITZ_GL_SURFACE (dst);
 
-  GLITZ_GL_SURFACE (dst);
+    if (n_rects < 1)
+        return;
 
-  glitz_rectangle_bounds (rects, n_rects, &bounds);
-  if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
-      bounds.x2 < 0 || bounds.y2 < 0)
-    return;
+    if (SURFACE_SOLID (dst))
+    {
+        glitz_color_t old = dst->solid;
+        glitz_box_t   *clip  = dst->clip;
+        int           n_clip = dst->n_clip;
 
-  if (SURFACE_SOLID (dst) &&
-      (bounds.x2 - bounds.x1) > 0 && (bounds.y2 - bounds.y1) > 0) {
-    STORE_16 (dst->solid.red, dst->format->color.red_size, color->red);
-    STORE_16 (dst->solid.green, dst->format->color.green_size, color->green);
-    STORE_16 (dst->solid.blue, dst->format->color.blue_size, color->blue);
-    STORE_16 (dst->solid.alpha, dst->format->color.alpha_size, color->alpha);
-
-    dst->flags &= ~GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK;
-    glitz_surface_damage (dst, &bounds,
-                          GLITZ_DAMAGE_TEXTURE_MASK |
-                          GLITZ_DAMAGE_DRAWABLE_MASK);
-    return;
-  }
-
-  if (glitz_surface_push_current (dst, GLITZ_DRAWABLE_CURRENT)) {
-    gl->clear_color (color->red / (glitz_gl_clampf_t) 0xffff,
-                     color->green / (glitz_gl_clampf_t) 0xffff,
-                     color->blue / (glitz_gl_clampf_t) 0xffff,
-                     color->alpha / (glitz_gl_clampf_t) 0xffff);
-
-    for (; n_rects; n_rects--, rects++) {
-      gl->scissor (rects->x,
-                   dst->attached->height - dst->y - rects->y - rects->height,
-                   rects->width,
-                   rects->height);
-      gl->clear (GLITZ_GL_COLOR_BUFFER_BIT);
+        for (; n_clip; clip++, n_clip--)
+        {
+            if (clip->x1 > 0 ||
+                clip->y1 > 0 ||
+                clip->x2 < 1 ||
+                clip->y2 < 1)
+                continue;
+            
+            for (; n_rects; rects++, n_rects--)
+            {
+                if (rects->x > 0 ||
+                    rects->y > 0 ||
+                    (rects->x + rects->width) < 1 ||
+                    (rects->y + rects->height) < 1)
+                    continue;
+            
+                STORE_16 (dst->solid.red,
+                          dst->format->color.red_size,
+                          color->red);
+                STORE_16 (dst->solid.green,
+                          dst->format->color.green_size,
+                          color->green);
+                STORE_16 (dst->solid.blue,
+                          dst->format->color.blue_size,
+                          color->blue);
+                STORE_16 (dst->solid.alpha,
+                          dst->format->color.alpha_size,
+                          color->alpha);
+    
+                if (dst->flags & GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK)
+                {
+                    dst->flags &= ~GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK;
+                    glitz_surface_damage (dst, &dst->box,
+                                          GLITZ_DAMAGE_TEXTURE_MASK |
+                                          GLITZ_DAMAGE_DRAWABLE_MASK);
+                }
+                else
+                {
+                    if (dst->solid.red   != old.red   ||
+                        dst->solid.green != old.green ||
+                        dst->solid.blue  != old.blue  ||
+                        dst->solid.alpha != old.alpha)
+                        glitz_surface_damage (dst, &dst->box,
+                                              GLITZ_DAMAGE_TEXTURE_MASK |
+                                              GLITZ_DAMAGE_DRAWABLE_MASK);
+                }
+                break;
+            }
+            break;
+        }
     }
-    glitz_surface_damage (dst, &bounds,
-                          GLITZ_DAMAGE_TEXTURE_MASK |
-                          GLITZ_DAMAGE_SOLID_MASK);
-  } else {
-    static glitz_pixel_format_t pf = {
-      {
-        32,
-        0xff000000,
-        0x00ff0000,
-        0x0000ff00,
-        0x000000ff
-      },
-      0, 0, 0,
-      GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
-    };
-    glitz_buffer_t *buffer;
-    unsigned int i, width, height, pixel, *data;
+    else
+    {
+        static glitz_pixel_format_t pf = {
+            {
+                32,
+                0xff000000,
+                0x00ff0000,
+                0x0000ff00,
+                0x000000ff
+            },
+            0, 0, 0,
+            GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
+        };
+        glitz_buffer_t *buffer = NULL;
+        glitz_box_t    box;
+        glitz_bool_t   drawable;
+        
+        drawable = glitz_surface_push_current (dst, GLITZ_DRAWABLE_CURRENT);
+        if (drawable)
+        {
+            gl->clear_color (color->red   / (glitz_gl_clampf_t) 0xffff,
+                             color->green / (glitz_gl_clampf_t) 0xffff,
+                             color->blue  / (glitz_gl_clampf_t) 0xffff,
+                             color->alpha / (glitz_gl_clampf_t) 0xffff);
+        }
+        else
+        {
+            unsigned int pixel =
+                ((((unsigned int) color->alpha * 0xff) / 0xffff) << 24) |
+                ((((unsigned int) color->red   * 0xff) / 0xffff) << 16) |
+                ((((unsigned int) color->green * 0xff) / 0xffff) << 8) |
+                ((((unsigned int) color->blue  * 0xff) / 0xffff));
 
-    width = bounds.x2 - bounds.x1;
-    height = bounds.y2 - bounds.y1;
+            buffer = _glitz_minimum_buffer (dst, rects, n_rects, pixel);
+            if (!buffer)
+            {
+                glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
+                return;
+            }
+        }
+      
+        while (n_rects--)
+        {
+            glitz_box_t *clip  = dst->clip;
+            int         n_clip = dst->n_clip;
 
-    data = malloc (width * height * 4);
-    if (data == NULL) {
-      glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
-      return;
+            while (n_clip--)
+            {
+                box.x1 = clip->x1 + dst->x_clip;
+                box.y1 = clip->y1 + dst->y_clip;
+                box.x2 = clip->x2 + dst->x_clip;
+                box.y2 = clip->y2 + dst->y_clip;
+
+                if (dst->box.x1 > box.x1)
+                    box.x1 = dst->box.x1;
+                if (dst->box.y1 > box.y1)
+                    box.y1 = dst->box.y1;
+                if (dst->box.x2 < box.x2)
+                    box.x2 = dst->box.x2;
+                if (dst->box.y2 < box.y2)
+                    box.y2 = dst->box.y2;
+                
+                if (rects->x > box.x1)
+                    box.x1 = rects->x;
+                if (rects->y > box.y1)
+                    box.y1 = rects->y;
+                if (rects->x + rects->width < box.x2)
+                    box.x2 = rects->x + rects->width;
+                if (rects->y + rects->height < box.y2)
+                    box.y2 = rects->y + rects->height;
+
+                if (box.x1 < box.x2 && box.y1 < box.y2)
+                {
+                    if (drawable)
+                    {
+                        gl->scissor (box.x1,
+                                     dst->attached->height - dst->y - box.y2,
+                                     box.x2 - box.x1,
+                                     box.y2 - box.y1);
+                        gl->clear (GLITZ_GL_COLOR_BUFFER_BIT);
+                        
+                        glitz_surface_damage (dst, &box,
+                                              GLITZ_DAMAGE_TEXTURE_MASK |
+                                              GLITZ_DAMAGE_SOLID_MASK);
+                    }
+                    else
+                    {
+                        glitz_set_pixels (dst,
+                                          box.x1, box.y1,
+                                          box.x2 - box.x1, box.y2 - box.y1,
+                                          &pf, buffer);
+                    }
+                }
+                clip++;
+            }
+            rects++;
+        }
+        
+        if (buffer)
+            glitz_buffer_destroy (buffer);
+
+        glitz_surface_pop_current (dst);
     }
-    
-    buffer = glitz_buffer_create_for_data (data);
-    if (buffer == NULL) {
-      free (data);
-      glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
-      return;
-    }        
-    
-    pixel =
-      ((((unsigned int) color->alpha * 0xff) / 0xffff) << 24) |
-      ((((unsigned int) color->red * 0xff) / 0xffff) << 16) |
-      ((((unsigned int) color->green * 0xff) / 0xffff) << 8) |
-      ((((unsigned int) color->blue * 0xff) / 0xffff));
-    
-    for (i = 0; i < width; i++)
-      data[i] = pixel;
-    
-    for (i = 1; i < height; i++)
-      memcpy (&data[i * width], data, width * sizeof (unsigned int));
-
-    for (; n_rects; n_rects--, rects++)
-      glitz_set_pixels (dst,
-                        rects->x, rects->y,
-                        rects->width, rects->height,
-                        &pf, buffer);
-
-    glitz_buffer_destroy (buffer);
-    free (data);
-  }
-  
-  glitz_surface_pop_current (dst);
 }
 slim_hidden_def(glitz_set_rectangles);
 
@@ -167,13 +252,13 @@ glitz_set_rectangle (glitz_surface_t     *dst,
                      unsigned int        width,
                      unsigned int        height)
 {
-  glitz_rectangle_t rect;
+    glitz_rectangle_t rect;
 
-  rect.x = x;
-  rect.y = y;
-  rect.width = width;
-  rect.height = height;
+    rect.x = x;
+    rect.y = y;
+    rect.width = width;
+    rect.height = height;
 
-  glitz_set_rectangles (dst, color, &rect, 1);
+    glitz_set_rectangles (dst, color, &rect, 1);
 }
 slim_hidden_def(glitz_set_rectangle);
