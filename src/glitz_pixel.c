@@ -31,8 +31,6 @@
 
 #include <string.h>
 
-#include <stdio.h>
-
 typedef struct _glitz_gl_pixel_format {
   glitz_pixel_format_t pixel;
   glitz_gl_enum_t      format;
@@ -98,6 +96,55 @@ static glitz_gl_pixel_format_t _gl_packed_pixel_formats[] = {
     GLITZ_GL_UNSIGNED_SHORT_5_6_5
 #endif
     
+  }
+};
+
+#define SOLID_ALPHA 0
+#define SOLID_RED   1
+#define SOLID_GREEN 2
+#define SOLID_BLUE  3
+
+static glitz_pixel_format_t _solid_format[] = {
+  {
+    {
+      16,
+      0x0000ffff,
+      0x00000000,
+      0x00000000,
+      0x00000000
+    },
+    0, 0, 0,
+    GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
+  }, {
+    {
+      16,
+      0x00000000,
+      0x0000ffff,
+      0x00000000,
+      0x00000000
+    },
+    0, 0, 0,
+    GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
+  }, {
+    {
+      16,
+      0x00000000,
+      0x00000000,
+      0x0000ffff,
+      0x00000000
+    },
+    0, 0, 0,
+    GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
+  }, {
+    {
+      16,
+      0x00000000,
+      0x00000000,
+      0x00000000,
+      0x0000ffff
+    },
+    0, 0, 0,
+    GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP
   }
 };
 
@@ -558,6 +605,70 @@ glitz_set_pixels (glitz_surface_t      *dst,
     return;
   }
 
+  box.x1 = x_dst;
+  box.y1 = y_dst;
+  box.x2 = box.x1 + width;
+  box.y2 = box.y1 + height;
+
+  if (SURFACE_SOLID (dst)) {
+    glitz_image_t src_image, dst_image;
+
+    dst_image.width = dst_image.height = 1;
+
+    src_image.data = glitz_buffer_map (buffer, GLITZ_BUFFER_ACCESS_READ_ONLY);
+    src_image.data += format->skip_lines * format->bytes_per_line;
+    src_image.format = format;
+    src_image.width = src_image.height = 1;
+
+    if (format->masks.alpha_mask) {
+      dst_image.data = (void *) &dst->solid.alpha;
+      dst_image.format = &_solid_format[SOLID_ALPHA];
+
+      _glitz_pixel_transform (GLITZ_TRANSFORM_PIXELS_MASK,
+                              &src_image, &dst_image,
+                              format->xoffset, 0, 0, 0, 1, 1);
+    } else
+      dst->solid.alpha = 0xffff;
+
+    if (format->masks.red_mask) {
+      dst_image.data = (void *) &dst->solid.red;
+      dst_image.format = &_solid_format[SOLID_RED];
+
+      _glitz_pixel_transform (GLITZ_TRANSFORM_PIXELS_MASK,
+                              &src_image, &dst_image,
+                              format->xoffset, 0, 0, 0, 1, 1);
+    } else
+      dst->solid.red = 0;
+
+    if (format->masks.green_mask) {
+      dst_image.data = (void *) &dst->solid.green;
+      dst_image.format = &_solid_format[SOLID_GREEN];
+
+      _glitz_pixel_transform (GLITZ_TRANSFORM_PIXELS_MASK,
+                              &src_image, &dst_image,
+                              format->xoffset, 0, 0, 0, 1, 1);
+    } else
+      dst->solid.green = 0;
+
+    if (format->masks.blue_mask) {
+      dst_image.data = (void *) &dst->solid.blue;
+      dst_image.format = &_solid_format[SOLID_BLUE];
+
+      _glitz_pixel_transform (GLITZ_TRANSFORM_PIXELS_MASK,
+                              &src_image, &dst_image,
+                              format->xoffset, 0, 0, 0, 1, 1);
+    } else
+      dst->solid.blue = 0;
+
+    glitz_buffer_unmap (buffer);
+
+    dst->flags &= ~GLITZ_SURFACE_FLAG_SOLID_DAMAGE_MASK;
+    glitz_surface_damage (dst, &box,
+                          GLITZ_DAMAGE_TEXTURE_MASK |
+                          GLITZ_DAMAGE_DRAWABLE_MASK);
+    return;
+  }
+
   /* find direct format */
   gl_format =
     _glitz_find_gl_pixel_format (format,
@@ -667,11 +778,6 @@ glitz_set_pixels (glitz_surface_t      *dst,
   
   glitz_texture_unbind (gl, texture);
 
-  box.x1 = x_dst;
-  box.y1 = y_dst;
-  box.x2 = box.x1 + width;
-  box.y2 = box.y1 + height;
-
   glitz_surface_damage (dst, &box,
                         GLITZ_DAMAGE_DRAWABLE_MASK |
                         GLITZ_DAMAGE_SOLID_MASK);
@@ -705,6 +811,86 @@ glitz_get_pixels (glitz_surface_t      *src,
   if (x_src < 0 || x_src > (src->width - width) ||
       y_src < 0 || y_src > (src->height - height)) {
     glitz_surface_status_add (src, GLITZ_STATUS_BAD_COORDINATE_MASK);
+    return;
+  }
+
+  if (SURFACE_SOLID (src)) {
+    glitz_image_t src_image, dst_image;
+    glitz_pixel_format_t dst_format;
+
+    if (SURFACE_SOLID_DAMAGE (src)) {
+      glitz_surface_push_current (src, GLITZ_ANY_CONTEXT_CURRENT);
+      glitz_surface_sync_solid (src);
+      glitz_surface_pop_current (src);
+    }
+
+    src_image.width = src_image.height = 1;
+
+    dst_format = *format;
+
+    dst_image.data = glitz_buffer_map (buffer, GLITZ_BUFFER_ACCESS_WRITE_ONLY);
+    dst_image.data += format->skip_lines * format->bytes_per_line;
+    dst_image.format = &dst_format;
+    dst_image.width = dst_image.height = 1;
+
+    if (format->masks.alpha_mask) {
+      src_image.data = (void *) &src->solid.alpha;
+      src_image.format = &_solid_format[SOLID_ALPHA];
+
+      dst_format.masks.alpha_mask = format->masks.alpha_mask;
+      dst_format.masks.red_mask = 0;
+      dst_format.masks.green_mask = 0;
+      dst_format.masks.blue_mask = 0;
+
+      _glitz_pixel_transform (GLITZ_TRANSFORM_PIXELS_MASK,
+                              &src_image, &dst_image,
+                              0, 0, format->xoffset, 0, 1, 1);
+    }
+
+    if (format->masks.red_mask) {
+      src_image.data = (void *) &src->solid.red;
+      src_image.format = &_solid_format[SOLID_RED];
+
+      dst_format.masks.alpha_mask = 0;
+      dst_format.masks.red_mask = format->masks.red_mask;
+      dst_format.masks.green_mask = 0;
+      dst_format.masks.blue_mask = 0;
+
+      _glitz_pixel_transform (GLITZ_TRANSFORM_PIXELS_MASK,
+                              &src_image, &dst_image,
+                              0, 0, format->xoffset, 0, 1, 1);
+    }
+
+    if (format->masks.green_mask) {
+      src_image.data = (void *) &src->solid.green;
+      src_image.format = &_solid_format[SOLID_GREEN];
+
+      dst_format.masks.alpha_mask = 0;
+      dst_format.masks.red_mask = 0;
+      dst_format.masks.green_mask = format->masks.green_mask;
+      dst_format.masks.blue_mask = 0;
+
+      _glitz_pixel_transform (GLITZ_TRANSFORM_PIXELS_MASK,
+                              &src_image, &dst_image,
+                              0, 0, format->xoffset, 0, 1, 1);
+    }
+
+    if (format->masks.blue_mask) {
+      src_image.data = (void *) &src->solid.blue;
+      src_image.format = &_solid_format[SOLID_BLUE];
+
+      dst_format.masks.alpha_mask = 0;
+      dst_format.masks.red_mask = 0;
+      dst_format.masks.green_mask = 0;
+      dst_format.masks.blue_mask = format->masks.blue_mask;
+      
+      _glitz_pixel_transform (GLITZ_TRANSFORM_PIXELS_MASK,
+                              &src_image, &dst_image,
+                              0, 0, format->xoffset, 0, 1, 1);
+    }
+
+    glitz_buffer_unmap (buffer);
+    
     return;
   }
 

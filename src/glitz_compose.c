@@ -495,18 +495,30 @@ glitz_composite_op_init (glitz_composite_op_t *op,
     return;
   
   if (src_type == GLITZ_SURFACE_TYPE_SOLID) {
-    glitz_surface_sync_solid (src);
+    if (SURFACE_SOLID_DAMAGE (src)) {
+      glitz_surface_push_current (dst, GLITZ_ANY_CONTEXT_CURRENT);
+      glitz_surface_sync_solid (src);
+      glitz_surface_pop_current (dst);
+    }
     op->solid = &src->solid;
     op->src = NULL;
   }
   
   if (mask_type == GLITZ_SURFACE_TYPE_SOLID) {
-    glitz_surface_sync_solid (mask);
+    if (SURFACE_SOLID_DAMAGE (mask)) {
+      glitz_surface_push_current (dst, GLITZ_ANY_CONTEXT_CURRENT);
+      glitz_surface_sync_solid (mask);
+      glitz_surface_pop_current (dst);
+    }
     op->alpha_mask = mask->solid;
     op->mask = NULL;
     op->combine = combine;
   } else if (mask_type == GLITZ_SURFACE_TYPE_SOLIDC) {
-    glitz_surface_sync_solid (mask);
+    if (SURFACE_SOLID_DAMAGE (mask)) {
+      glitz_surface_push_current (dst, GLITZ_ANY_CONTEXT_CURRENT);
+      glitz_surface_sync_solid (mask);
+      glitz_surface_pop_current (dst);
+    }
     op->alpha_mask = mask->solid;
     op->mask = NULL;
     

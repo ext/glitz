@@ -1,3 +1,10 @@
+2004-12-03  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_compose.c (glitz_composite_op_init): Make sure some
+	context is current when synchronizing solid color.
+
+	* src/glitz_pixel.c: Added quick paths for solid surfaces.
+
 2004-11-12  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_rect.c (glitz_set_rectangles): Clear solid damage
