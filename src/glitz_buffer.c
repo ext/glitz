@@ -302,6 +302,7 @@ glitz_buffer_map (glitz_buffer_t        *buffer,
 
     gl->bind_buffer (buffer->target, buffer->name);
     pointer = gl->map_buffer (buffer->target, buffer_access);
+    gl->bind_buffer (buffer->target, 0);
     
     buffer->drawable->backend->pop_current (buffer->drawable);
   }
@@ -322,6 +323,8 @@ glitz_buffer_unmap (glitz_buffer_t *buffer)
     
     buffer->drawable->backend->push_current (buffer->drawable, NULL,
                                              GLITZ_ANY_CONTEXT_CURRENT);
+
+    gl->bind_buffer (buffer->target, buffer->name);
     
     if (gl->unmap_buffer (buffer->target) == GLITZ_GL_FALSE)
       status = GLITZ_STATUS_CONTENT_DESTROYED;
