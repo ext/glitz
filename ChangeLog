@@ -1,3 +1,19 @@
+2004-10-21  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_pixel.c (glitz_get_pixels): Set read buffer and
+	scissor box before ReadPixels.
+
+	* src/glitz.c (glitz_copy_area): Reset scissor box when before
+	CopyPixels.
+	(glitz_copy_area): Moved pop_current to correct place.
+	(glitz_copy_area): Set read buffer and scissor box before
+	copy_texture.
+
+2004-10-09  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_pixel.c (glitz_get_pixels): Set intermediate image
+	size correctly.
+
 2004-10-06  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.c (glitz_copy_area): Fixed source drawable offset.

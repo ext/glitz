@@ -464,7 +464,9 @@ glitz_copy_area (glitz_surface_t *src,
         gl->read_buffer (src->read_buffer);
       
       glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
-
+      
+      gl->scissor (0, 0, dst->width, dst->height);
+      
       glitz_set_raster_pos (gl, x_dst, dst->height - (y_dst + height));
       gl->copy_pixels (x_src, src->height - (y_src + height),
                        width, height, GLITZ_GL_COLOR);
@@ -476,7 +478,7 @@ glitz_copy_area (glitz_surface_t *src,
         glitz_texture_set_tex_gen (gl, texture,
                                    x_dst - x_src,
                                    y_dst - y_src,
-                                   0); 
+                                   0);
 
         gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                        GLITZ_GL_REPLACE);
@@ -500,14 +502,20 @@ glitz_copy_area (glitz_surface_t *src,
     }
     
     glitz_surface_dirty (dst, &box);
-    glitz_surface_pop_current (dst);
 
     status = 1;
   }
 
+  glitz_surface_pop_current (dst);
+
   if (!status) {
     if (glitz_surface_push_current (src, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
       glitz_texture_t *texture;
+
+      if (src->format->doublebuffer)
+        gl->read_buffer (src->read_buffer);
+
+      gl->scissor (0, 0, src->width, src->height);
 
       texture = glitz_surface_get_texture (dst, 1);
       if (texture) {

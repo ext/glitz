@@ -680,6 +680,12 @@ glitz_get_pixels (glitz_surface_t *src,
        x_src += src->texture.box.x1;
        y_src += src->texture.box.y1;
     }
+
+    if (src->format->doublebuffer)
+      gl->read_buffer (src->read_buffer);
+
+    gl->scissor (0, 0, src->width, src->height);
+      
     gl->read_pixels (x_src, src->height - y_src - height,
                      width, height,
                      gl_format->format, gl_format->type,
@@ -698,8 +704,8 @@ glitz_get_pixels (glitz_surface_t *src,
 
     src_image.data = data + src_y * bytes_per_line;
     src_image.format = &gl_format->pixel;
-    src_image.width = src->width;
-    src_image.height = src->height;
+    src_image.width = src_w;
+    src_image.height = src_h;
 
     if (format->bytes_per_line)
       stride = format->bytes_per_line;
