@@ -1,5 +1,7 @@
 2004-09-11  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz_rect.c (glitz_set_rectangles): Fixed memory leak.
+
 	* src/glitz.c (glitz_composite): Oh, I'm good at these, not the
 	first time I accidentally replaced x with y. 
 

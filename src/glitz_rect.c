@@ -140,6 +140,8 @@ glitz_set_rectangles (glitz_surface_t *dst,
                         rects->x, rects->y,
                         rects->width, rects->height,
                         &pf, buffer);
+
+    glitz_buffer_destroy (buffer);
   }
   
   glitz_surface_pop_current (dst);
