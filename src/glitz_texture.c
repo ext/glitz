@@ -293,7 +293,7 @@ glitz_texture_set_tex_gen (glitz_gl_proc_address_list_t *gl,
 
     if (flags & GLITZ_SURFACE_FLAG_GEN_T_COORDS_MASK)
     {
-        plane.v[0] = 0.0f;
+        plane.v[0] = plane.v[2] = 0.0f;
         if (flags & GLITZ_SURFACE_FLAG_EYE_COORDS_MASK)
         {
             plane.v[1] = 1.0f;

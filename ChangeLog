@@ -1,3 +1,11 @@
+2005-03-08  David Reveman  <davidr@novell.com>
+
+	* src/glitz_texture.c (glitz_texture_set_tex_gen): Initialize plane
+	equation correctly.
+
+	* src/glitz_pixel.c (glitz_set_pixels): Advance to next clip box.
+	(glitz_set_pixels): Zero y-offset to _glitz_pixel_transform.
+
 2005-03-01  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.1.

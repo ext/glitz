@@ -780,11 +780,9 @@ glitz_set_pixels (glitz_surface_t      *dst,
                     dst_image.data = pixels = data;
                     dst_image.format = &gl_format->pixel;
 
-                    src_image.data =
+                    ptr =
                         glitz_buffer_map (buffer,
                                           GLITZ_BUFFER_ACCESS_READ_ONLY);
-                    src_image.data +=
-                        format->skip_lines * format->bytes_per_line;
                     src_image.format = format;
 
                     gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 4);
@@ -797,11 +795,13 @@ glitz_set_pixels (glitz_surface_t      *dst,
                 src_image.width  = box.x2 - box.x1;
                 src_image.height = box.y2 - box.y1;
 
+                src_image.data = ptr + (format->skip_lines + box.y1 - y_dst) *
+                    format->bytes_per_line;
+
                 _glitz_pixel_transform (transform,
                                         &src_image,
                                         &dst_image,
-                                        format->xoffset + box.x1 - x_dst,
-                                        box.y1 - y_dst,
+                                        format->xoffset + box.x1 - x_dst, 0,
                                         0, 0,
                                         box.x2 - box.x1, box.y2 - box.y1);
             }
@@ -851,6 +851,7 @@ glitz_set_pixels (glitz_surface_t      *dst,
                                   GLITZ_DAMAGE_DRAWABLE_MASK |
                                   GLITZ_DAMAGE_SOLID_MASK);
         }
+        clip++;
     }
 
     if (transform)
