@@ -149,7 +149,7 @@ _glitz_composite_direct (glitz_operator_t op,
     
     src_box.x1 += x_dst - x_src;
     src_box.x2 += x_dst - x_src;
-    src_box.y2 += y_dst - y_src;
+    src_box.y1 += y_dst - y_src;
     src_box.y2 += y_dst - y_src;
 
     if (!SURFACE_PROGRAMMATIC (src))
@@ -168,7 +168,7 @@ _glitz_composite_direct (glitz_operator_t op,
   
     mask_box.x1 += x_dst - x_mask;
     mask_box.x2 += x_dst - x_mask;
-    mask_box.y2 += y_dst - y_mask;
+    mask_box.y1 += y_dst - y_mask;
     mask_box.y2 += y_dst - y_mask;
 
     if (!SURFACE_PROGRAMMATIC (mask))

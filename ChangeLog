@@ -1,7 +1,11 @@
 2004-05-28  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz.c (_glitz_composite_direct): Fixed typo.
+
 	* src/glitz_glx_info.c (glitz_glx_screen_info_get): screen_info to
 	proc_address_lookup.
+	(glitz_glx_proc_address_lookup): Check for glXGetProcAddressARB last as
+	we don't want to use it for GLX 1.3 function pointer lookups.
 
 	* src/glitz_glxint.h: screen_info to proc_address_lookup.
 

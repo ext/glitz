@@ -125,8 +125,6 @@ glitz_glx_get_proc_address (glitz_glx_thread_info_t *info, const char *name)
 static void
 glitz_glx_proc_address_lookup (glitz_glx_thread_info_t *info)
 {
-  info->glx.get_proc_address_arb = (glitz_glx_get_proc_address_arb_t)
-    glitz_glx_get_proc_address (info, "glXGetProcAddressARB");
   info->glx.get_fbconfigs = (glitz_glx_get_fbconfigs_t)
     glitz_glx_get_proc_address (info, "glXGetFBConfigs");
   info->glx.get_fbconfig_attrib = (glitz_glx_get_fbconfig_attrib_t)
@@ -139,6 +137,8 @@ glitz_glx_proc_address_lookup (glitz_glx_thread_info_t *info)
     glitz_glx_get_proc_address (info, "glXDestroyPbuffer");
   info->glx.make_context_current = (glitz_glx_make_context_current_t)
     glitz_glx_get_proc_address (info, "glXMakeContextCurrent");
+  info->glx.get_proc_address_arb = (glitz_glx_get_proc_address_arb_t)
+    glitz_glx_get_proc_address (info, "glXGetProcAddressARB");
   
   info->glx.need_lookup = 0;
 }
