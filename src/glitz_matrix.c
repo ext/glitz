@@ -35,8 +35,8 @@
 
 static void
 _glitz_matrix_transform_distance (glitz_matrix_t *matrix,
-                                double *dx,
-                                double *dy)
+                                  double *dx,
+                                  double *dy)
 {
   double new_x, new_y;
 
@@ -49,7 +49,7 @@ _glitz_matrix_transform_distance (glitz_matrix_t *matrix,
 
 void
 glitz_matrix_transform_point (glitz_matrix_t *matrix,
-                            glitz_point_t *point)
+                              glitz_point_t *point)
 {
   _glitz_matrix_transform_distance (matrix, &point->x, &point->y);
 
@@ -59,7 +59,7 @@ glitz_matrix_transform_point (glitz_matrix_t *matrix,
 
 void
 glitz_matrix_transform_region (glitz_matrix_t *matrix,
-                             glitz_region_box_t *region)
+                               glitz_region_box_t *region)
 {
   glitz_point_t point;
 
@@ -83,7 +83,7 @@ glitz_matrix_transform_region (glitz_matrix_t *matrix,
 
 void
 glitz_matrix_transform_sub_pixel_region (glitz_matrix_t *matrix,
-                                       glitz_sub_pixel_region_box_t *region)
+                                         glitz_sub_pixel_region_box_t *region)
 {
   _glitz_matrix_transform_distance (matrix, &region->x1, &region->y1);
   _glitz_matrix_transform_distance (matrix, &region->x2, &region->y2);
@@ -96,9 +96,9 @@ glitz_matrix_transform_sub_pixel_region (glitz_matrix_t *matrix,
 
 static void
 _glitz_matrix_set_affine (glitz_matrix_t *matrix,
-                        double a, double b,
-                        double c, double d,
-                        double tx, double ty)
+                          double a, double b,
+                          double c, double d,
+                          double tx, double ty)
 {  
   matrix->m[0][0] =  a; matrix->m[0][1] =  b;
   matrix->m[1][0] =  c; matrix->m[1][1] =  d;
@@ -107,7 +107,7 @@ _glitz_matrix_set_affine (glitz_matrix_t *matrix,
 
 static void
 _glitz_matrix_scalar_multiply (glitz_matrix_t *matrix,
-                             double scalar)
+                               double scalar)
 {
   int row, col;
 
@@ -131,14 +131,14 @@ _glitz_matrix_compute_adjoint (glitz_matrix_t *matrix)
   tx = matrix->m[2][0]; ty = matrix->m[2][1];
   
   _glitz_matrix_set_affine (matrix,
-                          d, -b,
-                          -c, a,
-                          c * ty - d * tx, b * tx - a * ty);
+                            d, -b,
+                            -c, a,
+                            c * ty - d * tx, b * tx - a * ty);
 }
 
 static void
 _glitz_matrix_compute_determinant (glitz_matrix_t *matrix,
-                                 double *det)
+                                   double *det)
 {
   double a, b, c, d;
 
@@ -167,13 +167,12 @@ glitz_matrix_invert (glitz_matrix_t *matrix)
 
 void
 glitz_matrix_translate (glitz_matrix_t *matrix,
-                      double tx,
-                      double ty)
+                        double tx,
+                        double ty)
 {  
   matrix->m[2][0] += tx;
   matrix->m[2][1] += ty;
 }
-
 
 /* This function is only used for convolution kernel normalization.
    I'm not sure that it does the right thing when kernel contains negative

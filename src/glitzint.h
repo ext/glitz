@@ -333,6 +333,7 @@ typedef struct _glitz_programmatic_surface_t {
   glitz_surface_t base;
   
   glitz_texture_t texture;
+  glitz_matrix_t transform;
   
   glitz_programmatic_surface_type_t type;
   union {
@@ -346,7 +347,8 @@ typedef struct _glitz_programmatic_surface_t {
     } linear;
     struct {
       glitz_point_fixed_t center;
-      glitz_distance_fixed_t radius;
+      glitz_fixed16_16_t radius0;
+      glitz_fixed16_16_t radius1;
       glitz_color_range_t *color_range;
     } radial;
   } u;
@@ -613,8 +615,13 @@ glitz_programmatic_surface_create_linear (glitz_point_fixed_t *start,
 
 extern glitz_surface_t *__internal_linkage
 glitz_programmatic_surface_create_radial (glitz_point_fixed_t *start,
-                                          glitz_distance_fixed_t *radius,
+                                          glitz_fixed16_16_t radius0,
+                                          glitz_fixed16_16_t radius1,
                                           glitz_color_range_t *color_range);
+
+extern void __internal_linkage
+glitz_programmatic_surface_set_transform (glitz_surface_t *surface,
+                                          glitz_transform_t *transform);
 
 extern void __internal_linkage
 glitz_color_range_bind (glitz_gl_proc_address_list_t *gl,

@@ -55,10 +55,6 @@ typedef struct _glitz_point_fixed_t {
   glitz_fixed16_16_t x, y;
 } glitz_point_fixed_t;
 
-typedef struct _glitz_distance_fixed_t {
-  glitz_fixed16_16_t dx, dy;
-} glitz_distance_fixed_t;
-
 typedef struct _glitz_line_fixed_t {
   glitz_point_fixed_t p1, p2;
 } glitz_line_fixed_t;
@@ -277,7 +273,8 @@ glitz_surface_create_linear (glitz_point_fixed_t *start,
 
 glitz_surface_t *
 glitz_surface_create_radial (glitz_point_fixed_t *center,
-                             glitz_distance_fixed_t *radius,
+                             glitz_fixed16_16_t radius0,
+                             glitz_fixed16_16_t radius1,
                              glitz_color_range_t *color_range);
   
 void

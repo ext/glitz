@@ -104,11 +104,14 @@ slim_hidden_def(glitz_surface_create_linear);
 
 glitz_surface_t *
 glitz_surface_create_radial (glitz_point_fixed_t *center,
-                             glitz_distance_fixed_t *radius,
+                             glitz_fixed16_16_t radius0,
+                             glitz_fixed16_16_t radius1,
                              glitz_color_range_t *color_range)
 {
   return
-    glitz_programmatic_surface_create_radial (center, radius, color_range);
+    glitz_programmatic_surface_create_radial (center,
+                                              radius0, radius1,
+                                              color_range);
 }
 slim_hidden_def(glitz_surface_create_radial);
 
@@ -243,8 +246,10 @@ glitz_surface_set_transform (glitz_surface_t *surface,
     }
   };
 
-  if (SURFACE_PROGRAMMATIC (surface))
+  if (SURFACE_PROGRAMMATIC (surface)) {
+    glitz_programmatic_surface_set_transform (surface, transform);
     return;
+  }
 
   if (transform && memcmp (transform, &identity,
                            sizeof (glitz_transform_t)) == 0)
@@ -254,8 +259,8 @@ glitz_surface_set_transform (glitz_surface_t *surface,
     if (!surface->transform) {
       glitz_surface_push_transform (surface);
       if (!surface->transform)
-		return;
-	}
+        return;
+    }
 
     surface->transform->m[0][0] = FIXED_TO_DOUBLE (transform->matrix[0][0]);
     surface->transform->m[1][0] = FIXED_TO_DOUBLE (transform->matrix[0][1]);

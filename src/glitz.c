@@ -209,6 +209,9 @@ _glitz_composite_direct (glitz_operator_t op,
   } else {
     glitz_intersect_sub_pixel_region (&src_region, &dst_region, &src_region);
 
+    if (x_src < 0) x_src = 0;
+    if (y_src < 0) y_src = 0;
+
     src_region.x2 = x_src + (src_region.x2 - src_region.x1) - translate_src.x;
     src_region.y2 = y_src + (src_region.y2 - src_region.y1) - translate_src.y;
     src_region.x1 = x_src - translate_src.x;
@@ -225,6 +228,9 @@ _glitz_composite_direct (glitz_operator_t op,
     mask_region.x2 = (dst_region.x2 - dst_region.x1) + mask_region.x1;
   } else {
     glitz_intersect_sub_pixel_region (&mask_region, &dst_region, &mask_region);
+
+    if (x_mask < 0) x_mask = 0;
+    if (y_mask < 0) y_mask = 0;
     
     mask_region.x2 = x_mask + (mask_region.x2 - mask_region.x1) -
       translate_mask.x;

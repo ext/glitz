@@ -260,26 +260,55 @@ char *_glitz_fragment_program_programmatic[] = {
   
   /*
    * Linear gradient using 1D texture as color range.
-   * Texture unit 2 is color range.
+   * Color range in texture unit 2.
    *
    * program.local[0].x = start offset
    * program.local[0].y = 1 / length
    * program.local[0].z = sin (angle)
    * program.local[0].w = cos (angle)
    *
+   * transform:
+   * [ a | c | tx ]
+   * [ b | d | ty ]
+   * [ 0 | 0 |  1 ]
+   *
+   * program.local[1].x = a
+   * program.local[1].y = b
+   * program.local[1].z = c
+   * program.local[1].w = d
+   * program.local[2].x = tx
+   * program.local[2].y = ty
+   * program.local[2].z = height
+   *
    * Author: David Reveman <c99drn@cs.umu.se>
    */
 
   "!!ARBfp1.0\n"
   "PARAM gradient = program.local[0];\n"
+  "PARAM transform = program.local[1];\n"
+  "PARAM translate = program.local[2];\n"
   "ATTRIB pos = fragment.texcoord[%d];\n"
   "TEMP color, distance, position;\n"
-  
+
   /* temporary */
   "%s"
-  
-  "MUL position.x, gradient.z, pos.x;\n"
-  "MAD position.x, gradient.w, pos.y, position.x;\n"
+
+  /* flip Y position */
+  "SUB position.y, translate.z, pos.y;\n"
+
+  /* transform X position */
+  "MUL position.x, transform.x, pos.x;\n"
+  "MAD position.x, transform.z, position.y, position.x;\n"
+  "ADD position.x, position.x, translate.x;\n"
+
+  /* transform Y position */
+  "MUL position.y, transform.w, position.y;\n"
+  "MAD position.y, transform.y, pos.x, position.y;\n"
+  "ADD position.y, position.y, translate.y;\n"
+
+  /* calculate gradient offset */
+  "MUL position.x, gradient.z, position.x;\n"
+  "MAD position.x, gradient.w, position.y, position.x;\n"
   
   "SUB distance.x, position.x, gradient.x;\n"
   "MUL distance.x, distance.x, gradient.y;\n"
@@ -293,29 +322,54 @@ char *_glitz_fragment_program_programmatic[] = {
 
   /*
    * Radial gradient using 1D texture as color range.
-   * Texture unit 2 is color range.
+   * Color range in texture unit 2.
    *
-   * param[0].x = center point X coordinate
-   * param[0].y = center point Y coordinate
-   * param[1].x = MIN (radius_x, radius_y) / radius_x
-   * param[1].y = MIN (radius_x, radius_y) / radius_y
-   * param[1].z = 0
-   * param[1].x = 1 / MIN (radius_x, radius_y)
+   * param.local[0].x = center point X coordinate
+   * param.local[0].y = center point Y coordinate
+   * param.local[0].z = 1 / (radius1 - radius0)
+   * param.local[0].w = radius0
+   *
+   * transform:
+   * [ a | c | tx ]
+   * [ b | d | ty ]
+   * [ 0 | 0 |  1 ]
+   *
+   * program.local[1].x = a
+   * program.local[1].y = b
+   * program.local[1].z = c
+   * program.local[1].w = d
+   * program.local[2].x = tx
+   * program.local[2].y = ty
+   * program.local[2].z = height
    *
    * Author: David Reveman <c99drn@cs.umu.se>
    */
 
   "!!ARBfp1.0\n"
   "PARAM gradient = program.local[0];\n"
-  "PARAM length = program.local[1];\n"
-  "ATTRIB position = fragment.texcoord[%d];\n"
-  "TEMP color, distance;\n"
+  "PARAM transform = program.local[1];\n"
+  "PARAM translate = program.local[2];\n"
+  "ATTRIB pos = fragment.texcoord[%d];\n"
+  "TEMP color, distance, position;\n"
 
   /* temporary */
   "%s"
-  
+
+  /* flip Y position */
+  "SUB position.y, translate.z, pos.y;\n"
+
+  /* transform X position */
+  "MUL position.x, transform.x, pos.x;\n"
+  "MAD position.x, transform.z, position.y, position.x;\n"
+  "ADD position.x, position.x, translate.x;\n"
+
+  /* transform Y position */
+  "MUL position.y, transform.w, position.y;\n"
+  "MAD position.y, transform.y, pos.x, position.y;\n"
+  "ADD position.y, position.y, translate.y;\n"
+
+  /* calculate gradient offset */
   "SUB distance, position, gradient;\n"
-  "MUL distance, distance, length;\n"
 
   "DP3 distance.x, distance, distance;\n"
   "RSQ distance.w, distance.x;\n"
@@ -323,8 +377,9 @@ char *_glitz_fragment_program_programmatic[] = {
   "RCP distance.x, distance.w;\n"
   "MUL distance.x, distance.x, distance.x;\n"
   "MUL distance.x, distance.x, distance.w;\n"
-  
-  "MUL distance.x, distance.x, length.w;\n"
+
+  "SUB distance.x, distance.x, gradient.w;\n"
+  "MUL distance.x, distance.x, gradient.z;\n"
   
   "TEX color, distance, texture[2], 1D;\n"
 

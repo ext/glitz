@@ -1,3 +1,21 @@
+2004-04-30  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Updated linear and radial surfaces.
+
+	* src/glitz_surface.c: Updated linear and radial surfaces.
+
+	* src/glitz_programmatic.c: Updated linear and radial surfaces.
+
+	* src/glitz_program.c: Updated linear and radial surfaces.
+
+	* src/glitz_matrix.c: Fixed indentation.
+
+	* src/glitz.h: Removed glitz_distance_fixed_t. Updated linear
+	and radial surfaces.
+
+	* src/glitz.c (_glitz_composite_direct): Fixed rare source/mask
+	offset bug.
+
 2004-04-28  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: Added internal_format to glitz_texture_t. Added
