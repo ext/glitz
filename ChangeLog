@@ -1,5 +1,9 @@
 2004-05-20  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.1.3.
+
+	* configure.in: Bump version to 0.1.3.
+
 	* src/glitz_surface.c (glitz_surface_fini): Free inverse_transform
 	if allocated.
 	(glitz_surface_push_transform): Allocate inverse_transform.
