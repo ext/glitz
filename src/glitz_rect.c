@@ -123,10 +123,10 @@ glitz_set_rectangles (glitz_surface_t *dst,
     }
     
     pixel =
-      ((((unsigned int) color->red * 0xff) / 0xffff) << 24) |
-      ((((unsigned int) color->green * 0xff) / 0xffff) << 16) |
-      ((((unsigned int) color->blue * 0xff) / 0xffff) << 8) |
-      ((((unsigned int) color->alpha * 0xff) / 0xffff));
+      ((((unsigned int) color->alpha * 0xff) / 0xffff) << 24) |
+      ((((unsigned int) color->red * 0xff) / 0xffff) << 16) |
+      ((((unsigned int) color->green * 0xff) / 0xffff) << 8) |
+      ((((unsigned int) color->blue * 0xff) / 0xffff));
     
     p = glitz_buffer_map (buffer, GLITZ_BUFFER_ACCESS_WRITE_ONLY);
     

@@ -1,6 +1,13 @@
 2004-09-11  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz_filter.c (glitz_filter_set_params): Gradient coordinates
+	are now translated 0.5 in both x and y directions within glitz so
+	applications shouldn't have to think about this anymore. e.g.
+	specifying the top-left pixel as color stop coordinate is now done
+	with x parameter 0.0 and y parameter 0.0. This makes much more sence.
+
 	* src/glitz_rect.c (glitz_set_rectangles): Fixed memory leak.
+	Fixed order of pixel color components.
 
 	* src/glitz.c (glitz_composite): Oh, I'm good at these, not the
 	first time I accidentally replaced x with y. 

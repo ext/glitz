@@ -270,16 +270,19 @@ glitz_filter_set_params (glitz_surface_t *surface,
       glitz_float_t x_default, y_default, o_default;
       
       o_default = i / (glitz_float_t) (size - 1);
-      x_default = 0.5f + (surface->width * i) / (glitz_float_t) size;
-      y_default = 0.5f + (surface->height * i) / (glitz_float_t) size;
+      x_default = (surface->width * i) / (glitz_float_t) size;
+      y_default = (surface->height * i) / (glitz_float_t) size;
       
       _glitz_filter_params_set (&vecs[i].v[2], o_default, &params, &n_params);
       _glitz_filter_params_set (&vecs[i].v[0], x_default, &params, &n_params);
       _glitz_filter_params_set (&vecs[i].v[1], y_default, &params, &n_params);
 
       glitz_clamp_value (&vecs[i].v[2], 0.0f, 1.0f);
-      glitz_clamp_value (&vecs[i].v[0], 0.5f, surface->width - 0.5f);
-      glitz_clamp_value (&vecs[i].v[1], 0.5f, surface->height - 0.5f);
+      glitz_clamp_value (&vecs[i].v[0], 0.0f, surface->width - 1.0f);
+      glitz_clamp_value (&vecs[i].v[1], 0.0f, surface->height - 1.0f);
+
+      vecs[i].v[0] += 0.5f;
+      vecs[i].v[1] += 0.5f;
 
       vecs[i].v[0] += surface->texture.box.x1;
       vecs[i].v[1] = surface->texture.box.y2 - vecs[i].v[1];
