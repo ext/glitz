@@ -1,3 +1,15 @@
+2005-03-12  David Reveman  <davidr@novell.com>
+
+	* src/glx/glitz_glx_info.c: Fix non thread safe initialization code.
+
+2005-03-10  David Reveman  <davidr@novell.com>
+
+	* src/glx/glitz_glx_context.c (_glitz_glx_context_initialize):
+	Temporary workaround for problem with NPOT GL_TEXTURE_2D textures.
+
+	* src/glitz_pixel.c (glitz_set_pixels): Correct offset in pixel
+	data with bottom to top scanline order.
+
 2005-03-08  David Reveman  <davidr@novell.com>
 
 	* src/glitz_texture.c (glitz_texture_set_tex_gen): Initialize plane

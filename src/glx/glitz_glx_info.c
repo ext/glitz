@@ -256,15 +256,6 @@ static void
 _glitz_glx_screen_destroy (glitz_glx_screen_info_t *screen_info);
 
 static void
-_glitz_glx_thread_info_init (glitz_glx_thread_info_t *thread_info)
-{
-  thread_info->displays = NULL;
-  thread_info->n_displays = 0;
-  thread_info->gl_library = NULL;
-  thread_info->dlhand = NULL;
-}
-
-static void
 _glitz_glx_thread_info_fini (glitz_glx_thread_info_t *thread_info)
 {
   int i;
@@ -296,6 +287,15 @@ _glitz_glx_thread_info_fini (glitz_glx_thread_info_t *thread_info)
 /* thread safe */
 static int tsd_initialized = 0;
 static xthread_key_t info_tsd;
+
+static void
+_glitz_glx_thread_info_init (glitz_glx_thread_info_t *thread_info)
+{
+  thread_info->displays = NULL;
+  thread_info->n_displays = 0;
+  thread_info->gl_library = NULL;
+  thread_info->dlhand = NULL;
+}
 
 static void
 _glitz_glx_thread_info_destroy (glitz_glx_thread_info_t *thread_info)
@@ -374,20 +374,20 @@ _glitz_glx_thread_info_destroy (glitz_glx_thread_info_t *thread_info)
 }
 
 static glitz_glx_thread_info_t *
-_glitz_glx_thread_info_get (char *gl_library)
+_glitz_glx_thread_info_get (const char *gl_library)
 {
   if (gl_library) {
     int len = strlen (gl_library);
 
-    if (thread_info->gl_library) {
-      free (thread_info->gl_library);
-      thread_info->gl_library = NULL;
+    if (thread_info.gl_library) {
+      free (thread_info.gl_library);
+      thread_info.gl_library = NULL;
     }
     
-    thread_info->gl_library = malloc (len + 1);
-    if (thread_info->gl_library) {
-      memcpy (thread_info->gl_library, gl_library, len);
-      thread_info->gl_library[len] = '\0';
+    thread_info.gl_library = malloc (len + 1);
+    if (thread_info.gl_library) {
+      memcpy (thread_info.gl_library, gl_library, len);
+      thread_info.gl_library[len] = '\0';
     }
   }
   
