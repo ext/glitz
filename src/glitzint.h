@@ -374,6 +374,11 @@ glitz_matrix_translate (glitz_matrix_t *matrix,
 extern glitz_status_t __internal_linkage
 glitz_matrix_normalize (glitz_matrix_t *matrix);
 
+typedef enum glitz_int_operator {
+  GLITZ_INT_OPERATOR_STENCIL_RECT_SET = 1000,
+  GLITZ_INT_OPERATOR_STENCIL_RECT_SRC
+} glitz_int_operator_t;
+
 extern void __internal_linkage
 glitz_set_operator (glitz_gl_proc_address_list_t *gl, glitz_operator_t op);
 

@@ -65,27 +65,54 @@ glitz_int_fill_rectangles (glitz_operator_t op,
 {
   glitz_region_box_t bounds;
   glitz_gl_vertex_2i_t vertex_2i;
+  glitz_gl_bitfield_t clear_mask;
   
   glitz_rectangle_bounds (n_rects, rects, &bounds);
   if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
       bounds.x2 < 0 || bounds.y2 < 0)
     return;
 
-  dst->gl->color_4us (color->red, color->green, color->blue, color->alpha);
-
-  glitz_set_operator (dst->gl, op);
+  if (op == GLITZ_OPERATOR_SRC) {
+    clear_mask = GLITZ_GL_COLOR_BUFFER_BIT;
+    dst->gl->clear_color (color->red / (glitz_gl_clampf_t) 0xffff,
+                          color->green / (glitz_gl_clampf_t) 0xffff,
+                          color->blue / (glitz_gl_clampf_t) 0xffff,
+                          color->alpha / (glitz_gl_clampf_t) 0xffff);
+  } else if (op == (glitz_operator_t) GLITZ_INT_OPERATOR_STENCIL_RECT_SET) {
+    clear_mask = GLITZ_GL_STENCIL_BUFFER_BIT;
+    dst->gl->clear_stencil (0x1);
+  } else {
+    if (op == (glitz_operator_t) GLITZ_INT_OPERATOR_STENCIL_RECT_SRC)
+      op = GLITZ_OPERATOR_SRC;
     
-  dst->gl->begin (GLITZ_GL_QUADS);
-
-  vertex_2i = dst->gl->vertex_2i;
-  for (; n_rects; n_rects--, rects++) {
-    vertex_2i (rects->x, rects->y);
-    vertex_2i (rects->x + rects->width, rects->y);
-    vertex_2i (rects->x + rects->width, rects->y + rects->height);
-    vertex_2i (rects->x, rects->y + rects->height);
+    clear_mask = 0x0;
   }
   
-  dst->gl->end ();
+  if (clear_mask) {
+    for (; n_rects; n_rects--, rects++) {
+      dst->gl->scissor (rects->x,
+                        dst->height - (rects->y + rects->height),
+                        rects->width,
+                        rects->height);
+      dst->gl->clear (clear_mask);
+    }
+  } else {
+    dst->gl->color_4us (color->red, color->green, color->blue, color->alpha);
+      
+    glitz_set_operator (dst->gl, op);
+      
+    dst->gl->begin (GLITZ_GL_QUADS);
+      
+    vertex_2i = dst->gl->vertex_2i;
+    for (; n_rects; n_rects--, rects++) {
+      vertex_2i (rects->x, rects->y);
+      vertex_2i (rects->x + rects->width, rects->y);
+      vertex_2i (rects->x + rects->width, rects->y + rects->height);
+      vertex_2i (rects->x, rects->y + rects->height);
+    }
+  
+    dst->gl->end ();
+  }
 }
 
 void

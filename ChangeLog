@@ -1,4 +1,18 @@
-2004-04-03    <c99drn@cs.umu.se>
+2004-04-06  David Reveman  <c99drn@cs.umu.se>
+
+	* ChangeLog: Added name to ChangeLog entries.
+
+	* src/glitz_rect.c (glitz_int_fill_rectangles): Use glClear
+	for solid color and stencil fills.
+
+	* src/glitz_surface.c (glitz_int_surface_clip_rectangles): Use
+	internal stencil operators with glitz_int_fill_rectangles.
+
+	* src/glitzint.h: Added STENCIL_RECT operators.
+
+	* autogen.sh (AUTOMAKE_FLAGS): Removed --foreign flag.
+
+2004-04-03  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_agl_surface.c (_glitz_agl_set_features):
 	* src/glitz_glx_surface.c (_glitz_glx_set_features): Fixed 
@@ -11,62 +25,62 @@
 	* src/glitzint.h:
 	* src/glitz_glxext.h: Removed ATI_render_texture support.
 
-2004-04-01    <c99drn@cs.umu.se>
+2004-04-01  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: Removed __internal_linkage from functions that
 	should be exported to backend libraries.
 
-2004-03-31    <c99drn@cs.umu.se>
+2004-03-31  David Reveman  <c99drn@cs.umu.se>
 
 	* configure.in: Fixed misplacement of AM_CONDITIONAL macros.
 
-2004-03-30    <c99drn@cs.umu.se>
+2004-03-30  David Reveman  <c99drn@cs.umu.se>
 
 	Name change (libglc -> libglitz)
 
-2004-03-27    <c99drn@cs.umu.se>
+2004-03-27  David Reveman  <c99drn@cs.umu.se>
 
 	Added clipping support.
 	Added new polygon drawing code.
 
-2004-03-20    <c99drn@cs.umu.se>
+2004-03-20  David Reveman  <c99drn@cs.umu.se>
 
 	Added color range interface.
 	New fragment program for radial gradient.
 
-2004-03-15    <c99drn@cs.umu.se>
+2004-03-15  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_programmatic.c: Divide by zero fix.
 
-2004-03-14    <c99drn@cs.umu.se>
+2004-03-14  David Reveman  <c99drn@cs.umu.se>
 
 	* src/Makefile.am: Don't install GL extension headers. 
 
 	Fixed polygon bounds.
 
-2004-03-13    <c99drn@cs.umu.se>
+2004-03-13  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_glx_format.c: Use GLX13 to find visual info if GLX13 is 
 	present.
 
-2004-03-12    <c99drn@cs.umu.se>
+2004-03-12  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_trap.c: Removed ugly trapezoid hack.
 
-2004-03-08    <c99drn@cs.umu.se>
+2004-03-08  David Reveman  <c99drn@cs.umu.se>
 
 	Fragment program updates. Added support for combined 
 	convolution and solid programmatic surface operation.
 
-2004-03-06    <c99drn@cs.umu.se>
+2004-03-06  David Reveman  <c99drn@cs.umu.se>
 
 	Included our own GL extension definitions.
 
-2004-03-05    <c99drn@cs.umu.se>
+2004-03-05  David Reveman  <c99drn@cs.umu.se>
 
 	Added solid programmatic surfaces.
 
-2004-02-28    <c99drn@cs.umu.se>
+2004-02-28  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_agl_extension.c: Added NPOT texture support.
 
@@ -76,7 +90,7 @@
 
 	* src/glc_texture.c: Added NPOT texture support.
 
-2004-02-27    <c99drn@cs.umu.se>
+2004-02-27  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc.c (_glc_composite_direct): Texture coordinate fix.
 
@@ -89,14 +103,14 @@
 
 	* src/glc_program.c: Corrected some values in the expand map.
 
-2004-02-26    <c99drn@cs.umu.se>
+2004-02-26  David Reveman  <c99drn@cs.umu.se>
 
 	Added programmatic surface support. Two types on programmatic
 	surfaces are currently supported, linear and radial gradients.
 	I also like to have a function based gradient and linear and
 	radial guassian shadings.
 
-2004-02-23    <c99drn@cs.umu.se>
+2004-02-23  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_glx_format.c (glc_glx_query_formats_glx13): 
 	Use GLC_GLX_FEATURE_GLX13_MASK.
@@ -110,7 +124,7 @@
 
 	* src/glcint.h: Added GLC_GLX_FEATURE_GLX13_MASK.
 
-2004-02-21    <c99drn@cs.umu.se>
+2004-02-21  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_matrix.c: Added glc_matrix_transform_region function.
 
@@ -124,25 +138,25 @@
 	doing none direct compositing with mask and the area of that
 	intermediate surface is now also minimized.
 
-2004-02-20    <c99drn@cs.umu.se>
+2004-02-20  David Reveman  <c99drn@cs.umu.se>
 
 	Added convolution filter support.
 
-2004-02-18    <c99drn@cs.umu.se>
+2004-02-18  David Reveman  <c99drn@cs.umu.se>
 
 	Fixed dynamic lookup handling and texture rectangle support.
 
-2004-02-16    <c99drn@cs.umu.se>
+2004-02-16  David Reveman  <c99drn@cs.umu.se>
 
 	* configure.in: Check version of GL headers.
 
 	Dynamic lookup of all GL and GLX extension symbols.
 
-2004-02-12    <c99drn@cs.umu.se>
+2004-02-12  David Reveman  <c99drn@cs.umu.se>
 
 	Added pixel read/draw format info.
 
-2004-02-11    <c99drn@cs.umu.se>
+2004-02-11  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc.c: Sub-pixel positioning fixes.
 
@@ -150,7 +164,7 @@
 
 	Merged fragment program code. 
 
-2004-02-06    <c99drn@cs.umu.se>
+2004-02-06  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_glx_extension.c (glc_glx_query_extensions): Add offscreen
 	multisample support for geforce fx cards.
@@ -178,11 +192,11 @@
 	* src/glc_glx_format.c (glc_glx_query_formats_glx12): 
 	Fixed so that the correct visual IDs are retrieved.
 
-2004-02-05    <c99drn@cs.umu.se>
+2004-02-05  David Reveman  <c99drn@cs.umu.se>
 
 	Merged new format handling code.
 
-2004-02-03    <c99drn@cs.umu.se>
+2004-02-03  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_glx_format.c (glc_glx_find_visual_format): Don't add options
 	when searching for specific visual.
@@ -204,7 +218,7 @@
 	Restructuring of internal rendering model. 
 	AGL backend added.
 
-2003-12-13    <c99drn@cs.umu.se>
+2003-12-13  David Reveman  <c99drn@cs.umu.se>
 
 	* configure.in: Added --disable-glx switch.
 
@@ -216,7 +230,7 @@
 	* src/glcint.h: Directly fold in slim stuff rather than
 	depending on it from an external package.
 
-2003-12-09    <c99drn@cs.umu.se>
+2003-12-09  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_tri.c: Always turn off polygon smooth after rendering.
 
@@ -232,7 +246,7 @@
 	* src/glc_surface.c (glc_surface_draw_pixels): Do not draw to both
 	back and front buffer.
 
-2003-12-09    <c99pnn@cs.umu.se>
+2003-12-09  Peter Nilsson  <c99pnn@cs.umu.se>
 
 	* src/glc.h: Moved read/draw pixels from glx backend to glc 
 	core.  
@@ -243,11 +257,11 @@
 	* src/glc_surface.c: Moved read/draw pixels from glx backend to glc 
 	core. 
 	
-2003-12-08    <c99drn@cs.umu.se>
+2003-12-08  David Reveman  <c99drn@cs.umu.se>
 
 	Texture format fixes. Linux and MacOSX ATI drivers should now work.
 
-2003-12-07    <c99drn@cs.umu.se>
+2003-12-07  David Reveman  <c99drn@cs.umu.se>
 
 	New system for handling texture coordinates.
 
@@ -257,7 +271,7 @@
 	* src/glc_glx_context.c (glc_glx_context_release): Make sure context
 	is not current when destroying it.
 
-2003-12-05    <c99drn@cs.umu.se>
+2003-12-05  David Reveman  <c99drn@cs.umu.se>
 
 	* configure.in: Keeping up with cairo.
 
@@ -270,7 +284,7 @@
 
 	* Added conditional backend building.
 
-2003-12-04    <c99drn@cs.umu.se>
+2003-12-04  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc.c (glc_composite): Use GLC_OPERATOR_IN instead of
 	GLC_OPERATOR_MASK.
@@ -297,7 +311,7 @@
 	implemented.
 	(glc_composite): Added glFlush after glCopyTexSubImage2D.
 
-2003-12-04    <c99drn@cs.umu.se>
+2003-12-04  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_surface.c (glc_surface_setup_environment): Set pack/unpack
 	alignment.
@@ -308,7 +322,7 @@
 	* src/glc_glx_surface.c (glc_glx_surface_swap_buffers): Added
 	glFlush before glXSwapBuffers.
 
-2003-12-03    <c99drn@cs.umu.se>
+2003-12-03  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_texture.c: Internal texture format fixed.
 
@@ -332,7 +346,7 @@
 	* src/glc_glx_surface.c (glc_glx_surface_draw_pixels): Texture Y 
 	offset fix.
 
-2003-12-01    <c99drn@cs.umu.se>
+2003-12-01  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc.c (glc_composite): Only pop matrix if transformations has
 	been used.
@@ -351,7 +365,7 @@
 
 	* src/glcint.h: Added disable/enable transform functions.
 
-2003-11-27    <c99drn@cs.umu.se>
+2003-11-27  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glc_glx_info.c (glc_glx_thread_info_get): Type fix for not thread
 	safe building.

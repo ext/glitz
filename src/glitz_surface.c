@@ -771,7 +771,10 @@ glitz_int_surface_clip_rectangles (glitz_surface_t *surface,
   surface->gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE,
                            GLITZ_GL_FALSE, GLITZ_GL_FALSE);
 
-  glitz_int_fill_rectangles (GLITZ_OPERATOR_SRC,
+  glitz_int_fill_rectangles ((glitz_operator_t)
+                             ((op == GLITZ_INT_CLIP_OPERATOR_SET)?
+                              GLITZ_INT_OPERATOR_STENCIL_RECT_SET:
+                              GLITZ_INT_OPERATOR_STENCIL_RECT_SRC),
                              surface,
                              &color,
                              rects,
