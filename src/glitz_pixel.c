@@ -451,6 +451,12 @@ glitz_set_pixels (glitz_surface_t *dst,
       to_drawable = 0;
   } else
     glitz_surface_push_current (dst, GLITZ_CN_ANY_CONTEXT_CURRENT);
+
+  texture = glitz_surface_get_texture (dst, 1);
+  if (!texture) {
+    glitz_surface_pop_current (dst);
+    return;
+  }
   
   if (transform) {
     glitz_image_t src_image, dst_image;
@@ -493,12 +499,6 @@ glitz_set_pixels (glitz_surface_t *dst,
     bytes_per_line = format->bytes_per_line;
     pixels = glitz_buffer_bind (buffer, GLITZ_GL_PIXEL_UNPACK_BUFFER);
     pixels += format->skip_lines * bytes_per_line;
-  }
-
-  texture = glitz_surface_get_texture (dst, 1);
-  if (!texture) {
-    glitz_surface_pop_current (dst);
-    return;
   }
   
   glitz_texture_bind (gl, texture);

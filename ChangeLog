@@ -1,3 +1,8 @@
+2004-09-15  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_pixel.c (glitz_set_pixels): Get texture before pixel
+	transform and buffer bind.
+
 2004-09-14  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_compose.c: Fixed division by zero bug that occurred when
