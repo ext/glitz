@@ -149,9 +149,9 @@ _glitz_agl_set_features (glitz_agl_surface_t *surface)
        GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS_ARB,
        &texture_indirections);
 
-    /* Convolution filter programs require support for at least six
+    /* Convolution filter programs require support for at least nine
        texture indirections. */
-    if (texture_indirections >= 5)
+    if (texture_indirections >= 9)
       surface->base.feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
   }
 

@@ -150,12 +150,12 @@ glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
 void
 glitz_glx_context_proc_address_lookup (glitz_glx_context_t *context)
 {
-  context->glx.bind_tex_image_ati =
-    (glitz_glx_bind_tex_image_ati_t)
-    glitz_glx_get_proc_address ("glXBindTexImageATI");
-  context->glx.release_tex_image_ati =
-    (glitz_glx_release_tex_image_ati_t)
-    glitz_glx_get_proc_address ("glXReleaseTexImageATI");
+  context->glx.bind_tex_image_arb =
+    (glitz_glx_bind_tex_image_arb_t)
+    glitz_glx_get_proc_address ("glXBindTexImageARB");
+  context->glx.release_tex_image_arb =
+    (glitz_glx_release_tex_image_arb_t)
+    glitz_glx_get_proc_address ("glXReleaseTexImageARB");
 
   context->gl.active_texture_arb =
     (glitz_gl_active_texture_arb_t)

@@ -95,62 +95,24 @@ typedef XID GLXPbuffer;
 #endif
 
 typedef GLXFBConfig *(* glitz_glx_get_fbconfigs_t)
-     (Display *, int, int *);
+     (Display *display, int screen, int *n_elements);
 typedef int (* glitz_glx_get_fbconfig_attrib_t)
-     (Display *, GLXFBConfig, int, int *);
+     (Display *display, GLXFBConfig config, int attribute, int *value);
 typedef XVisualInfo *(* glitz_glx_get_visual_from_fbconfig_t)
-     (Display *, GLXFBConfig);
+     (Display *display, GLXFBConfig config);
 typedef GLXPbuffer (* glitz_glx_create_pbuffer_t)
-     (Display *, GLXFBConfig, const int *);
+     (Display *display, GLXFBConfig config, const int *attrib_list);
 typedef void (* glitz_glx_destroy_pbuffer_t)
-     (Display *, GLXPbuffer);
+     (Display *display, GLXPbuffer pbuffer);
 
 #ifndef GLX_ARB_multisample
 #define GLX_SAMPLE_BUFFERS_ARB              0x186a0
 #define GLX_SAMPLES_ARB                     0x186a1
 #endif
 
-#ifndef GLX_ATI_render_texture
-#define GLX_BIND_TO_TEXTURE_RGB_ATI         0x9800
-#define GLX_BIND_TO_TEXTURE_RGBA_ATI        0x9801
-#define GLX_TEXTURE_FORMAT_ATI              0x9802
-#define GLX_TEXTURE_TARGET_ATI              0x9803
-#define GLX_MIPMAP_TEXTURE_ATI              0x9804
-#define GLX_TEXTURE_RGB_ATI                 0x9805
-#define GLX_TEXTURE_RGBA_ATI                0x9806
-#define GLX_NO_TEXTURE_ATI                  0x9807
-#define GLX_TEXTURE_CUBE_MAP_ATI            0x9808
-#define GLX_TEXTURE_1D_ATI                  0x9809
-#define GLX_TEXTURE_2D_ATI                  0x980A
-#define GLX_MIPMAP_LEVEL_ATI                0x980B
-#define GLX_CUBE_MAP_FACE_ATI               0x980C
-#define GLX_TEXTURE_CUBE_MAP_POSITIVE_X_ATI 0x980D
-#define GLX_TEXTURE_CUBE_MAP_NEGATIVE_X_ATI 0x980E
-#define GLX_TEXTURE_CUBE_MAP_POSITIVE_Y_ATI 0x980F
-#define GLX_TEXTURE_CUBE_MAP_NEGATIVE_Y_ATI 0x9810
-#define GLX_TEXTURE_CUBE_MAP_POSITIVE_Z_ATI 0x9811
-#define GLX_TEXTURE_CUBE_MAP_NEGATIVE_Z_ATI 0x9812
-#define GLX_FRONT_LEFT_ATI                  0x9813
-#define GLX_FRONT_RIGHT_ATI                 0x9814
-#define GLX_BACK_LEFT_ATI                   0x9815
-#define GLX_BACK_RIGHT_ATI                  0x9816
-#define GLX_AUX0_ATI                        0x9817
-#define GLX_AUX1_ATI                        0x9818
-#define GLX_AUX2_ATI                        0x9819
-#define GLX_AUX3_ATI                        0x981A
-#define GLX_AUX4_ATI                        0x981B
-#define GLX_AUX5_ATI                        0x981C
-#define GLX_AUX6_ATI                        0x981D
-#define GLX_AUX7_ATI                        0x981E
-#define GLX_AUX8_ATI                        0x981F
-#define GLX_AUX9_ATI                        0x9820
-#define GLX_BIND_TO_TEXTURE_LUMINANCE_ATI   0x9821
-#define GLX_BIND_TO_TEXTURE_INTENSITY_ATI   0x9822
-#endif
-
-typedef void (* glitz_glx_bind_tex_image_ati_t)
-     (Display *, GLXPbuffer, int);
-typedef void (* glitz_glx_release_tex_image_ati_t)
-     (Display *, GLXPbuffer, int);
+typedef Bool *(* glitz_glx_bind_tex_image_arb_t)
+     (Display *display, GLXPbuffer pbuffer, int buffer);
+typedef Bool (* glitz_glx_release_tex_image_arb_t)
+     (Display *display, GLXPbuffer pbuffer, int buffer);
 
 #endif /* GLITZ_GLXEXT_H_INCLUDED */

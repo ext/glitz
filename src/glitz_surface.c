@@ -621,9 +621,8 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
     surface->gl->disable (GLITZ_GL_SCISSOR_TEST);
     surface->gl->disable (GLITZ_GL_DITHER);
     glitz_set_operator (surface->gl, GLITZ_OPERATOR_SRC);
-
-    if (!SURFACE_REQUIRES_NO_FLIPPING(surface))
-      surface->gl->pixel_zoom (1.0, -1.0);
+    
+    surface->gl->pixel_zoom (1.0, -1.0);
     
     _glitz_set_raster_pos (surface->gl, x, surface->height - y);
     surface->gl->draw_pixels (width, height, format, type, pixels);

@@ -56,16 +56,8 @@ _glitz_glx_surface_push_current (void *abstract_surface,
 {
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
 
-  if (constraint == GLITZ_CN_SURFACE_DRAWABLE_CURRENT) {
-    if (surface->render_texture) {
-      surface->context->glx.release_tex_image_ati
-        (surface->screen_info->display_info->display, surface->pbuffer,
-         (surface->base.format->doublebuffer)?
-         GLX_BACK_LEFT_ATI: GLX_FRONT_LEFT_ATI);
-    }
-    if (!surface->drawable)
-      constraint = GLITZ_CN_ANY_CONTEXT_CURRENT;
-  }
+  if (constraint == GLITZ_CN_SURFACE_DRAWABLE_CURRENT && (!surface->drawable))
+    constraint = GLITZ_CN_ANY_CONTEXT_CURRENT;
   
   surface = glitz_glx_context_push_current (surface, constraint);
 
@@ -123,19 +115,9 @@ _glitz_glx_surface_ensure_texture (glitz_glx_surface_t *surface)
 {
   if (!(surface->base.hint_mask & GLITZ_INT_HINT_DIRTY_MASK))
     return;
-
-  if (surface->render_texture) {
-    glitz_texture_bind (surface->base.gl, surface->base.texture);
-    surface->context->glx.bind_tex_image_ati
-      (surface->screen_info->display_info->display, surface->pbuffer,
-       (surface->base.format->doublebuffer)?
-       GLX_BACK_LEFT_ATI: GLX_FRONT_LEFT_ATI);
-    
-    glitz_texture_unbind (surface->base.gl, surface->base.texture);
-
-  } else
-    glitz_texture_copy_surface (surface->base.texture, &surface->base,
-                                &surface->base.dirty_region);
+  
+  glitz_texture_copy_surface (surface->base.texture, &surface->base,
+                              &surface->base.dirty_region);
 
   surface->base.hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
 }
@@ -158,7 +140,6 @@ _glitz_glx_set_features (glitz_glx_surface_t *surface)
 {
   surface->base.feature_mask = surface->screen_info->feature_mask;
 
-  surface->base.feature_mask &= ~GLITZ_FEATURE_ATI_RENDER_TEXTURE_MASK;
   surface->base.feature_mask &= ~GLITZ_FEATURE_ARB_VERTEX_PROGRAM_MASK;
   surface->base.feature_mask &= ~GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK;
   surface->base.feature_mask &= ~GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
@@ -170,12 +151,12 @@ _glitz_glx_set_features (glitz_glx_surface_t *surface)
                                 GLITZ_CN_SURFACE_CONTEXT_CURRENT);
     glitz_surface_pop_current (&surface->base);
   }
-  
-  if ((surface->screen_info->feature_mask &
-       GLITZ_FEATURE_ATI_RENDER_TEXTURE_MASK) &&
-      surface->context->glx.bind_tex_image_ati &&
-      surface->context->glx.release_tex_image_ati)
-    surface->base.feature_mask |= GLITZ_FEATURE_ATI_RENDER_TEXTURE_MASK;
+
+  if ((surface->screen_info->glx_feature_mask &
+       GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK) &&
+      surface->context->glx.bind_tex_image_arb &&
+      surface->context->glx.release_tex_image_arb)
+    surface->render_texture = 1;
 
   if (surface->context->gl.active_texture_arb &&
       surface->context->gl.multi_tex_coord_2d_arb &&
@@ -203,10 +184,10 @@ _glitz_glx_set_features (glitz_glx_surface_t *surface)
         (GLITZ_GL_FRAGMENT_PROGRAM_ARB,
          GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS_ARB,
          &texture_indirections);
-      
-      /* Convolution filter programs require support for at least six
+
+      /* Convolution filter programs require support for at least nine
          texture indirections. */
-      if (texture_indirections >= 5)
+      if (texture_indirections >= 9)
         surface->base.feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
     }
   }
@@ -251,9 +232,6 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
 
   texture_format = glitz_get_gl_format_from_bpp (format->bpp);
 
-  if (screen_info->feature_mask & GLITZ_FEATURE_ATI_RENDER_TEXTURE_MASK)
-    surface->render_texture = 1;
-  
   glitz_surface_push_current (&surface->base, GLITZ_CN_ANY_CONTEXT_CURRENT);
 
   surface->base.texture =
@@ -271,18 +249,11 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
     surface->drawable = surface->pbuffer =
       glitz_glx_pbuffer_create (screen_info->display_info->display,
                                 surface->context->fbconfig,
-                                surface->base.texture,
-                                surface->render_texture);
+                                surface->base.texture);
 
   _glitz_glx_set_features (surface);
-
-  if (surface->base.feature_mask & GLITZ_FEATURE_ATI_RENDER_TEXTURE_MASK) {
-    if (format->red_size || format->green_size || format->blue_size)
-      surface->base.hint_mask |= GLITZ_INT_HINT_REQUIRES_NO_FLIPPING_MASK;
-  } else
-    surface->render_texture = 0;
   
-  if ((!surface->render_texture) && (!surface->pbuffer))
+  if (!surface->pbuffer)
     glitz_texture_allocate (surface->base.gl, surface->base.texture);
 
   glitz_surface_pop_current (&surface->base);
@@ -384,13 +355,6 @@ _glitz_glx_surface_destroy (void *abstract_surface)
 
   glitz_surface_push_current (&surface->base, GLITZ_CN_ANY_CONTEXT_CURRENT);
 
-  if (surface->render_texture) {
-    surface->context->glx.release_tex_image_ati
-      (surface->screen_info->display_info->display, surface->pbuffer,
-       (surface->base.format->doublebuffer)?
-       GLX_BACK_LEFT_ATI: GLX_FRONT_LEFT_ATI);
-  }
-  
   if (surface->base.texture)
     glitz_texture_destroy (surface->base.gl, surface->base.texture);
 

@@ -45,8 +45,8 @@
 #define GLITZ_GLX_FEATURE_MULTISAMPLE_FILTER_MASK      (1L << 5)
 #define GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK      (1L << 6)
 #define GLITZ_GLX_FEATURE_ARB_FRAGMENT_PROGRAM_MASK    (1L << 7)
-#define GLITZ_GLX_FEATURE_ATI_RENDER_TEXTURE_MASK      (1L << 8)
-#define GLITZ_GLX_FEATURE_GLX13_MASK                   (1L << 9)
+#define GLITZ_GLX_FEATURE_GLX13_MASK                   (1L << 8)
+#define GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK      (1L << 9)
 
 typedef struct _glitz_glx_surface glitz_glx_surface_t;
 typedef struct _glitz_glx_screen_info_t glitz_glx_screen_info_t;
@@ -62,8 +62,8 @@ typedef struct _glitz_glx_static_proc_address_list_t {
 } glitz_glx_static_proc_address_list_t;
 
 typedef struct _glitz_glx_proc_address_list_t {
-  glitz_glx_bind_tex_image_ati_t bind_tex_image_ati;
-  glitz_glx_release_tex_image_ati_t release_tex_image_ati;
+  glitz_glx_bind_tex_image_arb_t bind_tex_image_arb;
+  glitz_glx_release_tex_image_arb_t release_tex_image_arb;
   glitz_bool_t supported;
 } glitz_glx_proc_address_list_t;
 
@@ -168,8 +168,7 @@ glitz_glx_query_formats (glitz_glx_screen_info_t *screen_info);
 extern GLXPbuffer __internal_linkage
 glitz_glx_pbuffer_create (Display *display,
                           GLXFBConfig fbconfig,
-                          glitz_texture_t *texture,
-                          glitz_bool_t render_texture);
+                          glitz_texture_t *texture);
 
 extern void __internal_linkage
 glitz_glx_pbuffer_destroy (Display *display,

@@ -36,8 +36,7 @@ extern glitz_glx_static_proc_address_list_t _glitz_glx_proc_address;
 GLXPbuffer
 glitz_glx_pbuffer_create (Display *display,
                           GLXFBConfig fbconfig,
-                          glitz_texture_t *texture,
-                          glitz_bool_t render_texture)
+                          glitz_texture_t *texture)
 {
   int pbuffer_attr[13], i = 0;
 
@@ -49,14 +48,6 @@ glitz_glx_pbuffer_create (Display *display,
   pbuffer_attr[i++] = 1;
   pbuffer_attr[i++] = GLX_LARGEST_PBUFFER;
   pbuffer_attr[i++] = 0;
-
-  if (render_texture) {    
-    pbuffer_attr[i++] = GLX_TEXTURE_FORMAT_ATI;
-    pbuffer_attr[i++] = GLX_TEXTURE_RGBA_ATI;
-    pbuffer_attr[i++] = GLX_TEXTURE_TARGET_ATI;
-    pbuffer_attr[i++] = GLX_TEXTURE_2D_ATI;
-  }
-
   pbuffer_attr[i++] = 0;
     
   return

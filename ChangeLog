@@ -1,3 +1,16 @@
+2004-04-03    <c99drn@cs.umu.se>
+
+	* src/glitz_agl_surface.c (_glitz_agl_set_features):
+	* src/glitz_glx_surface.c (_glitz_glx_set_features): Fixed 
+	detection of convolution filter support.
+
+	* src/glitz_glx_pbuffer.c:
+	* src/glitz_glx_context.c:
+	* src/glitz_glx_surface.c:
+	* src/glitz_glxint.h:
+	* src/glitzint.h:
+	* src/glitz_glxext.h: Removed ATI_render_texture support.
+
 2004-04-01    <c99drn@cs.umu.se>
 
 	* src/glitzint.h: Removed __internal_linkage from functions that

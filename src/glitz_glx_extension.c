@@ -34,7 +34,9 @@
 extern glitz_glx_static_proc_address_list_t _glitz_glx_proc_address;
 
 static glitz_extension_map client_glx_extensions[] = {
-  { "GLX_ATI_render_texture", GLITZ_GLX_FEATURE_ATI_RENDER_TEXTURE_MASK },
+  /* NYI: Don't know of any driver that supports GLX_ARB_render_texture 
+    { "GLX_ARB_render_texture", GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK },
+   */
   { "GLX_ARB_multisample", GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK },
   { NULL, 0 }
 }, gl_extensions[] = {
@@ -120,14 +122,8 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
     screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK;
 
   if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_ATI_RENDER_TEXTURE_MASK) {
-    screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_ATI_RENDER_TEXTURE_MASK;
-    screen_info->feature_mask |= GLITZ_FEATURE_ATI_RENDER_TEXTURE_MASK;
-
-    /* ATI render texture doesn't seem to support texture rectangle */
-    screen_info->texture_mask &= ~GLITZ_TEXTURE_TARGET_RECTANGLE_MASK;
-    screen_info->feature_mask &= ~GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK;
-  }
+      GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK)
+    screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_ARB_RENDER_TEXTURE_MASK;
 
   if (screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_ARB_VERTEX_PROGRAM_MASK) {

@@ -269,8 +269,7 @@ typedef struct glitz_surface_backend {
 #define GLITZ_INT_HINT_REPEAT_MASK               (1L << 4)
 #define GLITZ_INT_HINT_IMPLICIT_MASK_MASK        (1L << 5)
 #define GLITZ_INT_HINT_DIRTY_MASK                (1L << 6)
-#define GLITZ_INT_HINT_REQUIRES_NO_FLIPPING_MASK (1L << 7)
-#define GLITZ_INT_HINT_CLEAR_EXTERIOR_MASK       (1L << 8)
+#define GLITZ_INT_HINT_CLEAR_EXTERIOR_MASK       (1L << 7)
 
 #define SURFACE_PROGRAMMATIC(surface) \
   (surface->hint_mask & GLITZ_HINT_PROGRAMMATIC_MASK)
@@ -283,9 +282,6 @@ typedef struct glitz_surface_backend {
 
 #define SURFACE_DIRTY(surface) \
   (surface->hint_mask & GLITZ_INT_HINT_DIRTY_MASK)
-
-#define SURFACE_REQUIRES_NO_FLIPPING(surface) \
-  (surface->hint_mask & GLITZ_INT_HINT_REQUIRES_NO_FLIPPING_MASK)
 
 #define SURFACE_CLEAR_EXTERIOR(surface) \
   (surface->hint_mask & GLITZ_INT_HINT_CLEAR_EXTERIOR_MASK)
