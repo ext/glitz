@@ -1092,6 +1092,9 @@ glitz_get_pixels (glitz_surface_t      *src,
     dst_image.width = width;
     dst_image.height = height;
 
+    if (format->scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP)
+        src_y = src_h - src_y - height;
+
     _glitz_pixel_transform (transform,
                             &src_image,
                             &dst_image,
