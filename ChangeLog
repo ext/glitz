@@ -1,5 +1,9 @@
 2004-06-11  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.1.4.
+
+	* configure.in: Bump version to 0.1.4.
+
 	* src/glitzint.h: Added software multi-sampling, new render interface
 	and new stencil interface.
 
