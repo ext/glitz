@@ -210,11 +210,17 @@ glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
 {
   glitz_glx_thread_info_t *thread_info =
     screen_info->display_info->thread_info;
-    
-  context->backend.gl.active_texture =
-    (glitz_gl_active_texture_t)
-    glitz_glx_get_proc_address (thread_info, "glActiveTextureARB");
 
+  if (screen_info->gl_version >= 1.3) {
+    context->backend.gl.active_texture =
+      (glitz_gl_active_texture_t)
+      glitz_glx_get_proc_address (thread_info, "glActiveTexture");
+  } else {
+    context->backend.gl.active_texture =
+      (glitz_gl_active_texture_t)
+      glitz_glx_get_proc_address (thread_info, "glActiveTextureARB");
+  }
+  
   context->backend.gl.gen_programs =
     (glitz_gl_gen_programs_t)
     glitz_glx_get_proc_address (thread_info, "glGenProgramsARB");
@@ -234,30 +240,57 @@ glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
     (glitz_gl_get_program_iv_t)
     glitz_glx_get_proc_address (thread_info, "glGetProgramivARB");
 
-  context->backend.gl.gen_buffers =
-    (glitz_gl_gen_buffers_t)
-    glitz_glx_get_proc_address (thread_info, "glGenBuffersARB");
-  context->backend.gl.delete_buffers =
-    (glitz_gl_delete_buffers_t)
-    glitz_glx_get_proc_address (thread_info, "glDeleteBuffersARB");
-  context->backend.gl.bind_buffer =
-    (glitz_gl_bind_buffer_t)
-    glitz_glx_get_proc_address (thread_info, "glBindBufferARB");
-  context->backend.gl.buffer_data =
-    (glitz_gl_buffer_data_t)
-    glitz_glx_get_proc_address (thread_info, "glBufferDataARB");
-  context->backend.gl.buffer_sub_data =
-    (glitz_gl_buffer_sub_data_t)
-    glitz_glx_get_proc_address (thread_info, "glBufferSubDataARB");
-  context->backend.gl.get_buffer_sub_data =
-    (glitz_gl_get_buffer_sub_data_t)
-    glitz_glx_get_proc_address (thread_info, "glGetBufferSubDataARB");
-  context->backend.gl.map_buffer =
-    (glitz_gl_map_buffer_t)
-    glitz_glx_get_proc_address (thread_info, "glMapBufferARB");
-  context->backend.gl.unmap_buffer =
-    (glitz_gl_unmap_buffer_t)
-    glitz_glx_get_proc_address (thread_info, "glUnmapBufferARB");
+  if (screen_info->gl_version >= 1.5) {
+    context->backend.gl.gen_buffers =
+      (glitz_gl_gen_buffers_t)
+      glitz_glx_get_proc_address (thread_info, "glGenBuffers");
+    context->backend.gl.delete_buffers =
+      (glitz_gl_delete_buffers_t)
+      glitz_glx_get_proc_address (thread_info, "glDeleteBuffers");
+    context->backend.gl.bind_buffer =
+      (glitz_gl_bind_buffer_t)
+      glitz_glx_get_proc_address (thread_info, "glBindBuffer");
+    context->backend.gl.buffer_data =
+      (glitz_gl_buffer_data_t)
+      glitz_glx_get_proc_address (thread_info, "glBufferData");
+    context->backend.gl.buffer_sub_data =
+      (glitz_gl_buffer_sub_data_t)
+      glitz_glx_get_proc_address (thread_info, "glBufferSubData");
+    context->backend.gl.get_buffer_sub_data =
+      (glitz_gl_get_buffer_sub_data_t)
+      glitz_glx_get_proc_address (thread_info, "glGetBufferSubData");
+    context->backend.gl.map_buffer =
+      (glitz_gl_map_buffer_t)
+      glitz_glx_get_proc_address (thread_info, "glMapBuffer");
+    context->backend.gl.unmap_buffer =
+      (glitz_gl_unmap_buffer_t)
+      glitz_glx_get_proc_address (thread_info, "glUnmapBuffer");
+  } else {
+    context->backend.gl.gen_buffers =
+      (glitz_gl_gen_buffers_t)
+      glitz_glx_get_proc_address (thread_info, "glGenBuffersARB");
+    context->backend.gl.delete_buffers =
+      (glitz_gl_delete_buffers_t)
+      glitz_glx_get_proc_address (thread_info, "glDeleteBuffersARB");
+    context->backend.gl.bind_buffer =
+      (glitz_gl_bind_buffer_t)
+      glitz_glx_get_proc_address (thread_info, "glBindBufferARB");
+    context->backend.gl.buffer_data =
+      (glitz_gl_buffer_data_t)
+      glitz_glx_get_proc_address (thread_info, "glBufferDataARB");
+    context->backend.gl.buffer_sub_data =
+      (glitz_gl_buffer_sub_data_t)
+      glitz_glx_get_proc_address (thread_info, "glBufferSubDataARB");
+    context->backend.gl.get_buffer_sub_data =
+      (glitz_gl_get_buffer_sub_data_t)
+      glitz_glx_get_proc_address (thread_info, "glGetBufferSubDataARB");
+    context->backend.gl.map_buffer =
+      (glitz_gl_map_buffer_t)
+      glitz_glx_get_proc_address (thread_info, "glMapBufferARB");
+    context->backend.gl.unmap_buffer =
+      (glitz_gl_unmap_buffer_t)
+      glitz_glx_get_proc_address (thread_info, "glUnmapBufferARB");
+  }
 
   context->backend.feature_mask = screen_info->feature_mask;
 

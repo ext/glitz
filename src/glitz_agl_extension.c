@@ -34,45 +34,60 @@
 extern glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address;
 
 static glitz_extension_map gl_extensions[] = {
-  { "GL_APPLE_pixel_buffer", GLITZ_AGL_FEATURE_PBUFFER_MASK },
-  { "GL_EXT_texture_rectangle", GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK },
-  { "GL_NV_texture_rectangle", GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK },
-  { "GL_ARB_texture_non_power_of_two",
+  { 0.0, "GL_APPLE_pixel_buffer", GLITZ_AGL_FEATURE_PBUFFER_MASK },
+  { 0.0, "GL_ARB_texture_rectangle",
+    GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK },
+  { 0.0, "GL_EXT_texture_rectangle",
+    GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK },
+  { 0.0, "GL_NV_texture_rectangle", GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK },
+  { 0.0, "GL_ARB_texture_non_power_of_two",
     GLITZ_AGL_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK },
-  { "GL_ARB_texture_mirrored_repeat",
+  { 1.4, "GL_ARB_texture_mirrored_repeat",
     GLITZ_AGL_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK },
-  { "GL_ARB_texture_border_clamp",
+  { 1.3, "GL_ARB_texture_border_clamp",
     GLITZ_AGL_FEATURE_TEXTURE_BORDER_CLAMP_MASK },
-  { "GL_ARB_texture_env_combine", GLITZ_AGL_FEATURE_TEXTURE_ENV_COMBINE_MASK },
-  { "GL_EXT_texture_env_combine", GLITZ_AGL_FEATURE_TEXTURE_ENV_COMBINE_MASK },
-  { "GL_ARB_texture_env_dot3", GLITZ_AGL_FEATURE_TEXTURE_ENV_DOT3_MASK },
-  { "GL_ARB_multisample", GLITZ_AGL_FEATURE_MULTISAMPLE_MASK },
-  { "GL_NV_multisample_filter_hint",
+  { 1.3, "GL_ARB_texture_env_combine",
+    GLITZ_AGL_FEATURE_TEXTURE_ENV_COMBINE_MASK },
+  { 1.3, "GL_EXT_texture_env_combine",
+    GLITZ_AGL_FEATURE_TEXTURE_ENV_COMBINE_MASK },
+  { 1.3, "GL_ARB_texture_env_dot3", GLITZ_AGL_FEATURE_TEXTURE_ENV_DOT3_MASK },
+  { 1.3, "GL_ARB_multisample", GLITZ_AGL_FEATURE_MULTISAMPLE_MASK },
+  { 0.0, "GL_NV_multisample_filter_hint",
     GLITZ_AGL_FEATURE_MULTISAMPLE_FILTER_HINT_MASK },
-  { "GL_ARB_multitexture", GLITZ_AGL_FEATURE_MULTITEXTURE_MASK },
-  { "GL_ARB_fragment_program", GLITZ_AGL_FEATURE_FRAGMENT_PROGRAM_MASK },
-  /* TODO: lookup all symbols not part of OpenGL 1.1
-     { "GL_ARB_vertex_buffer_object",
-     GLITZ_AGL_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
-     { "GL_EXT_pixel_buffer_object",
-     GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
+  { 1.3, "GL_ARB_multitexture", GLITZ_AGL_FEATURE_MULTITEXTURE_MASK },
+  { 0.0, "GL_ARB_fragment_program", GLITZ_AGL_FEATURE_FRAGMENT_PROGRAM_MASK },
+  
+  /* TODO: lookup all symbols not part of OpenGL 1.2
+     { 1.5, "GL_ARB_vertex_buffer_object",
+     GLITZ_GLX_FEATURE_VERTEX_BUFFER_OBJECT_MASK },
+     { 0.0, "GL_EXT_pixel_buffer_object",
+     GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK },
   */
-  { NULL, 0 }
+  
+  { 0.0, NULL, 0 }
 };
 
-static long int
-_glitz_agl_extension_query_gl (void)
+static unsigned long
+_glitz_agl_extension_query_gl (glitz_gl_float_t gl_version)
 {
   const char *gl_extensions_strings;
   
   gl_extensions_strings = (const char *) glGetString (GL_EXTENSIONS);
 
-  return glitz_extensions_query (gl_extensions_strings, gl_extensions);
+  return glitz_extensions_query (gl_version,
+                                 gl_extensions_strings,
+                                 gl_extensions);
 }
 
-void
+glitz_status_t
 glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
 {
+  glitz_gl_float_t gl_version;
+
+  gl_version = atof ((const char *) glGetString (GL_VERSION));
+  if (gl_version < 1.2)
+    return GLITZ_STATUS_NOT_SUPPORTED;
+  
   thread_info->agl_feature_mask = 0;
   
   thread_info->agl_feature_mask |= _glitz_agl_extension_query_gl ();
@@ -142,4 +157,6 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
   if (thread_info->agl_feature_mask &
       GLITZ_AGL_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
     thread_info->feature_mask |= GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
+
+  return GLITZ_STATUS_SUCCESS;
 }

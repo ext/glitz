@@ -1,5 +1,24 @@
 2004-09-07  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitzint.h: Allow use of a version number to check presence of
+	an extension.
+	
+	* src/glitz_util.c (glitz_extensions_query): Allow use of a version
+	number to check presence of an extension.
+
+	* src/glitz_glx_info.c (glitz_glx_screen_info_get): Don't query
+	formats if OpenGL version is insufficient.
+
+	* src/glitz_glx_extension.c: Improved extension checking.
+
+	* src/glitz_glx_context.c (glitz_glx_context_proc_address_lookup): 
+	Lookup correct symbols.
+
+	* src/glitz_agl_info.c (glitz_agl_thread_info_init): Don't query
+	formats if OpenGL version is insufficient.
+
+	* src/glitz_agl_extension.c: Improved extension checking.
+
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.2.1.
 
 	* configure.in: Bump version to 0.2.1.

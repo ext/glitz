@@ -86,15 +86,18 @@ _glitz_extension_check (const char *extensions,
   return 0;
 }
 
-long int
-glitz_extensions_query (const char *extensions_string,
+unsigned long
+glitz_extensions_query (glitz_gl_float_t version,
+                        const char *extensions_string,
                         glitz_extension_map *extensions_map)
 {
-  long int mask = 0;
+  unsigned long mask = 0;
   int i;
 
   for (i = 0; extensions_map[i].name; i++)
-    if (_glitz_extension_check (extensions_string, extensions_map[i].name))
+    if (((extensions_map[i].version > 1.0) &&
+         (version >= extensions_map[i].version)) ||
+        _glitz_extension_check (extensions_string, extensions_map[i].name))
       mask |= extensions_map[i].mask;
 
   return mask;

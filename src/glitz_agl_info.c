@@ -98,7 +98,7 @@ glitz_gl_proc_address_list_t _glitz_agl_gl_proc_address = {
   (glitz_gl_program_local_param_4fv_t) glProgramLocalParameter4fvARB,
   (glitz_gl_get_program_iv_t) glGetProgramivARB,
 
-  /* TODO: lookup all symbols not part of OpenGL 1.1 */
+  /* TODO: lookup all symbols not part of OpenGL 1.2 */
   (glitz_gl_gen_buffers_t) 0,
   (glitz_gl_delete_buffers_t) 0,
   (glitz_gl_bind_buffer_t) 0,
@@ -233,8 +233,8 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
 
       aglSetCurrentContext (thread_info->root_context.context);
   
-      glitz_agl_query_extensions (thread_info);  
-      glitz_agl_query_formats (thread_info);
+      if (glitz_agl_query_extensions (thread_info) == GLITZ_STATUS_SUCCESS)
+        glitz_agl_query_formats (thread_info);
     }
   }
 

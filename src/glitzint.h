@@ -460,6 +460,7 @@ struct _glitz_composite_op_t {
 };
 
 typedef struct _glitz_extension_map {
+  glitz_gl_float_t version;
   char *name;
   int mask;
 } glitz_extension_map;
@@ -477,8 +478,9 @@ glitz_union_bounding_box (glitz_bounding_box_t *box1,
                           glitz_bounding_box_t *box2,
                           glitz_bounding_box_t *return_box);
 
-long int
-glitz_extensions_query (const char *extensions_string,
+unsigned long
+glitz_extensions_query (glitz_gl_float_t version,
+                        const char *extensions_string,
                         glitz_extension_map *extensions_map);
 
 extern unsigned int __internal_linkage

@@ -94,7 +94,7 @@ struct _glitz_agl_surface_t {
   glitz_gl_enum_t bound_buffer;
 };
 
-extern void __internal_linkage
+extern glitz_status_t __internal_linkage
 glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info);
 
 extern glitz_agl_thread_info_t *__internal_linkage

@@ -114,6 +114,7 @@ struct _glitz_glx_screen_info_t {
 
   unsigned long feature_mask;
   unsigned long glx_feature_mask;
+  glitz_gl_float_t gl_version;
 
   glitz_program_map_t program_map;
 };
@@ -127,7 +128,7 @@ struct _glitz_glx_surface {
   GLXDrawable pbuffer;
 };
 
-extern void __internal_linkage
+extern glitz_status_t __internal_linkage
 glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info);
 
 extern glitz_glx_screen_info_t *__internal_linkage
