@@ -66,12 +66,6 @@ AC_ARG_ENABLE(glx,
   AC_HELP_STRING([--disable-glx], [Disable glitz's GLX backend]),
   [use_glx=$enableval], [use_glx=yes])
 
-AC_ARG_ENABLE(agl,
-  AC_HELP_STRING([--disable-agl], [Disable glitz's AGL backend]),
-  [use_agl=$enableval], [use_agl=yes])
-
-dnl ===========================================================================
-
 AH_TEMPLATE([XTHREADS], [Define if Xlib supports XTHREADS])
 
 if test "x$use_glx" = "xyes"; then
@@ -106,17 +100,25 @@ if test "x$use_glx" = "xyes"; then
     fi
 
     use_glx="yes"
-    AM_CONDITIONAL(GLITZ_BUILD_GLX_BACKEND, true)
   else
     use_glx="no"
-    AM_CONDITIONAL(GLITZ_BUILD_GLX_BACKEND, false)
   fi
+fi
+
+if test "x$use_glx" = "xyes"; then
+  AM_CONDITIONAL(GLITZ_BUILD_GLX_BACKEND, true)
+else
+  AM_CONDITIONAL(GLITZ_BUILD_GLX_BACKEND, false)
 fi
 
 AC_SUBST(GLX_CFLAGS)
 AC_SUBST(GLX_LIBS)
 
 dnl ===========================================================================
+
+AC_ARG_ENABLE(agl,
+  AC_HELP_STRING([--disable-agl], [Disable glitz's AGL backend]),
+  [use_agl=$enableval], [use_agl=yes])
 
 AH_TEMPLATE([PTHREADS], [Define if PTHREADS are supported])
 
@@ -143,11 +145,13 @@ if test "x$use_agl" = "xyes"; then
       AC_DEFINE(PTHREADS, 1)
     fi
     AC_MSG_RESULT($use_pthreads)
-
-    AM_CONDITIONAL(GLITZ_BUILD_AGL_BACKEND, true)
-  else
-    AM_CONDITIONAL(GLITZ_BUILD_AGL_BACKEND, false)
   fi
+fi
+
+if test "x$use_agl" = "xyes"; then
+  AM_CONDITIONAL(GLITZ_BUILD_AGL_BACKEND, true)
+else
+  AM_CONDITIONAL(GLITZ_BUILD_AGL_BACKEND, false)
 fi
 
 AC_SUBST(AGL_CFLAGS)

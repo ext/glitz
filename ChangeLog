@@ -1,3 +1,7 @@
+2004-03-31    <c99drn@cs.umu.se>
+
+	* configure.in: Fixed misplacement of AM_CONDITIONAL macros.
+
 2004-03-30    <c99drn@cs.umu.se>
 
 	Name change (libglc -> libglitz)
