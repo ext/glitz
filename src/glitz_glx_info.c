@@ -87,6 +87,11 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_tex_parameter_i_t) glTexParameteri,
   (glitz_gl_copy_tex_sub_image_2d_t) glCopyTexSubImage2D,
   (glitz_gl_get_integer_v_t) glGetIntegerv,
+  (glitz_gl_delete_lists_t) glDeleteLists,
+  (glitz_gl_gen_lists_t) glGenLists,
+  (glitz_gl_new_list_t) glNewList,
+  (glitz_gl_end_list_t) glEndList,
+  (glitz_gl_call_list_t) glCallList,
 
   (glitz_gl_active_texture_arb_t) 0,
   (glitz_gl_multi_tex_coord_2d_arb_t) 0,

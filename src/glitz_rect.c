@@ -72,7 +72,7 @@ glitz_int_fill_rectangles (glitz_operator_t op,
       bounds.x2 < 0 || bounds.y2 < 0)
     return;
 
-  if (op == GLITZ_OPERATOR_SRC && (!dst->clip_mask)) {
+  if (op == GLITZ_OPERATOR_SRC && (!*dst->stencil_mask)) {
     clear_mask = GLITZ_GL_COLOR_BUFFER_BIT;
     dst->gl->clear_color (color->red / (glitz_gl_clampf_t) 0xffff,
                           color->green / (glitz_gl_clampf_t) 0xffff,
@@ -80,7 +80,7 @@ glitz_int_fill_rectangles (glitz_operator_t op,
                           color->alpha / (glitz_gl_clampf_t) 0xffff);
   } else if (op == (glitz_operator_t) GLITZ_INT_OPERATOR_STENCIL_RECT_SET) {
     clear_mask = GLITZ_GL_STENCIL_BUFFER_BIT;
-    dst->gl->clear_stencil (0x1);
+    dst->gl->clear_stencil (*dst->stencil_mask);
   } else {
     if (op == (glitz_operator_t) GLITZ_INT_OPERATOR_STENCIL_RECT_SRC)
       op = GLITZ_OPERATOR_SRC;

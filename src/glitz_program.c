@@ -368,6 +368,8 @@ char *_glitz_fragment_program_programmatic[] = {
   "MUL distance.x, distance.x, gradient.y;\n"
   
   "TEX color, distance, texture[2], 1D;\n"
+
+  "MUL color, color, fragment.color.a;\n"
   
   /* pd operation */
   "%s"
@@ -436,6 +438,8 @@ char *_glitz_fragment_program_programmatic[] = {
   "MUL distance.x, distance.x, gradient.z;\n"
   
   "TEX color, distance, texture[2], 1D;\n"
+
+  "MUL color, color, fragment.color;\n"
 
   /* pd operation */
   "%s"
@@ -560,16 +564,16 @@ glitz_program_compile_convolution (glitz_gl_proc_address_list_t *gl,
                                    int solid_offset,
                                    glitz_convolution_type_t type)
 {
-  char *solid_op_table[] = {
-    "MUL result.color, color, solid.a;\n",
-    "MUL result.color, solid, color.a;\n",
+  static char *solid_op_table[] = {
+    "MUL result.color, color, fragment.color.a;\n",
+    "MUL result.color, fragment.color, color.a;\n",
   };
   char program_buffer[1280];
   const glitz_program_expand_t *expand = &_program_expand_map[offset];
   char *temporary, *operation;
 
   if (solid_offset) {
-    temporary = "PARAM solid = program.local[3];\n";
+    temporary = "";
     operation = solid_op_table[solid_offset - 1];
   } else {
     temporary = expand->temporary;
@@ -636,17 +640,13 @@ glitz_program_compile_programmatic (glitz_programmatic_surface_type_t type,
   return glitz_program_compile_fragment_arb (gl, program_buffer);
 }
 
-static void
-glitz_program_enable_simple (glitz_gl_proc_address_list_t *gl,
-                             glitz_programs_t *programs,
-                             glitz_texture_t *src_texture,
-                             glitz_texture_t *mask_texture)
+void
+glitz_program_enable_argb_argb (glitz_gl_proc_address_list_t *gl,
+                                glitz_programs_t *programs,
+                                glitz_texture_t *src_texture,
+                                glitz_texture_t *mask_texture)
 {
   int offset;
-
-  /* This is done without fragment program */
-  if (mask_texture->internal_format == GLITZ_GL_LUMINANCE_ALPHA)
-    return;
 
   offset = _glitz_program_offset (src_texture, mask_texture);
   
@@ -661,7 +661,7 @@ glitz_program_enable_simple (glitz_gl_proc_address_list_t *gl,
   }
 }
 
-static void
+void
 glitz_program_enable_convolution (glitz_gl_proc_address_list_t *gl,
                                   glitz_programs_t *programs,
                                   glitz_surface_t *src,
@@ -669,7 +669,8 @@ glitz_program_enable_convolution (glitz_gl_proc_address_list_t *gl,
                                   glitz_texture_t *src_texture,
                                   glitz_texture_t *mask_texture,
                                   int offset,
-                                  int solid_offset)
+                                  int solid_offset,
+                                  unsigned short opacity)
 {
   glitz_texture_t *texture;
   glitz_surface_t *surface;
@@ -740,29 +741,27 @@ glitz_program_enable_convolution (glitz_gl_proc_address_list_t *gl,
                                     surface->convolution->m[2][2],
                                     0.0);
 
-    if (solid_offset) {
+    if (solid_offset && mask) {
       glitz_color_t *color;
       
       if (solid_offset == 1)
         color = &((glitz_programmatic_surface_t *) mask)->u.solid.color;
       else
         color = &((glitz_programmatic_surface_t *) src)->u.solid.color;
-      
-      gl->program_local_param_4d_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 3,
-                                      (double) color->red / 65536.0,
-                                      (double) color->green / 65536.0,
-                                      (double) color->blue / 65536.0,
-                                      (double) color->alpha / 65536.0);
-    }
+
+      gl->color_4us (color->red, color->green, color->blue, color->alpha);
+    } else
+      gl->color_4us (opacity, opacity, opacity, opacity);
   }
 }
 
-static void
+void
 glitz_program_enable_programmatic (glitz_surface_t *dst,
                                    glitz_programmatic_surface_t *surface,
                                    glitz_texture_t *src_texture,
                                    glitz_texture_t *mask_texture,
-                                   int offset)
+                                   int offset,
+                                   unsigned short opacity)
 {
   int type_offset, add_offset;
   glitz_programs_t *programs = dst->programs;
@@ -776,23 +775,6 @@ glitz_program_enable_programmatic (glitz_surface_t *dst,
 
   type_offset = offset + GLITZ_FRAGMENT_PROGRAM_TYPES * surface->type;
 
-  /* no fragment proram needed for solid programmatic surface and no mask */
-  if ((surface->type == GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE) &&
-      (add_offset == GLITZ_PROGRAM_NOSRC_NOMASK_OFFSET)) {
-    glitz_programmatic_surface_bind (dst->gl, surface, dst->feature_mask);
-    return;
-  }
-
-  /* no fragment proram needed for solid programmatic surface and
-     mask in lumniance alpha texture format */
-  if (dst->feature_mask & GLITZ_FEATURE_ARB_MULTITEXTURE_MASK) {
-    if ((surface->type == GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE) &&
-        (mask_texture->internal_format == GLITZ_GL_LUMINANCE_ALPHA)) {
-      glitz_programmatic_surface_bind (dst->gl, surface, dst->feature_mask);
-      return;
-    }
-  }
-
   if (dst->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
     if (!programs->fragment_programmatic[type_offset])
       programs->fragment_programmatic[type_offset] =
@@ -803,163 +785,11 @@ glitz_program_enable_programmatic (glitz_surface_t *dst,
       dst->gl->bind_program_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB,
                                  programs->fragment_programmatic[type_offset]);
     
-      glitz_programmatic_surface_bind (dst->gl, surface, dst->feature_mask);
+      glitz_programmatic_surface_bind (dst->gl, surface, dst->feature_mask,
+                                       0xffff);
+
+      dst->gl->color_4us (opacity, opacity, opacity, opacity);
     }
-  }
-}
-
-glitz_program_type_t
-glitz_program_type (glitz_surface_t *dst,
-                    glitz_surface_t *src,
-                    glitz_surface_t *mask)
-{
-  glitz_program_type_t type = GLITZ_PROGRAM_TYPE_NOT_SUPPORTED;
-  
-  if (dst->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
-
-    if (dst->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK) {
-      if (src->convolution) {
-        if (mask && SURFACE_PROGRAMMATIC (mask) &&
-            ((glitz_programmatic_surface_t *) mask)->type ==
-            GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE) {
-          if (dst->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK) {
-            type = GLITZ_PROGRAM_TYPE_SRC_CONVOLUTION_AND_SOLID_MASK;
-            goto OK2;
-          } else {
-            type = GLITZ_PROGRAM_TYPE_MASK_PROGRAMMATIC;
-            goto OK1;
-          }
-        }
-        type = GLITZ_PROGRAM_TYPE_SRC_CONVOLUTION;
-        goto OK1;
-      }
-    
-      if (mask && mask->convolution) {
-        if (SURFACE_PROGRAMMATIC (src) &&
-            ((glitz_programmatic_surface_t *) src)->type ==
-            GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE) {
-          if (dst->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK) {
-            type = GLITZ_PROGRAM_TYPE_MASK_CONVOLUTION_AND_SOLID_SRC;
-            goto OK2;
-          } else {
-            type = GLITZ_PROGRAM_TYPE_SRC_PROGRAMMATIC;
-            goto OK1;
-          }
-        }
-        type = GLITZ_PROGRAM_TYPE_MASK_CONVOLUTION;
-        goto OK1;
-      }
-    }
-
-    if (SURFACE_PROGRAMMATIC (src)) {
-      type = GLITZ_PROGRAM_TYPE_SRC_PROGRAMMATIC;
-      goto OK1;
-    }
-    
-    if (mask && SURFACE_PROGRAMMATIC (mask)) {
-      type = GLITZ_PROGRAM_TYPE_MASK_PROGRAMMATIC;
-      goto OK1;
-    }
-  }
-
-  if (SURFACE_SOLID (src)) {
-    type = GLITZ_PROGRAM_TYPE_SRC_PROGRAMMATIC;
-    goto OK1;
-  }
-
-  if (mask && SURFACE_SOLID (mask)) {
-    type = GLITZ_PROGRAM_TYPE_MASK_PROGRAMMATIC;
-    goto OK1;
-  }
-  
-  if (mask && (!SURFACE_PROGRAMMATIC (mask))) {
-    if (dst->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
-      type = GLITZ_PROGRAM_TYPE_SIMPLE;
-    } else if ((mask->texture.internal_format == GLITZ_GL_LUMINANCE_ALPHA) &&
-               (dst->feature_mask & GLITZ_FEATURE_ARB_MULTITEXTURE_MASK)) {
-      type = GLITZ_PROGRAM_TYPE_SIMPLE;
-    } else
-      type = GLITZ_PROGRAM_TYPE_NOT_SUPPORTED;
-  } 
-
- OK1:
-  if ((SURFACE_PROGRAMMATIC (src) || src->convolution) &&
-      (mask && (SURFACE_PROGRAMMATIC (mask) || mask->convolution)))
-    return GLITZ_PROGRAM_TYPE_NOT_SUPPORTED;
-  
- OK2:
-  return type;
-}
-
-void
-glitz_program_enable (glitz_program_type_t type,
-                      glitz_surface_t *dst,
-                      glitz_surface_t *src,
-                      glitz_surface_t *mask,
-                      glitz_texture_t *src_texture,
-                      glitz_texture_t *mask_texture)
-{
-  switch (type) {
-  case GLITZ_PROGRAM_TYPE_SRC_CONVOLUTION:
-    glitz_program_enable_convolution (dst->gl, dst->programs,
-                                      src, mask, src_texture, mask_texture,
-                                      GLITZ_PROGRAM_SRC_OPERATION_OFFSET, 0);
-    break;
-  case GLITZ_PROGRAM_TYPE_SRC_CONVOLUTION_AND_SOLID_MASK:
-    glitz_program_enable_convolution (dst->gl, dst->programs,
-                                      src, mask, src_texture, mask_texture,
-                                      GLITZ_PROGRAM_SRC_OPERATION_OFFSET, 1);
-    break;
-  case GLITZ_PROGRAM_TYPE_MASK_CONVOLUTION:
-    glitz_program_enable_convolution (dst->gl, dst->programs,
-                                      src, mask, src_texture, mask_texture,
-                                      GLITZ_PROGRAM_MASK_OPERATION_OFFSET, 0);
-    break;
-  case GLITZ_PROGRAM_TYPE_MASK_CONVOLUTION_AND_SOLID_SRC:
-    glitz_program_enable_convolution (dst->gl, dst->programs,
-                                      src, mask, src_texture, mask_texture,
-                                      GLITZ_PROGRAM_MASK_OPERATION_OFFSET, 2);
-    break;
-  case GLITZ_PROGRAM_TYPE_SRC_PROGRAMMATIC:
-    glitz_program_enable_programmatic (dst,
-                                       (glitz_programmatic_surface_t *) src,
-                                       src_texture, mask_texture,
-                                       GLITZ_PROGRAM_SRC_OPERATION_OFFSET);
-    break;
-  case GLITZ_PROGRAM_TYPE_MASK_PROGRAMMATIC:
-    glitz_program_enable_programmatic (dst,
-                                       (glitz_programmatic_surface_t *) mask,
-                                       src_texture, mask_texture,
-                                       GLITZ_PROGRAM_MASK_OPERATION_OFFSET);
-    break;
-  case GLITZ_PROGRAM_TYPE_SIMPLE:
-    glitz_program_enable_simple (dst->gl, dst->programs,
-                                 src_texture, mask_texture);
-    break;
-  case GLITZ_PROGRAM_TYPE_NONE:
-  case GLITZ_PROGRAM_TYPE_NOT_SUPPORTED:
-    break;
-  }
-}
-
-void
-glitz_program_disable (glitz_program_type_t type,
-                       glitz_surface_t *dst)
-{
-  if (dst->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
-
-    if (type == GLITZ_PROGRAM_TYPE_SRC_PROGRAMMATIC ||
-        type == GLITZ_PROGRAM_TYPE_MASK_PROGRAMMATIC) {
-      dst->gl->active_texture_arb (GLITZ_GL_TEXTURE2_ARB);
-      dst->gl->bind_texture (GLITZ_GL_TEXTURE_1D, 0);
-      dst->gl->disable (GLITZ_GL_TEXTURE_1D);
-      dst->gl->active_texture_arb (GLITZ_GL_TEXTURE0_ARB);
-    }
-    
-    dst->gl->bind_program_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB, 0);
-    dst->gl->disable (GLITZ_GL_FRAGMENT_PROGRAM_ARB);
-    dst->gl->bind_program_arb (GLITZ_GL_VERTEX_PROGRAM_ARB, 0);
-    dst->gl->disable (GLITZ_GL_VERTEX_PROGRAM_ARB);
   }
 }
 

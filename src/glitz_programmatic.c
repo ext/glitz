@@ -111,7 +111,7 @@ glitz_programmatic_surface_backend = {
   _glitz_programmatic_surface_make_current_read
 };
 
-glitz_programmatic_surface_t *
+static glitz_programmatic_surface_t *
 _glitz_programmatic_surface_create (void)
 {
   static const glitz_matrix_t identity = {
@@ -235,15 +235,22 @@ glitz_programmatic_surface_set_transform (glitz_surface_t *abstract_surface,
 void
 glitz_programmatic_surface_bind (glitz_gl_proc_address_list_t *gl,
                                  glitz_programmatic_surface_t *surface,
-                                 unsigned long feature_mask)
+                                 unsigned long feature_mask,
+                                 unsigned short opacity)
 {
   switch (surface->type) {
-  case GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE: {
-    gl->color_4us (surface->u.solid.color.red,
-                   surface->u.solid.color.green,
-                   surface->u.solid.color.blue,
-                   surface->u.solid.color.alpha);
-  } break;
+  case GLITZ_PROGRAMMATIC_SURFACE_SOLID_TYPE:
+    if (opacity != 0xffff) {
+      gl->color_4us (SHORT_MODULATE (surface->u.solid.color.red, opacity),
+                     SHORT_MODULATE (surface->u.solid.color.green, opacity),
+                     SHORT_MODULATE (surface->u.solid.color.blue, opacity),
+                     SHORT_MODULATE (surface->u.solid.color.alpha, opacity));
+    } else
+      gl->color_4us (surface->u.solid.color.red,
+                     surface->u.solid.color.green,
+                     surface->u.solid.color.blue,
+                     surface->u.solid.color.alpha);
+    break;
   case GLITZ_PROGRAMMATIC_SURFACE_LINEAR_TYPE: {
     glitz_point_t p1, p2;
     double length, angle, start;

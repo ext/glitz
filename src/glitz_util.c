@@ -79,17 +79,6 @@ glitz_intersect_bounding_box_double (glitz_bounding_box_double_t *box1,
     return_box->y1 = return_box->y2 = 0.0;
 }
 
-void
-glitz_union_bounding_box_double (glitz_bounding_box_double_t *box1,
-                                 glitz_bounding_box_double_t *box2,
-                                 glitz_bounding_box_double_t *return_box)
-{
-  return_box->x1 = (box1->x1 <= box2->x1)? box1->x1: box2->x1;
-  return_box->x2 = (box1->x2 >= box2->x2)? box1->x2: box2->x2;
-  return_box->y1 = (box1->y1 <= box2->y1)? box1->y1: box2->y1;
-  return_box->y2 = (box1->y2 >= box2->y2)? box1->y2: box2->y2;
-}
-
 static int
 big_endian (void)
 {

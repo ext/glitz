@@ -67,13 +67,13 @@ _glitz_composite_direct (glitz_operator_t op,
   glitz_bounding_box_double_t src_box, mask_box, dst_box;
   glitz_bounding_box_t dirty_box;
   glitz_point_t src_tl, src_br, mask_tl, mask_br;
-  glitz_program_type_t type;
+  glitz_render_type_t type;
 
   gl = dst->gl;
 
-  type = glitz_program_type (dst, src, mask);
+  type = glitz_render_type (src, mask, dst);
   
-  if (type == GLITZ_PROGRAM_TYPE_NOT_SUPPORTED)
+  if (type == GLITZ_RENDER_TYPE_NOT_SUPPORTED)
     return 0;
   
   /* We cannot continue if we have a rotating transformation. */
@@ -99,8 +99,9 @@ _glitz_composite_direct (glitz_operator_t op,
 
   gl->disable (GLITZ_GL_SCISSOR_TEST);
 
-  glitz_surface_enable_program (type, dst, src, mask,
-                                src_texture, mask_texture);
+  glitz_render_enable (type,
+                       src, mask, dst,
+                       src_texture, mask_texture, 0xffff);
 
   glitz_set_operator (gl, op);
   
@@ -270,7 +271,7 @@ _glitz_composite_direct (glitz_operator_t op,
   gl->active_texture_arb (GLITZ_GL_TEXTURE0_ARB);
   glitz_texture_unbind (gl, src_texture);
 
-  glitz_surface_disable_program (type, dst);
+  glitz_render_disable (type, dst);
 
   dirty_box.x1 = floor (dst_box.x1);
   dirty_box.y1 = floor (dst_box.y1);
@@ -397,12 +398,13 @@ glitz_composite (glitz_operator_t op,
                  int height)
 {
   glitz_gl_proc_address_list_t *gl;
-  glitz_surface_t *intermediate = NULL, *mask_surface;
+  glitz_surface_t *intermediate = NULL;
   glitz_texture_t *texture;
   glitz_point_t tl, bl, br, tr;
   glitz_bounding_box_t clip;
-  glitz_program_type_t type = 0;
-  glitz_bool_t simple_modulate = 0;
+  glitz_render_type_t type;
+  glitz_gl_uint_t list = 0;
+  unsigned short opacity = 0xffff;
 
   gl = dst->gl;
   
@@ -412,23 +414,22 @@ glitz_composite (glitz_operator_t op,
                                       height + abs (y_src));
 
   if (mask) {
-    if (SURFACE_PROGRAMMATIC (mask))
+    if (SURFACE_PROGRAMMATIC (mask)) {
       glitz_programmatic_surface_setup (mask,
                                         width + abs (x_mask),
                                         height + abs (y_mask));
 
-    if (SURFACE_SOLID (mask) && (!SURFACE_PROGRAMMATIC (src))) {
-      simple_modulate = 1;
-      if ((dst->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK) &&
-          src->convolution)
-        simple_modulate = 0;
+      if (SURFACE_SOLID (mask)) {
+        opacity = ((glitz_programmatic_surface_t *) mask)->u.solid.color.alpha;
+        mask = NULL;
+      }
     }
   }
 
-  if (mask && (!simple_modulate)) {
-    glitz_bounding_box_t mask_bounds;
+  if (mask) {
+    glitz_bounding_box_t dst_bounds, mask_bounds;
+    glitz_intermediate_t intermediate_type;
     static glitz_color_t clear_color = { 0x0000, 0x0000, 0x0000, 0x0000 };
-    glitz_bool_t intermediate_translate;
 
     if ((dst->feature_mask & GLITZ_FEATURE_ARB_MULTITEXTURE_MASK) &&
         _glitz_composite_direct (op,
@@ -439,94 +440,62 @@ glitz_composite (glitz_operator_t op,
                                  width, height))
       return;
 
-    mask_bounds.x1 = x_dst;
-    mask_bounds.y1 = y_dst;
-    intermediate_translate = 0;
+    dst_bounds.x1 = x_dst;
+    dst_bounds.x2 = x_dst + width;
+    dst_bounds.y1 = y_dst;
+    dst_bounds.y2 = y_dst + height;
+      
+    glitz_mask_bounds (src, mask, dst,
+                       x_src, y_src, x_mask, y_mask, x_dst, y_dst,
+                       &dst_bounds, &mask_bounds);
+    if ((mask_bounds.x2 - x_dst) <= 0 || (mask_bounds.y2 - y_dst) <= 0)
+      return;
+
+    if (src->transform && (!SURFACE_REPEAT (src)))
+      intermediate_type = GLITZ_INTERMEDIATE_RGBA_STENCIL;
+    else
+      intermediate_type = GLITZ_INTERMEDIATE_RGBA;
     
-    if (!SURFACE_IMPLICIT_MASK (mask)) {
-      glitz_bounding_box_t bounds;
-      
-      bounds.x1 = x_dst;
-      bounds.x2 = x_dst + width;
-      bounds.y1 = y_dst;
-      bounds.y2 = y_dst + height;
-      
-      glitz_mask_bounds (src, mask, dst,
-                         x_src, y_src, x_mask, y_mask, x_dst, y_dst,
-                         &bounds, &mask_bounds);
-
-      if (mask_bounds.x2 - mask_bounds.x1 <= 0 ||
-          mask_bounds.y2 - mask_bounds.y1 <= 0)
-        return;
-
-      if ((x_dst != mask_bounds.x1) || (y_dst != mask_bounds.y1))
-        intermediate_translate = 1;
-      
-      mask_surface = intermediate =
-        glitz_surface_create_intermediate (dst, GLITZ_INTERMEDIATE_RGBA,
-                                           mask_bounds.x2 - mask_bounds.x1,
-                                           mask_bounds.y2 - mask_bounds.y1);
-      
-      if (!mask_surface) {
-        glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
-        return;
-      }
-
-      if (mask->transform)
-        glitz_fill_rectangle (GLITZ_OPERATOR_SRC,
-                              mask_surface,
-                              &clear_color,
-                              0, 0,
-                              mask_surface->width,
-                              mask_surface->height);
-
-      if ((!SURFACE_REPEAT (mask)) && intermediate_translate) {
-        glitz_surface_push_transform (mask);
-        glitz_matrix_translate (mask->transform,
-                                x_dst - mask_bounds.x1,
-                                y_dst - mask_bounds.y1);
-      }
-      
-      glitz_composite (GLITZ_OPERATOR_SRC,
-                       mask, NULL, mask_surface,
-                       x_mask, y_mask,
-                       0, 0,
-                       0, 0,
-                       mask_surface->width - (x_dst - mask_bounds.x1),
-                       mask_surface->height - (y_dst - mask_bounds.y1));
-
-      if (intermediate_translate)
-        glitz_surface_pop_transform (mask);
-      
-    } else
-      mask_surface = mask;
-
-    if ((!SURFACE_REPEAT (src)) && intermediate_translate) {
-      glitz_surface_push_transform (src);
-      glitz_matrix_translate (src->transform,
-                              x_dst - mask_bounds.x1,
-                              y_dst - mask_bounds.y1);
+    intermediate =
+      glitz_surface_create_intermediate (dst, intermediate_type,
+                                         mask_bounds.x2 - x_dst,
+                                         mask_bounds.y2 - y_dst);
+    
+    if (!intermediate) {
+      glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
+      return;
     }
 
-    if (src->transform)
-      mask_surface->hint_mask |= GLITZ_INT_HINT_CLEAR_EXTERIOR_MASK;
+    if (mask->transform)
+      glitz_fill_rectangle (GLITZ_OPERATOR_SRC,
+                            intermediate,
+                            &clear_color,
+                            0, 0,
+                            intermediate->width,
+                            intermediate->height);
+
+    glitz_composite (GLITZ_OPERATOR_SRC,
+                     mask, NULL, intermediate,
+                     x_mask, y_mask,
+                     0, 0,
+                     0, 0,
+                     intermediate->width,
+                     intermediate->height);
+
+    if (src->transform && (!SURFACE_REPEAT (src)))
+      intermediate->hint_mask |= GLITZ_INT_HINT_CLEAR_EXTERIOR_MASK;
     
     glitz_composite (GLITZ_OPERATOR_IN,
-                     src, NULL, mask_surface,
+                     src, NULL, intermediate,
                      x_src, y_src,
                      0, 0,
                      0, 0,
-                     mask_surface->width,
-                     mask_surface->height);
-
-    if (intermediate_translate)
-      glitz_surface_pop_transform (src);
-
-    x_dst = mask_bounds.x1;
-    y_dst = mask_bounds.y1;
-    width = mask_surface->width;
-    height = mask_surface->height;
-    src = mask_surface;
+                     intermediate->width,
+                     intermediate->height);
+    
+    width = intermediate->width;
+    height = intermediate->height;
+    src = intermediate;
     x_src = y_src = 0;
   }
 
@@ -543,40 +512,25 @@ glitz_composite (glitz_operator_t op,
   }
 
   glitz_texture_bind (gl, texture);
-  
-  gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
-                 GLITZ_GL_TEXTURE_ENV_MODE,
-                 (simple_modulate)? GLITZ_GL_MODULATE: GLITZ_GL_REPLACE);
-  
-  if (simple_modulate) {
-    glitz_programmatic_surface_t *m = (glitz_programmatic_surface_t *) mask;
-
-    gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
-                   GLITZ_GL_TEXTURE_ENV_MODE,
-                   GLITZ_GL_MODULATE);
-    gl->color_4us (m->u.solid.color.alpha,
-                   m->u.solid.color.alpha,
-                   m->u.solid.color.alpha,
-                   m->u.solid.color.alpha);
-  } else {
-    gl->tex_env_f (GLITZ_GL_TEXTURE_ENV,
-                   GLITZ_GL_TEXTURE_ENV_MODE,
-                   GLITZ_GL_REPLACE);
-  }
 
   clip.x1 = x_dst;
   clip.y1 = y_dst;
   clip.x2 = clip.x1 + width;
   clip.y2 = clip.y1 + height;
+
+  if (SURFACE_CLEAR_EXTERIOR (dst)) {
+    gl->clear_stencil (0x0);
+    gl->clear (GLITZ_GL_STENCIL_BUFFER_BIT);
+    glitz_set_stencil_operator (gl, GLITZ_STENCIL_OPERATOR_SET, 0x1);
+  }
+
+  type = glitz_render_type (src, NULL, dst);
   
   gl->scissor (clip.x1, dst->height - (clip.y1 + height), width, height);
   
   glitz_set_operator (gl, op);
 
-  if (src->convolution || SURFACE_PROGRAMMATIC (src)) {
-    type = glitz_program_type (dst, src, NULL);
-    glitz_surface_enable_program (type, dst, src, NULL, texture, NULL);
-  }
+  glitz_render_enable (type, src, NULL, dst, texture, NULL, opacity);
   
   if ((!src->transform) && SURFACE_GLREPEAT (src, texture)) {
     /* CASE 1: Repeat, no transformation and power of two sized texture,
@@ -609,6 +563,11 @@ glitz_composite (glitz_operator_t op,
       
     repeat_factor_x = (br.x - tl.x) / (double) texture->width;
     repeat_factor_y = (br.y - tl.y) / (double) texture->height;
+
+    if (dst->multi_sample) {
+      list = dst->gl->gen_lists (1);
+      dst->gl->new_list (list, GLITZ_GL_COMPILE);
+    }
       
     gl->begin (GLITZ_GL_QUADS);
     gl->tex_coord_2d (0.0, repeat_factor_y);
@@ -645,6 +604,11 @@ glitz_composite (glitz_operator_t op,
       glitz_texture_ensure_filter (gl, texture, src->filter);
     else
       glitz_texture_ensure_filter (gl, texture, GLITZ_FILTER_NEAREST);
+
+    if (dst->multi_sample) {
+      list = dst->gl->gen_lists (1);
+      dst->gl->new_list (list, GLITZ_GL_COMPILE);
+    }
 
     while (repeat_direction) {
       save_base_x1 = base_tl.x;
@@ -764,61 +728,48 @@ glitz_composite (glitz_operator_t op,
     }
   }
 
-  if (src->convolution || SURFACE_PROGRAMMATIC (src))
-    glitz_surface_disable_program (type, dst);
+  if (list) {
+    int i;
+    unsigned int mask = *dst->stencil_mask & ~0x1;
+    
+    gl->end_list ();
+    
+    for (i = 0; i < dst->multi_sample->n_samples; i++) {
+      if ((i + 1) == dst->multi_sample->n_samples)
+        glitz_set_stencil_operator (gl, GLITZ_STENCIL_OPERATOR_CLIP,
+                                    mask | (i + 1));
+      else
+        glitz_set_stencil_operator (gl, GLITZ_STENCIL_OPERATOR_CLIP_EQUAL,
+                                    mask | (i + 1));
+      
+      glitz_render_enable (type, src, NULL, dst, texture, NULL,
+                           SHORT_MODULATE (dst->multi_sample->weights[i],
+                                           opacity));
+      
+      gl->call_list (list);
+    }
+    
+    gl->delete_lists (list, 1);
+  }
+  
+  glitz_render_disable (type, dst);
   
   glitz_texture_unbind (gl, texture);
 
-  /* Clear intermediate mask exterior. This is only done if
-     destination surfaces is an intermediate mask surface
-     and source surface is transformed and not repeating. */
-  if (SURFACE_CLEAR_EXTERIOR (dst) && (!SURFACE_REPEAT (src))) {
+  if (SURFACE_CLEAR_EXTERIOR (dst)) {    
     glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
-    
+    glitz_set_stencil_operator (dst->gl,
+                                GLITZ_STENCIL_OPERATOR_CLIP_EQUAL, 0x0);
+
     gl->color_4us (0x0000, 0x0000, 0x0000, 0x0000);
     
     gl->begin (GLITZ_GL_QUADS);
-
-    gl->vertex_2d (tl.x, tl.y);
-    gl->vertex_2d (0.0, tl.y);
+    
     gl->vertex_2d (0.0, 0.0);
-    gl->vertex_2d (tl.x, 0.0);   
-
-    gl->vertex_2d (tl.x, tl.y);
-    gl->vertex_2d (tl.x, 0.0);
-    gl->vertex_2d (tr.x, 0.0);
-    gl->vertex_2d (tr.x, tr.y);
-    
-    gl->vertex_2d (tr.x, tr.y);
-    gl->vertex_2d (tr.x, 0.0);
     gl->vertex_2d (dst->width, 0.0);
-    gl->vertex_2d (dst->width, tr.y);
-
-    gl->vertex_2d (tr.x, tr.y);
-    gl->vertex_2d (dst->width, tr.y);
-    gl->vertex_2d (dst->width, br.y);
-    gl->vertex_2d (br.x, br.y);
-    
-    gl->vertex_2d (br.x, br.y);
-    gl->vertex_2d (dst->width, br.y);
     gl->vertex_2d (dst->width, dst->height);
-    gl->vertex_2d (br.x, dst->height);
-
-    gl->vertex_2d (br.x, br.y);
-    gl->vertex_2d (br.x, dst->height);
-    gl->vertex_2d (bl.x, dst->height);
-    gl->vertex_2d (bl.x, bl.y);
-
-    gl->vertex_2d (bl.x, bl.y);
-    gl->vertex_2d (bl.x, dst->height);
     gl->vertex_2d (0.0, dst->height);
-    gl->vertex_2d (0.0, bl.y);
-
-    gl->vertex_2d (bl.x, bl.y);
-    gl->vertex_2d (0.0, bl.y);
-    gl->vertex_2d (0.0, tl.y);
-    gl->vertex_2d (tl.x, tl.y);
-
+    
     gl->end ();
   }
 

@@ -418,6 +418,7 @@ glitz_surface_create_similar (glitz_surface_t *templ,
 #define GLITZ_HINT_CLIPPING_MASK     (1L << 0)
 #define GLITZ_HINT_OFFSCREEN_MASK    (1L << 1)
 #define GLITZ_HINT_PROGRAMMATIC_MASK (1L << 2)
+#define GLITZ_HINT_MULTISAMPLE_MASK  (1L << 3)
 
 unsigned long
 glitz_surface_get_hints (glitz_surface_t *surface);

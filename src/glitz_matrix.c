@@ -164,15 +164,6 @@ glitz_matrix_invert (glitz_matrix_t *matrix)
   return GLITZ_STATUS_SUCCESS;
 }
 
-void
-glitz_matrix_translate (glitz_matrix_t *matrix,
-                        double tx,
-                        double ty)
-{  
-  matrix->m[2][0] += tx;
-  matrix->m[2][1] += ty;
-}
-
 /* This function is only used for convolution kernel normalization.
    I'm not sure that it does the right thing when kernel contains negative
    values or when the sum equals zero. */

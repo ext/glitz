@@ -1,3 +1,65 @@
+2004-06-11  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Added software multi-sampling, new render interface
+	and new stencil interface.
+
+	* src/glitz_util.c: Removed glitz_union_bounding_box_double as it's
+	no longer used.
+
+	* src/glitz_tri.c (glitz_int_fill_triangles): Added software
+	multi-sample support.
+	(glitz_int_composite_triangles): Use new stencil interface.
+
+	* src/glitz_trap.c (glitz_int_fill_trapezoids): Added software
+	multi-sample support.
+	(glitz_composite_trapezoids): Use new stencil interface.
+
+	* src/glitz_surface.c: Removed transform stack as it's no longer
+	needed.
+	(glitz_surface_create_intermediate): Added 
+	GLITZ_INTERMEDIATE_RGBA_STENCIL.
+	Removed enable/disable program functions in favor of new render
+	interface.
+	Removed glitz_surface_bounds as it's no longer used.
+	(glitz_surface_set_transform): Fixed so that NULL as transform
+	for programmatic surface is handled correctly.
+	(glitz_surface_set_draw_buffer): Switch stencil mask.
+	(glitz_surface_swap_buffers): Clear all stencil masks.
+	Added glitz_surface_enable_anti_aliasing,
+	glitz_surface_disable_anti_aliasing and software multi-sample
+	support.
+	Move all clipping code into the new stencil interface.
+	(glitz_surface_get_hints): Add GLITZ_HINT_MULTISAMPLE_MASK if software
+	multi-sampling is used.
+
+	* src/glitz_program.c: Modulate linear and radial gradients
+	with current color to support dynamic gradient opacity. Modulate
+	convolution filter result with current color to support dynamic
+	opacity. Major cleanup, moved much code into the new render
+	interface.
+
+	* src/glitz_operator.c: Added glitz_set_stencil_operator as part
+	of the new stencil buffer interface.
+
+	* src/glitz_matrix.c: Removed glitz_matrix_translate as it's no
+	longer used.
+
+	* src/glitz_gl.h: Added GLITZ_GL_LESS, GLITZ_GL_LEQUAL, 
+	GLITZ_GL_COMPILE and display list function prototypes.
+
+	* src/glitz_agl_info.c: Added display list functions.
+
+	* src/glitz_glx_info.c: Added display list functions.
+
+	* src/glitz.h: Added GLITZ_HINT_MULTISAMPLE_MASK hint.
+
+	* src/glitz.c (_glitz_composite_direct): Use new render interface.
+	(glitz_composite): Use new render interface. Software multi-sampling
+	support. Major cleanup to compositing using intermediate surface.
+
+	* src/Makefile.am (libglitz_la_SOURCES): Added glitz_render.c and
+	glitz_stencil.c.
+
 2004-06-02  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: glitz_intersect_bounding_box should not be declared

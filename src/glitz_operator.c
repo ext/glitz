@@ -98,35 +98,36 @@ glitz_set_operator (glitz_gl_proc_address_list_t *gl, glitz_operator_t op) {
 }
 
 void
-glitz_set_clip_operator (glitz_gl_proc_address_list_t *gl,
-                         glitz_int_clip_operator_t op,
-                         int mask)
+glitz_set_stencil_operator (glitz_gl_proc_address_list_t *gl,
+                            glitz_stencil_operator_t op,
+                            unsigned int mask)
 {
   gl->enable (GLITZ_GL_STENCIL_TEST);
-  
+
   switch (op) {
-  case GLITZ_INT_CLIP_OPERATOR_SET:
-    gl->clear_stencil (0x0);
-    gl->clear (GLITZ_GL_STENCIL_BUFFER_BIT);
-  case GLITZ_INT_CLIP_OPERATOR_UNION:
-    gl->stencil_func (GLITZ_GL_ALWAYS, mask, mask);
+  case GLITZ_STENCIL_OPERATOR_SET:
+  case GLITZ_STENCIL_OPERATOR_UNION:
+    gl->stencil_func (GLITZ_GL_ALWAYS, ~0x0, ~0x0);
     gl->stencil_op (GLITZ_GL_REPLACE, GLITZ_GL_REPLACE, GLITZ_GL_REPLACE);
     break;
-  case GLITZ_INT_CLIP_OPERATOR_INTERSECT:
-    gl->stencil_func (GLITZ_GL_EQUAL, mask, mask);
-    gl->stencil_op (GLITZ_GL_KEEP, GLITZ_GL_REPLACE, GLITZ_GL_REPLACE);
+  case GLITZ_STENCIL_OPERATOR_INTERSECT:
+    gl->stencil_func (GLITZ_GL_LESS, mask, ~0x0);
+    gl->stencil_op (GLITZ_GL_ZERO, GLITZ_GL_REPLACE, GLITZ_GL_REPLACE);
     break;
-  case GLITZ_INT_CLIP_OPERATOR_INCR_INTERSECT:
-    gl->stencil_func (GLITZ_GL_EQUAL, mask - 0x1, mask - 0x1);
+  case GLITZ_STENCIL_OPERATOR_INCR_EQUAL:
+    gl->stencil_func (GLITZ_GL_EQUAL, mask, mask);
     gl->stencil_op (GLITZ_GL_KEEP, GLITZ_GL_INCR, GLITZ_GL_INCR);
     break;
-  case GLITZ_INT_CLIP_OPERATOR_DECR_INTERSECT:
-    gl->stencil_func (GLITZ_GL_EQUAL, mask + 0x1, mask + 0x1);
-    gl->stencil_op (GLITZ_GL_KEEP, GLITZ_GL_DECR, GLITZ_GL_DECR);
+  case GLITZ_STENCIL_OPERATOR_DECR_LESS:
+    gl->stencil_func (GLITZ_GL_LESS, mask, ~0x0);
+    gl->stencil_op (GLITZ_GL_KEEP, GLITZ_GL_REPLACE, GLITZ_GL_REPLACE);
     break;
-  case GLITZ_INT_CLIP_OPERATOR_CLIP:
-  default:
-    gl->stencil_func (GLITZ_GL_EQUAL, mask, mask);
+  case GLITZ_STENCIL_OPERATOR_CLIP_EQUAL:
+    gl->stencil_func (GLITZ_GL_EQUAL, mask, ~0x0);
+    gl->stencil_op (GLITZ_GL_KEEP, GLITZ_GL_KEEP, GLITZ_GL_KEEP);
+    break;
+  case GLITZ_STENCIL_OPERATOR_CLIP:
+    gl->stencil_func (GLITZ_GL_LEQUAL, mask, ~0x0);
     gl->stencil_op (GLITZ_GL_KEEP, GLITZ_GL_KEEP, GLITZ_GL_KEEP);
     break;
   }

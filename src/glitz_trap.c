@@ -105,15 +105,16 @@ glitz_int_fill_trapezoids (glitz_operator_t op,
                            int n_traps)
 {
   glitz_gl_vertex_2d_t vertex_2d;
-  
-  if (SURFACE_IMPLICIT_MASK (dst)) {
-    dst->gl->clear_color (0.0, 0.0, 0.0, 0.0);
-    dst->gl->clear (GLITZ_GL_COLOR_BUFFER_BIT);
-  }
+  glitz_gl_uint_t list = 0;
 
   dst->gl->color_4us (color->red, color->green, color->blue, color->alpha);
 
   glitz_set_operator (dst->gl, op);
+
+  if (dst->multi_sample) {
+    list = dst->gl->gen_lists (1);
+    dst->gl->new_list (list, GLITZ_GL_COMPILE);
+  }
     
   dst->gl->begin (GLITZ_GL_QUADS);
 
@@ -140,8 +141,24 @@ glitz_int_fill_trapezoids (glitz_operator_t op,
                FIXED_TO_DOUBLE (glitz_line_fixed_x
                                 (&traps->left, traps->bottom, 0)), bottom);
   }
-  
+
   dst->gl->end ();
+
+  if (list) {
+    int i;
+    
+    dst->gl->end_list ();
+
+    for (i = 0; i < dst->multi_sample->n_samples; i++) {
+      dst->gl->translate_d (dst->multi_sample->offsets[i].x,
+                            -dst->multi_sample->offsets[i].y, 0.0);
+      dst->gl->call_list (list);
+      dst->gl->translate_d (-dst->multi_sample->offsets[i].x,
+                            dst->multi_sample->offsets[i].y, 0.0);
+    }
+
+    dst->gl->delete_lists (list, 1);
+  }
 }
 
 void
@@ -181,10 +198,8 @@ glitz_composite_trapezoids (glitz_operator_t op,
 {
   glitz_surface_t *mask;
   glitz_bounding_box_t trap_bounds;
-  glitz_bool_t use_mask;
   int x_dst, y_dst;
-  int x_offset, y_offset;
-  int width, height;
+  glitz_rectangle_t rect;
 
   if (n_traps == 0)
     return;
@@ -192,99 +207,35 @@ glitz_composite_trapezoids (glitz_operator_t op,
   x_dst = traps[0].left.p1.x >> 16;
   y_dst = traps[0].left.p1.y >> 16;
 
-  if (dst->format->stencil_size > dst->clip_mask)
-    use_mask = 0;
-  else
-    use_mask = 1;
+  if (dst->format->stencil_size < ((*dst->stencil_mask)? 2: 1)) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
+    return;
+  }
 
   glitz_trapezoid_bounds (n_traps, traps, &trap_bounds);
+  if (trap_bounds.x1 > dst->width || trap_bounds.y1 > dst->height ||
+      trap_bounds.x2 < 0 || trap_bounds.y2 < 0)
+    return;
 
-  if (use_mask) {
-    glitz_bounding_box_t src_bounds, dst_bounds, bounds;
-    static glitz_color_t color = { 0xffff, 0xffff, 0xffff, 0xffff };
-    
-    glitz_surface_bounds (src, &src_bounds);
-    glitz_surface_bounds (dst, &dst_bounds);
-
-    src_bounds.x1 += (x_dst - x_src);
-    src_bounds.y1 += (y_dst - y_src);
-    src_bounds.x2 += (x_dst - x_src);
-    src_bounds.y2 += (y_dst - y_src);
-
-    glitz_intersect_bounding_box (&src_bounds, &trap_bounds, &bounds);
-    glitz_intersect_bounding_box (&dst_bounds, &bounds, &bounds);
-
-    if ((bounds.x2 - bounds.x1) <= 0 || (bounds.y2 - bounds.y1) <= 0)
-      return;
-
-    mask = glitz_surface_create_intermediate (dst, GLITZ_INTERMEDIATE_ALPHA,
-                                              bounds.x2 - bounds.x1,
-                                              bounds.y2 - bounds.y1);
-    if (!mask)
-      return;
-    
-    mask->hint_mask |= GLITZ_INT_HINT_IMPLICIT_MASK_MASK;
-
-    if (!glitz_surface_push_current (mask,
-                                     GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
-      glitz_surface_pop_current (mask);
-      return;
-    }
-
-    glitz_int_fill_trapezoids (GLITZ_OPERATOR_SRC,
-                               mask, -bounds.x1, -bounds.y1,
-                               &color, traps, n_traps);
-
-    if (dst->polyopacity != 0xffff) {
-      glitz_rectangle_t rect;
-      glitz_color_t color;
-
-      rect.x = rect.y = 0;
-      rect.width = mask->width;
-      rect.height = mask->height;
-      color.red = color.green = color.blue = color.alpha = dst->polyopacity;
-      glitz_int_fill_rectangles (GLITZ_OPERATOR_IN, mask, &color, &rect, 1);
-    }
-
-    glitz_surface_dirty (mask, NULL);
-    glitz_surface_pop_current (mask);
-    
-    x_offset = bounds.x1;
-    y_offset = bounds.y1;
-    width = mask->width;
-    height = mask->height;
-  } else {
-    glitz_int_clip_operator_t clip_op;
-    
-    if (trap_bounds.x1 > dst->width || trap_bounds.y1 > dst->height ||
-        trap_bounds.x2 < 0 || trap_bounds.y2 < 0)
-      return;
-
-    if (dst->clip_mask)
-      clip_op = GLITZ_INT_CLIP_OPERATOR_INCR_INTERSECT;
-    else
-      clip_op = GLITZ_INT_CLIP_OPERATOR_SET;
-
-    glitz_int_surface_clip_trapezoids (dst,
-                                       clip_op,
-                                       dst->clip_mask + 0x1,
-                                       traps,
-                                       n_traps);
-    
-    x_offset = trap_bounds.x1;
-    y_offset = trap_bounds.y1;
-    width = trap_bounds.x2 - trap_bounds.x1;
-    height = trap_bounds.y2 - trap_bounds.y1;
-
-    if (dst->polyopacity != 0xffff) {
-      glitz_color_t color;
-
-      color.red = color.green = color.blue = color.alpha = dst->polyopacity;
-      mask = glitz_surface_create_solid (&color);
-    } else
-      mask = NULL;
-  }
+  glitz_surface_enable_anti_aliasing (dst);
   
+  glitz_stencil_trapezoids (dst,
+                            GLITZ_STENCIL_OPERATOR_INCR_EQUAL,
+                            traps, n_traps);
+  
+  rect.x = trap_bounds.x1;
+  rect.y = trap_bounds.y1;
+  rect.width = trap_bounds.x2 - trap_bounds.x1;
+  rect.height = trap_bounds.y2 - trap_bounds.y1;
+  
+  if (dst->polyopacity != 0xffff) {
+    glitz_color_t color;
+    
+    color.red = color.green = color.blue = color.alpha = dst->polyopacity;
+    mask = glitz_surface_create_solid (&color);
+  } else
+    mask = NULL;
+
   glitz_composite (op,
                    src,
                    mask,
@@ -292,26 +243,17 @@ glitz_composite_trapezoids (glitz_operator_t op,
                    x_src + trap_bounds.x1 - x_dst,
                    y_src + trap_bounds.y1 - y_dst,
                    0, 0,
-                   x_offset, y_offset,
-                   width, height);
+                   rect.x, rect.y,
+                   rect.width, rect.height);
 
   if (mask)
     glitz_surface_destroy (mask);
 
-  if (!use_mask) {
-    glitz_int_clip_operator_t clip_op;
-    static glitz_rectangle_t rect = { 0, 0, MAXSHORT, MAXSHORT };
-    
-    if (dst->clip_mask > 0x1)
-      clip_op = GLITZ_INT_CLIP_OPERATOR_DECR_INTERSECT;
-    else
-      clip_op = GLITZ_INT_CLIP_OPERATOR_SET;
+  glitz_surface_disable_anti_aliasing (dst);
 
-    glitz_int_surface_clip_rectangles (dst,
-                                       clip_op,
-                                       dst->clip_mask - 0x1,
-                                       &rect, 1);
-  }
+  glitz_stencil_rectangles (dst,
+                            GLITZ_STENCIL_OPERATOR_DECR_LESS,
+                            &rect, 1);
 }
 slim_hidden_def(glitz_composite_trapezoids);
 

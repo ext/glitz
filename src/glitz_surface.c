@@ -60,6 +60,7 @@ glitz_surface_init (glitz_surface_t *surface,
   surface->height = height;
   surface->gl = gl;
   surface->draw_buffer = surface->read_buffer = GLITZ_GL_FRONT;
+  surface->stencil_mask = surface->stencil_masks;
 
   if (surface->gl) {
     if (format->doublebuffer)
@@ -78,8 +79,8 @@ glitz_surface_fini (glitz_surface_t *surface)
   if (surface->gl)
     glitz_texture_fini (surface->gl, &surface->texture);
   
-  if (surface->transforms)
-    free (surface->transforms);
+  if (surface->transform)
+    free (surface->transform);
 
   if (surface->inverse_transform)
     free (surface->inverse_transform);
@@ -138,6 +139,10 @@ glitz_surface_create_intermediate (glitz_surface_t *surface,
   /* component size 8 should instead be 1 but first need to add a
      GLITZ_FORMAT_MINIMUM_MASK. */
   switch (type) {
+  case GLITZ_INTERMEDIATE_RGBA_STENCIL:
+    templ.stencil_size = 8;
+    mask |= GLITZ_FORMAT_STENCIL_SIZE_MASK;
+    /* fall-through */
   case GLITZ_INTERMEDIATE_RGBA:
     templ.red_size = 8;
     templ.green_size = 8;
@@ -145,7 +150,7 @@ glitz_surface_create_intermediate (glitz_surface_t *surface,
     mask |= (GLITZ_FORMAT_RED_SIZE_MASK |
              GLITZ_FORMAT_GREEN_SIZE_MASK |
              GLITZ_FORMAT_BLUE_SIZE_MASK);
-    /* fall through */
+    /* fall-through */
   case GLITZ_INTERMEDIATE_ALPHA:
     templ.alpha_size = 8;
     mask |= GLITZ_FORMAT_ALPHA_SIZE_MASK;
@@ -230,104 +235,10 @@ glitz_surface_pop_current (glitz_surface_t *surface)
 }
 
 void
-glitz_surface_enable_program (glitz_program_type_t type,
-                              glitz_surface_t *surface,
-                              glitz_surface_t *src,
-                              glitz_surface_t *mask,
-                              glitz_texture_t *src_texture,
-                              glitz_texture_t *mask_texture)
-{
-  glitz_program_enable (type, surface, src, mask, src_texture, mask_texture);
-}
-
-void
-glitz_surface_disable_program (glitz_program_type_t type,
-                               glitz_surface_t *surface)
-{
-  glitz_program_disable (type, surface);
-}
-
-void
-glitz_surface_push_transform (glitz_surface_t *surface)
-{
-  static const glitz_matrix_t identity = {
-    {
-      { 1.0, 0.0, 0.0 },
-      { 0.0, 1.0, 0.0 },
-      { 0.0, 0.0, 1.0 }
-    }
-  };
-  
-  surface->n_transforms++;
-  
-  surface->transforms =
-    realloc (surface->transforms,
-             surface->n_transforms * sizeof (glitz_matrix_t));
-
-  if (!surface->transforms)
-    return;
-
-  if (!surface->inverse_transform)
-    surface->inverse_transform = malloc (sizeof (glitz_matrix_t));
-  
-  if (!surface->inverse_transform) {
-    free (surface->transforms);
-    surface->transforms = surface->transform = NULL;
-    return;
-  }
-  
-  if (surface->n_transforms > 1) {
-    surface->transforms[surface->n_transforms - 1] =
-      surface->transforms[surface->n_transforms - 2];
-  } else
-    surface->transforms[surface->n_transforms - 1] = identity;
-  
-  surface->transform = &surface->transforms[surface->n_transforms - 1];
-}
-
-void
-glitz_surface_pop_transform (glitz_surface_t *surface)
-{
-  if (surface->n_transforms < 1)
-    return;
-  
-  surface->n_transforms--;
-  
-  surface->transforms =
-    realloc (surface->transforms,
-             surface->n_transforms * sizeof (glitz_matrix_t));
-
-  if (surface->n_transforms)
-    surface->transform = &surface->transforms[surface->n_transforms - 1];
-  else
-    surface->transform = NULL;
-}
-
-void
-glitz_surface_bounds (glitz_surface_t *surface,
-                      glitz_bounding_box_t *box)
-{
-  box->y1 = MINSHORT;
-  box->y2 = MAXSHORT;
-  box->x1 = MINSHORT;
-  box->x2 = MAXSHORT;
-  
-  if (SURFACE_PROGRAMMATIC (surface) ||
-      SURFACE_REPEAT (surface) ||
-      surface->transform)
-    return;
-    
-  box->x1 = 0;
-  box->y1 = 0;
-  box->x2 = surface->width;
-  box->y2 = surface->height;
-}
-
-void
 glitz_surface_set_transform (glitz_surface_t *surface,
                              glitz_transform_t *transform)
 {
-  static const glitz_transform_t identity = {
+  static glitz_transform_t identity = {
     {
       { FIXED1, 0x00000, 0x00000 },
       { 0x00000, FIXED1, 0x00000 },
@@ -336,6 +247,8 @@ glitz_surface_set_transform (glitz_surface_t *surface,
   };
 
   if (SURFACE_PROGRAMMATIC (surface)) {
+    if (transform == NULL)
+      transform = &identity;
     glitz_programmatic_surface_set_transform (surface, transform);
     return;
   }
@@ -346,8 +259,16 @@ glitz_surface_set_transform (glitz_surface_t *surface,
   
   if (transform) {
     if (!surface->transform) {
-      glitz_surface_push_transform (surface);
-      if (!surface->transform) {
+      surface->transform = malloc (sizeof (glitz_matrix_t));
+      surface->inverse_transform = malloc (sizeof (glitz_matrix_t));
+      if ((!surface->transform) || (!surface->inverse_transform)) {
+        if (surface->transform)
+          free (surface->transform);
+        
+        if (surface->inverse_transform)
+          free (surface->inverse_transform);
+        
+        surface->transform = surface->inverse_transform = NULL;
         glitz_surface_status_add (surface, GLITZ_STATUS_NO_MEMORY_MASK);
         return;
       }
@@ -364,11 +285,20 @@ glitz_surface_set_transform (glitz_surface_t *surface,
     *surface->inverse_transform = *surface->transform;
 
     if (glitz_matrix_invert (surface->transform)) {
-      glitz_surface_pop_transform (surface);
+      free (surface->transform);
+      free (surface->inverse_transform);
+      surface->transform = surface->inverse_transform = NULL;
       glitz_surface_status_add (surface, GLITZ_STATUS_INVALID_MATRIX_MASK);
     }
-  } else
-    glitz_surface_pop_transform (surface);
+  } else {
+    if (surface->transform)
+      free (surface->transform);
+    
+    if (surface->inverse_transform)
+      free (surface->inverse_transform);
+    
+    surface->transform = surface->inverse_transform = NULL;
+  }
 }
 slim_hidden_def(glitz_surface_set_transform);
 
@@ -531,6 +461,8 @@ glitz_surface_set_draw_buffer (glitz_surface_t *surface,
     return;
 
   surface->draw_buffer = _gl_buffer (buffer);
+  surface->stencil_mask =
+    &surface->stencil_masks[(buffer == GLITZ_BUFFER_FRONT)? 1: 0];
 }
 slim_hidden_def(glitz_surface_set_draw_buffer);
 
@@ -552,6 +484,9 @@ glitz_surface_swap_buffers (glitz_surface_t *surface)
     return;
   
   surface->backend->swap_buffers (surface);
+
+  memset (surface->stencil_masks, 0x0,
+          sizeof (unsigned int) * GLITZ_N_STENCIL_MASKS);
 }
 slim_hidden_def(glitz_surface_swap_buffers);
 
@@ -626,11 +561,47 @@ glitz_surface_setup_environment (glitz_surface_t *surface)
   if (surface->format->doublebuffer)
     gl->draw_buffer (surface->draw_buffer);
 
-  if (surface->clip_mask)
-    glitz_set_clip_operator (gl, GLITZ_INT_CLIP_OPERATOR_CLIP,
-                             surface->clip_mask);
+  if (*surface->stencil_mask)
+    glitz_set_stencil_operator (gl, GLITZ_STENCIL_OPERATOR_CLIP,
+                                *surface->stencil_mask);
   else
     gl->disable (GLITZ_GL_STENCIL_TEST);
+}
+
+/* This is supposed to be a 4x rotated grid multi-sample pattern. I'm not
+   sure it's actually correct. */
+static glitz_sample_offset_t _4x_multi_sample_offsets[] = {
+  { -0.125, -0.375 },
+  {  0.375, -0.124 },
+  {  0.125,  0.375 },
+  { -0.375,  0.125 }
+};
+
+static unsigned short _4x_multi_sample_weights[] = {
+  0x4000, 0x8000, 0xbfff, 0xffff
+};
+
+static glitz_multi_sample_info_t _4x_multi_sample = {
+  _4x_multi_sample_offsets,
+  _4x_multi_sample_weights,
+  4
+};
+
+void
+glitz_surface_enable_anti_aliasing (glitz_surface_t *surface)
+{
+  if (surface->format->multisample.samples > 1)
+    return;
+
+  if (surface->polyedge == GLITZ_POLYEDGE_SMOOTH &&
+      surface->format->stencil_size >= 4)
+    surface->multi_sample = &_4x_multi_sample;
+}
+
+void
+glitz_surface_disable_anti_aliasing (glitz_surface_t *surface)
+{
+  surface->multi_sample = NULL;
 }
 
 void
@@ -931,122 +902,15 @@ glitz_surface_get_features (glitz_surface_t *surface)
 slim_hidden_def(glitz_surface_get_features);
 
 void
-glitz_int_surface_clip_rectangles (glitz_surface_t *surface,
-                                   glitz_int_clip_operator_t op,
-                                   int mask,
-                                   const glitz_rectangle_t *rects,
-                                   int n_rects)
-{
-  static glitz_color_t color = { 0x0000, 0x0000, 0x0000, 0x0000 };
-
-  if (n_rects == 0)
-    return;
-
-  if ((op == GLITZ_INT_CLIP_OPERATOR_SET ||
-       op == GLITZ_INT_CLIP_OPERATOR_UNION) &&
-      (n_rects == 1 &&
-       rects->x <= 0 && rects->y <= 0 &&
-       rects->width >= surface->width &&
-       rects->height >= surface->height)) {
-    surface->clip_mask = 0x0;
-    return;
-  }
-
-  if (surface->format->stencil_size < 1)
-    return;
-
-  if (!glitz_surface_push_current (surface,
-                                   GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
-    glitz_surface_pop_current (surface);
-    return;
-  }
-
-  glitz_set_clip_operator (surface->gl, op, mask);
-  
-  surface->gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE,
-                           GLITZ_GL_FALSE, GLITZ_GL_FALSE);
-
-  glitz_int_fill_rectangles ((glitz_operator_t)
-                             ((op == GLITZ_INT_CLIP_OPERATOR_SET)?
-                              GLITZ_INT_OPERATOR_STENCIL_RECT_SET:
-                              GLITZ_INT_OPERATOR_STENCIL_RECT_SRC),
-                             surface,
-                             &color,
-                             rects,
-                             n_rects);
-  
-  surface->gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE,
-                           GLITZ_GL_TRUE, GLITZ_GL_TRUE);
-  
-  surface->clip_mask = mask;
-
-  glitz_surface_pop_current (surface);
-}
-
-void
 glitz_surface_clip_rectangles (glitz_surface_t *surface,
                                glitz_clip_operator_t op,
                                const glitz_rectangle_t *rects,
                                int n_rects)
 {
-  glitz_int_surface_clip_rectangles (surface, (glitz_int_clip_operator_t) op,
-                                     0x1, rects, n_rects);
+  glitz_stencil_rectangles (surface, (glitz_stencil_operator_t) op,
+                            rects, n_rects);
 }
 slim_hidden_def(glitz_surface_clip_rectangles);
-
-void
-glitz_int_surface_clip_trapezoids (glitz_surface_t *surface,
-                                   glitz_int_clip_operator_t op,
-                                   int mask,
-                                   const glitz_trapezoid_t *traps,
-                                   int n_traps)
-{
-  static glitz_color_t color = { 0x0000, 0x0000, 0x0000, 0x0000 };
-
-  if (n_traps == 0)
-    return;
-
-  if ((op == GLITZ_INT_CLIP_OPERATOR_SET ||
-       op == GLITZ_INT_CLIP_OPERATOR_UNION) &&
-      (n_traps == 1 &&
-       FIXED_TO_INT (traps->top) <= 0 &&
-       FIXED_TO_INT (traps->bottom) >= surface->height &&
-       FIXED_TO_INT (traps->left.p1.x) <= 0 &&
-       FIXED_TO_INT (traps->left.p2.x) <= 0 &&
-       FIXED_TO_INT (traps->right.p1.x) >= surface->width &&
-       FIXED_TO_INT (traps->right.p2.x) >= surface->width)) {
-    surface->clip_mask = 0x0;
-    return;
-  }
-  
-  if (surface->format->stencil_size < 1)
-    return;
-
-  if (!glitz_surface_push_current (surface,
-                                   GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
-    glitz_surface_pop_current (surface);
-    return;
-  }
-
-  glitz_set_clip_operator (surface->gl, op, mask);
-  
-  surface->gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE,
-                           GLITZ_GL_FALSE, GLITZ_GL_FALSE);
-
-  glitz_int_fill_trapezoids (GLITZ_OPERATOR_SRC,
-                             surface,
-                             0, 0,
-                             &color,
-                             traps,
-                             n_traps);
-    
-  surface->gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE,
-                           GLITZ_GL_TRUE, GLITZ_GL_TRUE);
-
-  surface->clip_mask = mask;
-
-  glitz_surface_pop_current (surface);
-}
 
 void
 glitz_surface_clip_trapezoids (glitz_surface_t *surface,
@@ -1054,53 +918,10 @@ glitz_surface_clip_trapezoids (glitz_surface_t *surface,
                                const glitz_trapezoid_t *traps,
                                int n_traps)
 {
-  glitz_int_surface_clip_trapezoids (surface, (glitz_int_clip_operator_t) op,
-                                     0x1, traps, n_traps);
+  glitz_stencil_trapezoids (surface, (glitz_stencil_operator_t) op,
+                            traps, n_traps);
 }
 slim_hidden_def(glitz_surface_clip_trapezoids);
-
-void
-glitz_int_surface_clip_triangles (glitz_surface_t *surface,
-                                  glitz_int_clip_operator_t op,
-                                  int mask,
-                                  glitz_triangle_type_t type,
-                                  const glitz_point_fixed_t *points,
-                                  int n_points)                               
-{
-  static glitz_color_t color = { 0x0000, 0x0000, 0x0000, 0x0000 };
-
-  if (n_points < 3)
-    return;
-  
-  if (surface->format->stencil_size < 1)
-    return;
-
-  if (!glitz_surface_push_current (surface,
-                                   GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
-    glitz_surface_pop_current (surface);
-    return;
-  }
-  
-  glitz_set_clip_operator (surface->gl, op, mask);
-  
-  surface->gl->color_mask (GLITZ_GL_FALSE, GLITZ_GL_FALSE,
-                           GLITZ_GL_FALSE, GLITZ_GL_FALSE);
-
-  glitz_int_fill_triangles (GLITZ_OPERATOR_SRC,
-                            surface,
-                            type,
-                            0, 0,
-                            &color,                        
-                            points,
-                            n_points);
-  
-  surface->gl->color_mask (GLITZ_GL_TRUE, GLITZ_GL_TRUE,
-                           GLITZ_GL_TRUE, GLITZ_GL_TRUE);
-
-  surface->clip_mask = mask;
-
-  glitz_surface_pop_current (surface);
-}
 
 void
 glitz_surface_clip_triangles (glitz_surface_t *surface,
@@ -1108,11 +929,9 @@ glitz_surface_clip_triangles (glitz_surface_t *surface,
                               const glitz_triangle_t *tris,
                               int n_tris)
 {
-  glitz_int_surface_clip_triangles (surface,
-                                    (glitz_int_clip_operator_t) op,
-                                    0x1,
-                                    GLITZ_TRIANGLE_TYPE_NORMAL,
-                                    (glitz_point_fixed_t *) tris, n_tris * 3);
+  glitz_stencil_triangles (surface, (glitz_stencil_operator_t) op,
+                           GLITZ_TRIANGLE_TYPE_NORMAL,
+                           (glitz_point_fixed_t *) tris, n_tris * 3);
 }
 slim_hidden_def(glitz_surface_clip_triangles);
 
@@ -1131,8 +950,14 @@ glitz_surface_get_hints (glitz_surface_t *surface)
   hint_mask = surface->hint_mask &
     (GLITZ_HINT_OFFSCREEN_MASK | GLITZ_HINT_PROGRAMMATIC_MASK);
 
-  if (surface->clip_mask)
+  if (*surface->stencil_mask)
     hint_mask |= GLITZ_HINT_CLIPPING_MASK;
+  
+  if ((!SURFACE_PROGRAMMATIC (surface)) &&
+      surface->polyedge == GLITZ_POLYEDGE_SMOOTH &&
+      surface->format->multisample.samples < 2 &&
+      surface->format->stencil_size >= 4)
+    hint_mask |= GLITZ_HINT_MULTISAMPLE_MASK;
   
   return hint_mask;
 }
