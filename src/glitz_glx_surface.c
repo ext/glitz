@@ -95,26 +95,6 @@ _glitz_glx_surface_make_current_read (void *abstract_surface)
   return 0;
 }
 
-static glitz_bool_t
-_glitz_glx_surface_get_window_size (Display *display,
-                                    Window drawable,
-                                    int *width,
-                                    int *height)
-{
-  unsigned int uwidth, uheight, bwidth_ignore, depth_ignore;
-  Window root_ignore;
-  int x_ignore, y_ignore;
-  
-  if (!XGetGeometry (display, drawable, &root_ignore, &x_ignore, &y_ignore,
-                     &uwidth, &uheight, &bwidth_ignore, &depth_ignore))
-    return 0;
-  
-  *width = (int) uwidth;
-  *height = (int) uheight;
-  
-  return 1;
-}
-
 static glitz_texture_t *
 _glitz_glx_surface_get_texture (void *abstract_surface,
                                 glitz_bool_t allocate)
@@ -214,19 +194,17 @@ glitz_surface_t *
 glitz_glx_surface_create_for_window (Display *display,
                                      int screen,
                                      glitz_format_t *format,
-                                     Window window)
+                                     Window window,
+                                     int width,
+                                     int height)
 {
   glitz_glx_surface_t *surface;
   glitz_glx_context_t *context;
-  int width, height;
   glitz_glx_screen_info_t *screen_info =
     glitz_glx_screen_info_get (display, screen);
   
   context = glitz_glx_context_get (screen_info, format);
   if (!context)
-    return NULL;
-
-  if (!_glitz_glx_surface_get_window_size (display, window, &width, &height))
     return NULL;
 
   surface = (glitz_glx_surface_t *) calloc (1, sizeof (glitz_glx_surface_t));

@@ -79,7 +79,9 @@ glitz_surface_t *
 glitz_glx_surface_create_for_window (Display *display,
                                      int screen,
                                      glitz_format_t *format,
-                                     Window window);
+                                     Window window,
+                                     int width,
+                                     int height);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

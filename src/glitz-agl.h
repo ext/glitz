@@ -65,7 +65,9 @@ glitz_agl_surface_create (glitz_format_t *format,
 
 glitz_surface_t *
 glitz_agl_surface_create_for_window (glitz_format_t *format,
-                                     WindowRef window);
+                                     WindowRef window,
+                                     int width,
+                                     int height);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

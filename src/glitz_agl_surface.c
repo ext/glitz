@@ -116,19 +116,6 @@ _glitz_agl_surface_get_texture (void *abstract_surface,
     return NULL;
 }
 
-static void
-_glitz_agl_surface_get_window_size (WindowRef window,
-                                    int *width,
-                                    int *height)
-{
-  Rect window_bounds;
-
-  GetWindowPortBounds (window, &window_bounds);
-  
-  *width = window_bounds.right - window_bounds.left;
-  *height = window_bounds.bottom - window_bounds.top;
-}
-
 static glitz_surface_t *
 _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
                            glitz_format_t *format,
@@ -175,18 +162,17 @@ slim_hidden_def(glitz_agl_surface_create_offscreen);
 
 glitz_surface_t *
 glitz_agl_surface_create_for_window (glitz_format_t *format,
-                                     WindowRef window)
+                                     WindowRef window,
+                                     int width,
+                                     int height)
 {
   glitz_agl_surface_t *surface;
   glitz_agl_context_t *context;
-  int width, height;
   glitz_agl_thread_info_t *thread_info = glitz_agl_thread_info_get ();
 
   context = glitz_agl_context_get (thread_info, format, 0);
   if (!context)
     return NULL;
-
-  _glitz_agl_surface_get_window_size (window, &width, &height);
 
   surface = (glitz_agl_surface_t *) calloc (1, sizeof (glitz_agl_surface_t));
   if (surface == NULL)

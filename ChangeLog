@@ -1,5 +1,21 @@
 2004-09-07  David Reveman  <c99drn@cs.umu.se>
 
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.2.1.
+
+	* configure.in: Bump version to 0.2.1.
+
+	* src/glitz-agl.h: Be consistent with the GLX backend.
+
+	* src/glitz_agl_surface.c: Be consistent with the GLX backend.
+
+	* src/glitz-glx.h: Window size as parameters to
+	glitz_glx_surface_create_for_window to avoid unnecessary server
+	round trip.
+
+	* src/glitz_glx_surface.c: Window size as parameters to
+	glitz_glx_surface_create_for_window to avoid unnecessary server
+	round trip.
+
 	* src/glitzint.h: Added texture flags.
 	Removed texture_mask.
 	GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
