@@ -517,16 +517,17 @@ glitz_set_pixels (glitz_surface_t *dst,
     else
       gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 2);
   } else
-    gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 1);    
+    gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT, 1);
 
   gl->tex_sub_image_2d (texture->target, 0,
-                        x_dst, dst->height - y_dst - height,
+                        texture->box.x1 + x_dst,
+                        texture->box.y2 - y_dst - height,
                         width, height,
                         gl_format->format, gl_format->type,
                         pixels);
 
   if (to_drawable) {
-    glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, height, ~0); 
+    glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, ~0); 
 
     gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                    GLITZ_GL_REPLACE);
@@ -549,12 +550,12 @@ glitz_set_pixels (glitz_surface_t *dst,
 
     if (x_dst == 0 && y_dst == 0 &&
         width == dst->width && height == dst->height)
-      dst->flags &= ~GLITZ_FLAG_DIRTY_MASK;
+      dst->flags &= ~GLITZ_SURFACE_FLAG_DIRTY_MASK;
   }
   
   glitz_texture_unbind (gl, texture);
 
-  dst->flags |= GLITZ_FLAG_SOLID_DIRTY_MASK;
+  dst->flags |= GLITZ_SURFACE_FLAG_SOLID_DIRTY_MASK;
 
   if (transform == 0)
     glitz_buffer_unbind (buffer);
@@ -621,8 +622,8 @@ glitz_get_pixels (glitz_surface_t *src,
     if (transform & GLITZ_TRANSFORM_COPY_REGION_MASK) {
       src_w = texture->width;
       src_h = texture->height;
-      src_x = x_src;
-      src_y = y_src;
+      src_x = x_src + texture->box.x1;
+      src_y = y_src + texture->box.y1;
     }
 
     stride = (((src_w * gl_format->pixel.masks.bpp) / 8) + 3) & -4;

@@ -118,16 +118,12 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
   }
 
   if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK) {
-    screen_info->texture_mask |= GLITZ_TEXTURE_TARGET_NON_POWER_OF_TWO_MASK;
+      GLITZ_GLX_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK)
     screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK;
-  }
 
   if (screen_info->glx_feature_mask &
-      GLITZ_GLX_FEATURE_TEXTURE_RECTANGLE_MASK) {
-    screen_info->texture_mask |= GLITZ_TEXTURE_TARGET_RECTANGLE_MASK;
+      GLITZ_GLX_FEATURE_TEXTURE_RECTANGLE_MASK)
     screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK;
-  }
 
   if (screen_info->glx_feature_mask &
       GLITZ_GLX_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK)

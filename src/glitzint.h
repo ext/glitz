@@ -67,10 +67,6 @@
 #define GLITZ_STATUS_NOT_SUPPORTED_MASK      (1L << 2)
 #define GLITZ_STATUS_CONTENT_DESTROYED_MASK  (1L << 3)
 
-#define GLITZ_TEXTURE_TARGET_2D_MASK               (1L << 0)
-#define GLITZ_TEXTURE_TARGET_RECTANGLE_MASK        (1L << 1)
-#define GLITZ_TEXTURE_TARGET_NON_POWER_OF_TWO_MASK (1L << 2)
-
 #define GLITZ_FORMAT_ALL_EXCEPT_ID_MASK ((1L << 19) - 2)
 
 #include "glitz_gl.h"
@@ -233,11 +229,24 @@ typedef struct _glitz_vec_t {
   glitz_float_t v[4];
 } glitz_vec4_t;
 
+#define GLITZ_TEXTURE_FLAG_ALLOCATED_MASK     (1L <<  0)
+#define GLITZ_TEXTURE_FLAG_REPEATABLE_MASK    (1L <<  1)
+#define GLITZ_TEXTURE_FLAG_PADABLE_MASK       (1L <<  2)
+
+#define TEXTURE_ALLOCATED(texture) \
+  ((texture)->flags & GLITZ_TEXTURE_FLAG_ALLOCATED_MASK)
+
+#define TEXTURE_REPEATABLE(texture) \
+  ((texture)->flags & GLITZ_TEXTURE_FLAG_REPEATABLE_MASK)
+
+#define TEXTURE_PADABLE(texture) \
+  ((texture)->flags & GLITZ_TEXTURE_FLAG_PADABLE_MASK)
+
 typedef struct _glitz_texture {
   glitz_gl_uint_t name;
   glitz_gl_enum_t target;
   glitz_gl_enum_t format;
-  glitz_bool_t allocated;
+  unsigned long flags;
   
   glitz_gl_enum_t filter;
   glitz_gl_enum_t wrap;
@@ -245,12 +254,10 @@ typedef struct _glitz_texture {
   unsigned int width;
   unsigned int height;
 
-  glitz_float_t texcoord_width;
-  glitz_float_t texcoord_height;
+  glitz_bounding_box_t box;
+  
   glitz_float_t texcoord_width_unit;
   glitz_float_t texcoord_height_unit;
-
-  glitz_bool_t repeatable;
 } glitz_texture_t;
 
 struct _glitz_buffer {
@@ -310,68 +317,72 @@ typedef struct glitz_surface_backend {
   unsigned long feature_mask;
 } glitz_surface_backend_t;
 
-#define GLITZ_FLAG_SOLID_MASK                   (1L <<  0)
-#define GLITZ_FLAG_OFFSCREEN_MASK               (1L <<  1)
-#define GLITZ_FLAG_REPEAT_MASK                  (1L <<  2)
-#define GLITZ_FLAG_MIRRORED_MASK                (1L <<  3)
-#define GLITZ_FLAG_PAD_MASK                     (1L <<  4)
-#define GLITZ_FLAG_DIRTY_MASK                   (1L <<  5)
-#define GLITZ_FLAG_COMPONENT_ALPHA_MASK         (1L <<  6)
-#define GLITZ_FLAG_MULTISAMPLE_MASK             (1L <<  7)
-#define GLITZ_FLAG_NICEST_MULTISAMPLE_MASK      (1L <<  8)
-#define GLITZ_FLAG_SOLID_DIRTY_MASK             (1L <<  9)
-#define GLITZ_FLAG_DRAWABLE_DIRTY_MASK          (1L << 10)
-#define GLITZ_FLAG_FRAGMENT_FILTER_MASK         (1L << 11)
-#define GLITZ_FLAG_LINEAR_TRANSFORM_FILTER_MASK (1L << 12)
-#define GLITZ_FLAG_DRAWABLE_MASK                (1L << 13)
-#define GLITZ_FLAG_IGNORE_REPEAT_MASK           (1L << 14)
-#define GLITZ_FLAG_TEXTURE_COORDS_MASK          (1L << 15)
+#define GLITZ_SURFACE_FLAG_SOLID_MASK                   (1L <<  0)
+#define GLITZ_SURFACE_FLAG_OFFSCREEN_MASK               (1L <<  1)
+#define GLITZ_SURFACE_FLAG_REPEAT_MASK                  (1L <<  2)
+#define GLITZ_SURFACE_FLAG_MIRRORED_MASK                (1L <<  3)
+#define GLITZ_SURFACE_FLAG_PAD_MASK                     (1L <<  4)
+#define GLITZ_SURFACE_FLAG_DIRTY_MASK                   (1L <<  5)
+#define GLITZ_SURFACE_FLAG_COMPONENT_ALPHA_MASK         (1L <<  6)
+#define GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK             (1L <<  7)
+#define GLITZ_SURFACE_FLAG_NICEST_MULTISAMPLE_MASK      (1L <<  8)
+#define GLITZ_SURFACE_FLAG_SOLID_DIRTY_MASK             (1L <<  9)
+#define GLITZ_SURFACE_FLAG_DRAWABLE_DIRTY_MASK          (1L << 10)
+#define GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK         (1L << 11)
+#define GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK (1L << 12)
+#define GLITZ_SURFACE_FLAG_DRAWABLE_MASK                (1L << 13)
+#define GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK           (1L << 14)
+#define GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK          (1L << 15)
+#define GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK        (1L << 16)
 
 #define SURFACE_OFFSCREEN(surface) \
-  ((surface)->flags & GLITZ_FLAG_OFFSCREEN_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_OFFSCREEN_MASK)
 
 #define SURFACE_SOLID(surface) \
-  ((surface)->flags & GLITZ_FLAG_SOLID_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_SOLID_MASK)
 
 #define SURFACE_REPEAT(surface) \
-  (((surface)->flags & GLITZ_FLAG_REPEAT_MASK) && \
-   (!((surface)->flags & GLITZ_FLAG_IGNORE_REPEAT_MASK)))
+  (((surface)->flags & GLITZ_SURFACE_FLAG_REPEAT_MASK) && \
+   (!((surface)->flags & GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK)))
 
 #define SURFACE_MIRRORED(surface) \
-  ((surface)->flags & GLITZ_FLAG_MIRRORED_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_MIRRORED_MASK)
 
 #define SURFACE_PAD(surface) \
-  ((surface)->flags & GLITZ_FLAG_PAD_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_PAD_MASK)
 
 #define SURFACE_DIRTY(surface) \
-  ((surface)->flags & GLITZ_FLAG_DIRTY_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_DIRTY_MASK)
 
 #define SURFACE_COMPONENT_ALPHA(surface) \
-  ((surface)->flags & GLITZ_FLAG_COMPONENT_ALPHA_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_COMPONENT_ALPHA_MASK)
 
 #define SURFACE_MULTISAMPLE(surface) \
-  ((surface)->flags & GLITZ_FLAG_MULTISAMPLE_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK)
 
 #define SURFACE_NICEST_MULTISAMPLE(surface) \
-  ((surface)->flags & GLITZ_FLAG_NICEST_MULTISAMPLE_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_NICEST_MULTISAMPLE_MASK)
 
 #define SURFACE_SOLID_DIRTY(surface) \
-  ((surface)->flags & GLITZ_FLAG_SOLID_DIRTY_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_SOLID_DIRTY_MASK)
 
 #define SURFACE_DRAWABLE_DIRTY(surface) \
-  ((surface)->flags & GLITZ_FLAG_DRAWABLE_DIRTY_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_DRAWABLE_DIRTY_MASK)
 
 #define SURFACE_FRAGMENT_FILTER(surface) \
-  ((surface)->flags & GLITZ_FLAG_FRAGMENT_FILTER_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK)
 
 #define SURFACE_LINEAR_TRANSFORM_FILTER(surface) \
-  ((surface)->flags & GLITZ_FLAG_LINEAR_TRANSFORM_FILTER_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK)
 
 #define SURFACE_DRAWABLE(surface) \
-  ((surface)->flags & GLITZ_FLAG_DRAWABLE_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_DRAWABLE_MASK)
 
 #define SURFACE_TEXTURE_COORDS(surface) \
-  ((surface)->flags & GLITZ_FLAG_TEXTURE_COORDS_MASK)
+  ((surface)->flags & GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK)
+
+#define SURFACE_SIMPLE_TRANSFORM(surface) \
+  ((surface)->flags & GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK)
 
 typedef struct _glitz_sample_offset {
   glitz_float_t x;
@@ -421,7 +432,7 @@ typedef struct _glitz_composite_op_t glitz_composite_op_t;
 
 typedef void (*glitz_combine_function_t) (glitz_composite_op_t *);
 
-typedef struct _glitz_render_t {
+typedef struct _glitz_combine_t {
   glitz_combine_type_t type;
   glitz_combine_function_t enable;
   int texture_units;
@@ -487,7 +498,7 @@ glitz_texture_init (glitz_texture_t *texture,
                     unsigned int width,
                     unsigned int height,
                     unsigned int texture_format,
-                    unsigned long target_mask);
+                    unsigned long feature_mask);
 
 void
 glitz_texture_fini (glitz_gl_proc_address_list_t *gl,
@@ -530,7 +541,6 @@ glitz_texture_set_tex_gen (glitz_gl_proc_address_list_t *gl,
                            glitz_texture_t *texture,
                            int x_src,
                            int y_src,
-                           int height,
                            unsigned long flags);
 
 void
@@ -538,8 +548,7 @@ glitz_surface_init (glitz_surface_t *surface,
                     glitz_surface_backend_t *backend,
                     glitz_format_t *format,
                     int width,
-                    int height,
-                    unsigned long texture_mask);
+                    int height);
 
 void
 glitz_surface_fini (glitz_surface_t *surface);

@@ -99,7 +99,7 @@ glitz_filter_set_params (glitz_surface_t *surface,
   
   switch (filter) {
   case GLITZ_FILTER_CONVOLUTION: {
-    glitz_float_t dm, dn, sum, tx, ty;
+    glitz_float_t dm, dn, sum;
     int cx, cy, m, n, j;
     
     _glitz_filter_params_set (&dm, 3.0f, &params, &n_params);
@@ -119,9 +119,6 @@ glitz_filter_set_params (glitz_surface_t *surface,
     cx = m / 2;
     cy = n / 2;
 
-    tx = surface->texture.texcoord_width / surface->texture.width;
-    ty = surface->texture.texcoord_height / surface->texture.height;
-
     sum = 0.0f;
     for (i = 0; i < m; i++) {
       glitz_vec4_t *vec;
@@ -131,8 +128,8 @@ glitz_filter_set_params (glitz_surface_t *surface,
         _glitz_filter_params_set (&weight, 0.0f, &params, &n_params);
         if (weight != 0.0f) {
           vec = &vecs[surface->filter_params->id++];
-          vec->v[0] = (i - cx) * tx;
-          vec->v[1] = (cy - j) * ty;
+          vec->v[0] = (i - cx) * surface->texture.texcoord_width_unit;
+          vec->v[1] = (cy - j) * surface->texture.texcoord_height_unit;
           vec->v[2] = weight;
           vec->v[3] = 0.0f;
           sum += weight;
@@ -149,7 +146,7 @@ glitz_filter_set_params (glitz_surface_t *surface,
     
   } break;
   case GLITZ_FILTER_GAUSSIAN: {
-    glitz_float_t radius, sigma, alpha, scale, xy_scale, sum, tx, ty;
+    glitz_float_t radius, sigma, alpha, scale, xy_scale, sum;
     int half_size, x, y;
     
     _glitz_filter_params_set (&radius, 1.0f, &params, &n_params);
@@ -177,9 +174,6 @@ glitz_filter_set_params (glitz_surface_t *surface,
 
     surface->filter_params->id = 0;
 
-    tx = surface->texture.texcoord_width / surface->texture.width;
-    ty = surface->texture.texcoord_height / surface->texture.height;
-
     sum = 0.0f;
     for (x = 0; x < size; x++) {
       glitz_vec4_t *vec;
@@ -195,8 +189,8 @@ glitz_filter_set_params (glitz_surface_t *surface,
 
         if (amp > 0.0f) {
           vec = &vecs[surface->filter_params->id++];
-          vec->v[0] = fx * tx;
-          vec->v[1] = fy * ty;
+          vec->v[0] = fx * surface->texture.texcoord_width_unit;
+          vec->v[1] = fy * surface->texture.texcoord_height_unit;
           vec->v[2] = amp;
           vec->v[3] = 0.0f;
           sum += amp;
@@ -290,7 +284,7 @@ glitz_filter_set_params (glitz_surface_t *surface,
       vecs[i].v[0] *= surface->texture.texcoord_width_unit;
       vecs[i].v[1] *= surface->texture.texcoord_height_unit;
       
-      vecs[i].v[1] = surface->texture.texcoord_height - vecs[i].v[1];
+      vecs[i].v[1] = surface->texture.box.y2 - vecs[i].v[1];
       vecs[i].v[3] = i;
     }
     
@@ -350,7 +344,7 @@ glitz_filter_set_type (glitz_surface_t *surface,
     surface->filter_params->fp_type = GLITZ_FP_CONVOLUTION;
     break;
   case GLITZ_FILTER_LINEAR_GRADIENT:
-    if (surface->flags & GLITZ_FLAG_REPEAT_MASK) {
+    if (surface->flags & GLITZ_SURFACE_FLAG_REPEAT_MASK) {
       if (SURFACE_MIRRORED (surface))
         surface->filter_params->fp_type = GLITZ_FP_LINEAR_GRADIENT_REFLECT;
       else
@@ -361,7 +355,7 @@ glitz_filter_set_type (glitz_surface_t *surface,
       surface->filter_params->fp_type = GLITZ_FP_LINEAR_GRADIENT_TRANSPARENT;
     break;
   case GLITZ_FILTER_RADIAL_GRADIENT:
-    if (surface->flags & GLITZ_FLAG_REPEAT_MASK) {
+    if (surface->flags & GLITZ_SURFACE_FLAG_REPEAT_MASK) {
       if (SURFACE_MIRRORED (surface))
         surface->filter_params->fp_type = GLITZ_FP_RADIAL_GRADIENT_REFLECT;
       else

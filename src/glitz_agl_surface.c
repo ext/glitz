@@ -89,7 +89,7 @@ _glitz_agl_surface_get_texture (void *abstract_surface,
     glitz_intersect_bounding_box (&surface->base.dirty_box,
                                   &copy_box, &copy_box);
 
-    if (!surface->base.texture.allocated)
+    if (!(TEXTURE_ALLOCATED (&surface->base.texture)))
       glitz_texture_allocate (&surface->base.backend->gl,
                               &surface->base.texture);  
       
@@ -101,16 +101,16 @@ _glitz_agl_surface_get_texture (void *abstract_surface,
                                 copy_box.x1,
                                 copy_box.y1);
     
-    surface->base.flags &= ~GLITZ_FLAG_DIRTY_MASK;
+    surface->base.flags &= ~GLITZ_SURFACE_FLAG_DIRTY_MASK;
   }
 
   if (allocate) {
-    if (!surface->base.texture.allocated)
+    if (!(TEXTURE_ALLOCATED (&surface->base.texture)))
       glitz_texture_allocate (&surface->base.backend->gl,
                               &surface->base.texture);
   }
   
-  if (surface->base.texture.allocated)
+  if (TEXTURE_ALLOCATED (&surface->base.texture))
     return &surface->base.texture;
   else
     return NULL;
@@ -137,7 +137,6 @@ _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
 {
   glitz_agl_surface_t *surface;
   glitz_agl_context_t *context;
-  unsigned long texture_mask;
 
   context = glitz_agl_context_get (thread_info, format, 1);
   if (!context)
@@ -146,31 +145,20 @@ _glitz_agl_surface_create (glitz_agl_thread_info_t *thread_info,
   surface = (glitz_agl_surface_t *) calloc (1, sizeof (glitz_agl_surface_t));
   if (surface == NULL)
     return NULL;
-
-  texture_mask = thread_info->texture_mask;
-
-  /* Seems to be a problem with binding a pbuffer to some power of two sized
-     textures. This will try to avoid the problem. */
-  if (((width > 1) && (width < 64)) ||
-      ((height > 1) && (height < 64))) {
-    if (texture_mask != GLITZ_TEXTURE_TARGET_2D_MASK)
-      texture_mask &= ~GLITZ_TEXTURE_TARGET_2D_MASK;
-  }
-
+  
   glitz_surface_init (&surface->base,
                       &context->backend,
                       format,
                       width,
-                      height,
-                      texture_mask);
+                      height);
   
   surface->thread_info = thread_info;
   surface->context = context;
 
-  surface->base.flags |= GLITZ_FLAG_OFFSCREEN_MASK;
+  surface->base.flags |= GLITZ_SURFACE_FLAG_OFFSCREEN_MASK;
 
   if (format->draw.offscreen)
-    surface->base.flags |= GLITZ_FLAG_DRAWABLE_MASK;
+    surface->base.flags |= GLITZ_SURFACE_FLAG_DRAWABLE_MASK;
 
   return &surface->base;
 }
@@ -208,15 +196,14 @@ glitz_agl_surface_create_for_window (glitz_format_t *format,
                       &context->backend,
                       format,
                       width,
-                      height,
-                      thread_info->texture_mask);
+                      height);
   
   surface->thread_info = thread_info;
   surface->context = context;
   surface->window = window;
   surface->drawable = GetWindowPort (window);
 
-  surface->base.flags |= GLITZ_FLAG_DRAWABLE_MASK;
+  surface->base.flags |= GLITZ_SURFACE_FLAG_DRAWABLE_MASK;
   
   return &surface->base;
 }

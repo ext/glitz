@@ -37,8 +37,7 @@ glitz_surface_init (glitz_surface_t *surface,
                     glitz_surface_backend_t *backend,
                     glitz_format_t *format,
                     int width,
-                    int height,
-                    unsigned long texture_mask)
+                    int height)
 {
   surface->backend = backend;
 
@@ -66,19 +65,20 @@ glitz_surface_init (glitz_surface_t *surface,
     surface->draw_buffer = surface->read_buffer = GLITZ_GL_FRONT;
 
   if (width == 1 && height == 1) {
-    surface->flags |= GLITZ_FLAG_SOLID_MASK;
+    surface->flags |= GLITZ_SURFACE_FLAG_SOLID_MASK;
     surface->solid.red = surface->solid.green = surface->solid.blue = 0x0;
     surface->solid.alpha = 0xffff;
   }
 
-  surface->flags |= GLITZ_FLAG_TEXTURE_COORDS_MASK;
+  surface->flags |= GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
+  surface->flags |= GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK;
 
   glitz_texture_init (&surface->texture,
                       width, height,
                       glitz_format_get_best_texture_format (backend->formats,
                                                             backend->n_formats,
                                                             format),
-                      texture_mask);
+                      backend->feature_mask);
 }
 
 void
@@ -175,19 +175,20 @@ _glitz_surface_solid_store (glitz_surface_t *surface) {
   } else {
     glitz_gl_float_t color[4];
 
-    if (surface->texture.allocated) {
+    if (TEXTURE_ALLOCATED (&surface->texture)) {
       color[0] = surface->solid.red / 65535.0f;
       color[1] = surface->solid.green / 65535.0f;
       color[2] = surface->solid.blue / 65535.0f;
       color[3] = surface->solid.alpha / 65535.0f;
     
       glitz_texture_bind (gl, &surface->texture);
-      gl->tex_sub_image_2d (surface->texture.target, 0, 0, 0, 1, 1,
-                            GLITZ_GL_RGBA, GLITZ_GL_FLOAT, color);
+      gl->tex_sub_image_2d (surface->texture.target, 0,
+                            surface->texture.box.x1, surface->texture.box.y1,
+                            1, 1, GLITZ_GL_RGBA, GLITZ_GL_FLOAT, color);
       glitz_texture_unbind (gl, &surface->texture);
     }
   }
-  surface->flags &= ~GLITZ_FLAG_DRAWABLE_DIRTY_MASK;
+  surface->flags &= ~GLITZ_SURFACE_FLAG_DRAWABLE_DIRTY_MASK;
 }
 
 void
@@ -195,25 +196,28 @@ glitz_surface_ensure_solid (glitz_surface_t *surface)
 {
   if (SURFACE_DIRTY (surface) || SURFACE_SOLID_DIRTY (surface)) {
     glitz_gl_proc_address_list_t *gl = &surface->backend->gl;
-    glitz_gl_float_t color[4];
-    
-    glitz_texture_t *texture = glitz_surface_get_texture (surface, 0);
+    glitz_gl_float_t *c, color[64];
+    glitz_texture_t *texture;
+
+    texture = glitz_surface_get_texture (surface, 0);
+
+    c = &color[(texture->box.y1 * texture->width + texture->box.x1) * 4];
     if (texture) {
       glitz_texture_bind (gl, texture);
       gl->get_tex_image (texture->target, 0,
                          GLITZ_GL_RGBA, GLITZ_GL_FLOAT, color);
       glitz_texture_unbind (gl, texture);
     } else {
-      color[0] = color[1] = color[2] = 0.0f;
-      color[3] = 1.0f;
+      c[0] = c[1] = c[2] = 0.0f;
+      c[3] = 1.0f;
     }
   
-    surface->solid.red = color[0] * 65535.0f;
-    surface->solid.green = color[1] * 65535.0f;
-    surface->solid.blue = color[2] * 65535.0f;
-    surface->solid.alpha = color[3] * 65535.0f;
+    surface->solid.red = c[0] * 65535.0f;
+    surface->solid.green = c[1] * 65535.0f;
+    surface->solid.blue = c[2] * 65535.0f;
+    surface->solid.alpha = c[3] * 65535.0f;
 
-    surface->flags &= ~GLITZ_FLAG_SOLID_DIRTY_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_SOLID_DIRTY_MASK;
   }
 }
 
@@ -253,7 +257,7 @@ glitz_surface_set_transform (glitz_surface_t *surface,
     transform = NULL;
   
   if (transform) {
-    glitz_gl_float_t *m, *t;
+    glitz_gl_float_t height, *m, *t;
     
     if (!surface->transform) {
       surface->transform = malloc (sizeof (glitz_matrix_t));
@@ -300,6 +304,10 @@ glitz_surface_set_transform (glitz_surface_t *surface,
        translate (TEXTURE_MATRIX, 0, -texture_height)
        
        the following code does it pretty efficiently. */
+
+    height = surface->texture.texcoord_height_unit *
+      (surface->texture.box.y2 - surface->texture.box.y1);
+      
     t[0] = m[0];
     t[4] = m[4];
     t[8] = 0.0f;
@@ -310,11 +318,10 @@ glitz_surface_set_transform (glitz_surface_t *surface,
     t[11] = 0.0f;
     t[15] = m[15];
     
-    t[1] = surface->texture.texcoord_height * t[3] - m[1];
-    t[5] = surface->texture.texcoord_height * t[7] - m[5];
+    t[1] = height * t[3] - m[1];
+    t[5] = height * t[7] - m[5];
     t[9] = 0.0f;
-    t[13] = surface->texture.texcoord_height * t[15] -
-      surface->texture.texcoord_height_unit * m[13];
+    t[13] = height * t[15] - surface->texture.texcoord_height_unit * m[13];
 
     t[2] = 0.0f;
     t[6] = 0.0f;
@@ -327,14 +334,22 @@ glitz_surface_set_transform (glitz_surface_t *surface,
     t[7] = -t[7];
 
     /* translate y = -texture_height */
-    t[12] -= t[4] * surface->texture.texcoord_height;
-    t[13] -= t[5] * surface->texture.texcoord_height;
-    t[15] -= t[7] * surface->texture.texcoord_height;
+    t[12] -= t[4] * height;
+    t[13] -= t[5] * height;
+    t[15] -= t[7] * height;
+
+    if (t[0] == 1.0 && t[4] == 0.0 &&
+        t[1] == 0.0 && t[5] == 1.0 &&
+        t[3] == 0.0 && t[7] == 0.0 && t[15] == 1.0)
+      surface->flags |= GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK;
+    else
+      surface->flags &= ~GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK;
   } else {
     if (surface->transform)
       free (surface->transform);
     
     surface->transform = NULL;
+    surface->flags |= GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK;
   }
 }
 slim_hidden_def(glitz_surface_set_transform);
@@ -345,24 +360,24 @@ glitz_surface_set_fill (glitz_surface_t *surface,
 {
   switch (fill) {
   case GLITZ_FILL_TRANSPARENT:
-    surface->flags &= ~GLITZ_FLAG_REPEAT_MASK;
-    surface->flags &= ~GLITZ_FLAG_MIRRORED_MASK;
-    surface->flags &= ~GLITZ_FLAG_PAD_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_REPEAT_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_MIRRORED_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_PAD_MASK;
     break;
   case GLITZ_FILL_NEAREST:
-    surface->flags &= ~GLITZ_FLAG_REPEAT_MASK;
-    surface->flags &= ~GLITZ_FLAG_MIRRORED_MASK;
-    surface->flags |= GLITZ_FLAG_PAD_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_REPEAT_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_MIRRORED_MASK;
+    surface->flags |= GLITZ_SURFACE_FLAG_PAD_MASK;
     break;
   case GLITZ_FILL_REPEAT:
-    surface->flags |= GLITZ_FLAG_REPEAT_MASK;
-    surface->flags &= ~GLITZ_FLAG_MIRRORED_MASK;
-    surface->flags &= ~GLITZ_FLAG_PAD_MASK;
+    surface->flags |= GLITZ_SURFACE_FLAG_REPEAT_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_MIRRORED_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_PAD_MASK;
     break;
   case GLITZ_FILL_REFLECT:
-    surface->flags |= GLITZ_FLAG_REPEAT_MASK;
-    surface->flags |= GLITZ_FLAG_MIRRORED_MASK;
-    surface->flags &= ~GLITZ_FLAG_PAD_MASK;
+    surface->flags |= GLITZ_SURFACE_FLAG_REPEAT_MASK;
+    surface->flags |= GLITZ_SURFACE_FLAG_MIRRORED_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_PAD_MASK;
     break;
   }
 
@@ -375,9 +390,9 @@ glitz_surface_set_component_alpha (glitz_surface_t *surface,
                                    glitz_bool_t component_alpha)
 {
   if (component_alpha && surface->format->red_size)
-    surface->flags |= GLITZ_FLAG_COMPONENT_ALPHA_MASK;
+    surface->flags |= GLITZ_SURFACE_FLAG_COMPONENT_ALPHA_MASK;
   else
-    surface->flags &= ~GLITZ_FLAG_COMPONENT_ALPHA_MASK;
+    surface->flags &= ~GLITZ_SURFACE_FLAG_COMPONENT_ALPHA_MASK;
 }
 slim_hidden_def(glitz_surface_set_component_alpha);
 
@@ -395,30 +410,30 @@ glitz_surface_set_filter (glitz_surface_t *surface,
   } else {
     switch (filter) {
     case GLITZ_FILTER_NEAREST:
-      surface->flags &= ~GLITZ_FLAG_FRAGMENT_FILTER_MASK;
-      surface->flags &= ~GLITZ_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
-      surface->flags &= ~GLITZ_FLAG_IGNORE_REPEAT_MASK;
-      surface->flags |= GLITZ_FLAG_TEXTURE_COORDS_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
       break;
     case GLITZ_FILTER_BILINEAR:
-      surface->flags &= ~GLITZ_FLAG_FRAGMENT_FILTER_MASK;
-      surface->flags |= GLITZ_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
-      surface->flags &= ~GLITZ_FLAG_IGNORE_REPEAT_MASK;
-      surface->flags |= GLITZ_FLAG_TEXTURE_COORDS_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
       break;
     case GLITZ_FILTER_CONVOLUTION:
     case GLITZ_FILTER_GAUSSIAN:
-      surface->flags |= GLITZ_FLAG_FRAGMENT_FILTER_MASK;
-      surface->flags |= GLITZ_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
-      surface->flags &= ~GLITZ_FLAG_IGNORE_REPEAT_MASK;
-      surface->flags |= GLITZ_FLAG_TEXTURE_COORDS_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
       break;
     case GLITZ_FILTER_LINEAR_GRADIENT:
     case GLITZ_FILTER_RADIAL_GRADIENT:
-      surface->flags |= GLITZ_FLAG_FRAGMENT_FILTER_MASK;
-      surface->flags &= ~GLITZ_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
-      surface->flags |= GLITZ_FLAG_IGNORE_REPEAT_MASK;
-      surface->flags &= ~GLITZ_FLAG_TEXTURE_COORDS_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
+      surface->flags |= GLITZ_SURFACE_FLAG_IGNORE_REPEAT_MASK;
+      surface->flags &= ~GLITZ_SURFACE_FLAG_TEXTURE_COORDS_MASK;
       break;
     }
     surface->filter = filter;
@@ -554,7 +569,8 @@ glitz_surface_dirty (glitz_surface_t *surface,
                                 &surface->dirty_box);
   }
   
-  surface->flags |= (GLITZ_FLAG_DIRTY_MASK | GLITZ_FLAG_SOLID_DIRTY_MASK);
+  surface->flags |=
+    (GLITZ_SURFACE_FLAG_DIRTY_MASK | GLITZ_SURFACE_FLAG_SOLID_DIRTY_MASK);
 }
 
 void

@@ -79,7 +79,6 @@ typedef struct _glitz_agl_thread_info_t {
 
   unsigned long feature_mask;
   unsigned long agl_feature_mask;
-  unsigned long texture_mask;
 
   glitz_program_map_t program_map;
 } glitz_agl_thread_info_t;

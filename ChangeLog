@@ -1,3 +1,69 @@
+2004-09-07  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: Added texture flags.
+	Removed texture_mask.
+	GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
+	texcoord_height and texcoord_width replaced by texture.box.
+
+	* src/glitz_texture.c: Make sure fill transparent works even though
+	GL_ARB_texture_border_clamp is missing.
+	texture_mask goes away.
+	Added texture flags.
+	texcoord_height and texcoord_width replaced by texture.box.
+
+	* src/glitz_surface.c: GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
+	texture_mask goes away.
+	Added texture flags.
+	texcoord_height and texcoord_width replaced by texture.box.
+	Added GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK, which mean no
+	transform or translate only transform.
+
+	* src/glitz_rect.c (glitz_set_rectangles): 
+	GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
+
+	* src/glitz_pixel.c (glitz_set_pixels): texture->box
+	specifies the texture origin in the texture map.
+	(glitz_set_pixels): no need to pass surface height
+	to glitz_texture_set_tex_gen anymore.
+	(glitz_set_pixels): GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
+
+	* src/glitz_glxint.h: texture_mask goes away.
+
+	* src/glitz_glx_surface.c: Added texture flags.
+	GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
+
+	* src/glitz_glx_info.c: texture_mask goes away. 
+
+	* src/glitz_glx_extension.c (glitz_glx_query_extensions): 
+	texture_mask goes away.
+
+	* src/glitz_geometry.c (glitz_set_geometry): GLITZ_FLAG ->
+	GLITZ_SURFACE_FLAGS.
+
+	* src/glitz_filter.c (glitz_filter_set_params): Don't calculate
+	texture unit sizes here, they have already been calculated in
+	the texture object.
+	texcoord_height and texcoord_width replaced by texture.box.
+
+	* src/glitz_compose.c: Added texture flags.
+	Fill type transparent supported even though
+	GL_ARB_texture_border_clamp is missing.
+
+	* src/glitz_aglint.h: texture_mask goes away.
+
+	* src/glitz_agl_surface.c: Added texture flags.
+	GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
+
+	* src/glitz_agl_extension.c (glitz_agl_query_extensions): 
+	texture_mask goes away.
+
+	* src/glitz.c (glitz_composite): no need to pass surface height
+	to glitz_texture_set_tex_gen anymore.
+
+2004-09-04  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_buffer.c (glitz_buffer_unmap): Obviously wrong.
+
 2004-09-03  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitzint.h: Switched to geometry buffers.

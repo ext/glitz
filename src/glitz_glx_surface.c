@@ -121,7 +121,7 @@ _glitz_glx_surface_get_texture (void *abstract_surface,
 {
   glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
   
-  if (surface->base.flags & GLITZ_FLAG_DIRTY_MASK) {
+  if (surface->base.flags & GLITZ_SURFACE_FLAG_DIRTY_MASK) {
     glitz_bounding_box_t copy_box;
 
     copy_box.x1 = copy_box.y1 = 0;
@@ -130,7 +130,7 @@ _glitz_glx_surface_get_texture (void *abstract_surface,
     glitz_intersect_bounding_box (&surface->base.dirty_box,
                                   &copy_box, &copy_box);
 
-    if (!surface->base.texture.allocated)
+    if (!(TEXTURE_ALLOCATED (&surface->base.texture)))
       glitz_texture_allocate (&surface->base.backend->gl,
                               &surface->base.texture);  
       
@@ -142,16 +142,16 @@ _glitz_glx_surface_get_texture (void *abstract_surface,
                                 copy_box.x1,
                                 copy_box.y1);
     
-    surface->base.flags &= ~GLITZ_FLAG_DIRTY_MASK;
+    surface->base.flags &= ~GLITZ_SURFACE_FLAG_DIRTY_MASK;
   }
 
   if (allocate) {
-    if (!surface->base.texture.allocated)
+    if (!(TEXTURE_ALLOCATED (&surface->base.texture)))
       glitz_texture_allocate (&surface->base.backend->gl,
                               &surface->base.texture);
   }
   
-  if (surface->base.texture.allocated)
+  if (TEXTURE_ALLOCATED (&surface->base.texture))
     return &surface->base.texture;
   else
     return NULL;
@@ -178,16 +178,15 @@ _glitz_glx_surface_create (glitz_glx_screen_info_t *screen_info,
                       &context->backend,
                       format,
                       width,
-                      height,
-                      screen_info->texture_mask);
+                      height);
   
   surface->screen_info = screen_info;
   surface->context = context;
   
-  surface->base.flags |= GLITZ_FLAG_OFFSCREEN_MASK;
+  surface->base.flags |= GLITZ_SURFACE_FLAG_OFFSCREEN_MASK;
 
   if (format->draw.offscreen)
-    surface->base.flags |= GLITZ_FLAG_DRAWABLE_MASK;
+    surface->base.flags |= GLITZ_SURFACE_FLAG_DRAWABLE_MASK;
 
   if (surface->context->backend.gl.need_lookup) {
     glitz_glx_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
@@ -206,8 +205,7 @@ glitz_glx_surface_create (Display *display,
 {
 
   return
-    _glitz_glx_surface_create (glitz_glx_screen_info_get
-                               (display, screen),
+    _glitz_glx_surface_create (glitz_glx_screen_info_get (display, screen),
                                format, width, height);
 }
 slim_hidden_def(glitz_glx_surface_create);
@@ -239,14 +237,13 @@ glitz_glx_surface_create_for_window (Display *display,
                       &context->backend,
                       format,
                       width,
-                      height,
-                      screen_info->texture_mask);
+                      height);
   
   surface->screen_info = screen_info;
   surface->context = context;
   surface->drawable = window;
 
-  surface->base.flags |= GLITZ_FLAG_DRAWABLE_MASK;
+  surface->base.flags |= GLITZ_SURFACE_FLAG_DRAWABLE_MASK;
 
   if (surface->context->backend.gl.need_lookup) {
     glitz_glx_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);

@@ -95,16 +95,12 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
   }
 
   if (thread_info->agl_feature_mask &
-      GLITZ_AGL_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK) {
-    thread_info->texture_mask |= GLITZ_TEXTURE_TARGET_NON_POWER_OF_TWO_MASK;
+      GLITZ_AGL_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK)
     thread_info->feature_mask |= GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK;
-  } 
 
   if (thread_info->agl_feature_mask &
-      GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK) {
-    thread_info->texture_mask |= GLITZ_TEXTURE_TARGET_RECTANGLE_MASK;
+      GLITZ_AGL_FEATURE_TEXTURE_RECTANGLE_MASK)
     thread_info->feature_mask |= GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK;
-  }
 
   if (thread_info->agl_feature_mask &
       GLITZ_AGL_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK)

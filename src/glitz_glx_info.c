@@ -454,7 +454,6 @@ glitz_glx_screen_info_get (Display *display,
 
   screen_info->glx_feature_mask = 0;
   screen_info->feature_mask = 0;
-  screen_info->texture_mask = GLITZ_TEXTURE_TARGET_2D_MASK;
 
   if (screen_info->root_context.context &&
       glXMakeCurrent (screen_info->display_info->display,

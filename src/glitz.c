@@ -180,7 +180,6 @@ glitz_composite (glitz_operator_t op,
                                mtexture,
                                rect.x1 - x_mask,
                                rect.y1 - y_mask,
-                               mask->height,
                                mask->flags);
     
     if (mask->transform) {
@@ -226,7 +225,6 @@ glitz_composite (glitz_operator_t op,
                                stexture,
                                rect.x1 - y_src,
                                rect.y1 - x_src,
-                               src->height,
                                src->flags);
 
     if (src->transform) {
@@ -469,7 +467,7 @@ glitz_copy_area (glitz_surface_t *src,
       if (texture) {
         glitz_texture_bind (gl, texture);
 
-        glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, height, ~0); 
+        glitz_texture_set_tex_gen (gl, texture, x_dst, y_dst, ~0); 
 
         gl->tex_env_f (GLITZ_GL_TEXTURE_ENV, GLITZ_GL_TEXTURE_ENV_MODE,
                        GLITZ_GL_REPLACE);

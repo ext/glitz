@@ -114,7 +114,6 @@ struct _glitz_glx_screen_info_t {
 
   unsigned long feature_mask;
   unsigned long glx_feature_mask;
-  unsigned long texture_mask;
 
   glitz_program_map_t program_map;
 };

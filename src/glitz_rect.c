@@ -78,7 +78,7 @@ glitz_set_rectangles (glitz_surface_t *dst,
     STORE_16 (dst->solid.blue, dst->format->blue_size, color->blue);
     STORE_16 (dst->solid.alpha, dst->format->alpha_size, color->alpha);
     
-    dst->flags |= GLITZ_FLAG_DRAWABLE_DIRTY_MASK;
+    dst->flags |= GLITZ_SURFACE_FLAG_DRAWABLE_DIRTY_MASK;
     return;
   }
   

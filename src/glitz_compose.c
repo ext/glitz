@@ -410,21 +410,22 @@ _glitz_combine_map[GLITZ_SURFACE_TYPES][GLITZ_SURFACE_TYPES] = {
 
 #define SURFACE_WRAP(surface, feature_mask) \
   (SURFACE_REPEAT (surface)? \
-   ((surface)->texture.repeatable && \
+   (TEXTURE_REPEATABLE (&(surface)->texture) && \
     ( \
      (!SURFACE_MIRRORED (surface)) || \
      ((feature_mask) & GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK) \
      ) \
     ) \
    : \
-   (SURFACE_PAD (surface)? \
-    ((surface)->texture.repeatable || \
-     (surface)->texture.target != GLITZ_GL_TEXTURE_2D) \
+   ((SURFACE_PAD (surface))? \
+    (TEXTURE_PADABLE (&(surface)->texture)) \
     : \
-    ((feature_mask) & GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK) \
+    (SURFACE_SIMPLE_TRANSFORM (surface) || \
+     ((feature_mask) & GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK) \
     ) \
-   )
-
+   ) \
+  )
+     
 static glitz_surface_type_t
 _glitz_get_surface_type (glitz_surface_t *surface,
                          unsigned long feature_mask)

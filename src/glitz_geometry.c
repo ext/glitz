@@ -158,16 +158,16 @@ glitz_set_geometry (glitz_surface_t *dst,
 
     if (dst->format->multisample.samples > 1) {
       if (format->edge_hint != GLITZ_GEOMETRY_EDGE_HINT_SHARP) {
-        dst->flags |= GLITZ_FLAG_MULTISAMPLE_MASK;
+        dst->flags |= GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK;
 
         if (format->edge_hint != GLITZ_GEOMETRY_EDGE_HINT_FAST_SMOOTH)
-          dst->flags |= GLITZ_FLAG_NICEST_MULTISAMPLE_MASK;
+          dst->flags |= GLITZ_SURFACE_FLAG_NICEST_MULTISAMPLE_MASK;
         else
-          dst->flags &= ~GLITZ_FLAG_NICEST_MULTISAMPLE_MASK;
+          dst->flags &= ~GLITZ_SURFACE_FLAG_NICEST_MULTISAMPLE_MASK;
         
         dst->update_mask |= GLITZ_UPDATE_MULTISAMPLE_MASK;
       } else {
-        dst->flags &= ~GLITZ_FLAG_MULTISAMPLE_MASK;
+        dst->flags &= ~GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK;
         dst->update_mask |= GLITZ_UPDATE_MULTISAMPLE_MASK;
       }
     } else {
@@ -201,7 +201,7 @@ glitz_set_geometry (glitz_surface_t *dst,
     }
   } else {
     if (dst->format->multisample.samples > 1) {
-      dst->flags &= ~GLITZ_FLAG_MULTISAMPLE_MASK;
+      dst->flags &= ~GLITZ_SURFACE_FLAG_MULTISAMPLE_MASK;
       dst->update_mask |= GLITZ_UPDATE_MULTISAMPLE_MASK;
     } else
       dst->indirect = NULL;

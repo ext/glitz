@@ -268,7 +268,8 @@ glitz_buffer_unmap (glitz_buffer_t *buffer)
   if (buffer->surface) {
     glitz_surface_push_current (buffer->surface, GLITZ_CN_ANY_CONTEXT_CURRENT);
     
-    if (buffer->surface->backend->gl.unmap_buffer (buffer->target))
+    if (buffer->surface->backend->gl.unmap_buffer (buffer->target) ==
+        GLITZ_GL_FALSE)
       status = GLITZ_STATUS_CONTENT_DESTROYED;
       
     buffer->surface->backend->gl.bind_buffer (buffer->target, 0);
