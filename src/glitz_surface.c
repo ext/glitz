@@ -64,6 +64,7 @@ glitz_surface_init (glitz_surface_t *surface,
   surface->gl = gl;
   surface->stencil_mask = surface->stencil_masks;
   surface->update_mask = GLITZ_UPDATE_ALL_MASK;
+  surface->hint_mask |= GLITZ_INT_HINT_CLIP_MASK;
 
   if (format->doublebuffer)
     surface->draw_buffer = surface->read_buffer = GLITZ_GL_BACK;
@@ -96,7 +97,7 @@ glitz_surface_fini (glitz_surface_t *surface)
     free (surface->transform);
 
   if (surface->filter_params)
-    free (surface->filter_params);
+    glitz_filter_params_destroy (surface->filter_params);
 }
 
 glitz_format_t *
@@ -134,7 +135,6 @@ glitz_surface_create_similar (glitz_surface_t *templ,
   if (surface) {
     surface->polyedge = templ->polyedge;
     surface->polyedge_smooth_hint = templ->polyedge_smooth_hint;
-    surface->polyopacity = templ->polyopacity;
   }
   
   return surface;
@@ -286,18 +286,25 @@ glitz_surface_set_transform (glitz_surface_t *surface,
     surface->transform->m[14] = 0.0;
     surface->transform->m[15] = FIXED_TO_DOUBLE (transform->matrix[2][2]);
 
-    /* FIXME: projective transformation matrix conversion to normalized
-       texture coordinates is incorrect. */
+    /* XXX: Projective transformation matrix conversion to normalized
+       texture coordinates seems to be working fine. However, it would be
+       good if someone could verify that this is actually a correct way for
+       doing this. */
     memcpy (surface->transform->m_norm, surface->transform->m,
             16 * sizeof (double));
+    
     surface->transform->m_norm[12] =
       (surface->texture.texcoord_width / surface->width) *
       surface->transform->m[12];
     surface->transform->m_norm[13] =
       (surface->texture.texcoord_height / surface->height) *
       surface->transform->m[13];
-
-    surface->transform->inverted = 0;
+    
+    surface->transform->m_norm[3] /=
+      (surface->texture.texcoord_width / surface->width);
+    surface->transform->m_norm[7] /=
+      (surface->texture.texcoord_height / surface->height);
+    
   } else {
     if (surface->transform)
       free (surface->transform);
@@ -307,57 +314,44 @@ glitz_surface_set_transform (glitz_surface_t *surface,
 }
 slim_hidden_def(glitz_surface_set_transform);
 
-glitz_matrix_t *
-glitz_surface_get_affine_transform (glitz_surface_t *surface)
-{
-  if (surface->transform == NULL)
-    return NULL;
-    
-  if (surface->transform->inverted == 0) {
-    surface->transform->affine.m[0][0] = surface->transform->m[0];
-    surface->transform->affine.m[1][0] = surface->transform->m[4];
-    surface->transform->affine.m[2][0] = surface->transform->m[12];
-
-    surface->transform->affine.m[0][1] = surface->transform->m[1];
-    surface->transform->affine.m[1][1] = surface->transform->m[5];
-    surface->transform->affine.m[2][1] = surface->transform->m[13];
-  
-    if (glitz_matrix_invert (&surface->transform->affine)) {
-      glitz_surface_status_add (surface, GLITZ_STATUS_INVALID_MATRIX_MASK);
-      return NULL;
-    }
-    surface->transform->inverted = 1;
-  }
-  
-  return &surface->transform->affine;
-}
-
 void
 glitz_surface_set_fill (glitz_surface_t *surface,
                         glitz_fill_t fill)
 {
   switch (fill) {
+  case GLITZ_FILL_CLIP:
+    surface->hint_mask |= GLITZ_INT_HINT_CLIP_MASK;
+    surface->hint_mask &= ~GLITZ_INT_HINT_PAD_MASK;
+    surface->hint_mask &= ~GLITZ_INT_HINT_REPEAT_MASK;
+    surface->hint_mask &= ~GLITZ_INT_HINT_MIRRORED_MASK;
+    break;
   case GLITZ_FILL_TRANSPARENT:
     surface->hint_mask &= ~GLITZ_INT_HINT_REPEAT_MASK;
     surface->hint_mask &= ~GLITZ_INT_HINT_MIRRORED_MASK;
     surface->hint_mask &= ~GLITZ_INT_HINT_PAD_MASK;
+    surface->hint_mask &= ~GLITZ_INT_HINT_CLIP_MASK;
     break;
   case GLITZ_FILL_NEAREST:
     surface->hint_mask &= ~GLITZ_INT_HINT_REPEAT_MASK;
     surface->hint_mask &= ~GLITZ_INT_HINT_MIRRORED_MASK;
     surface->hint_mask |= GLITZ_INT_HINT_PAD_MASK;
+    surface->hint_mask &= ~GLITZ_INT_HINT_CLIP_MASK;
     break;
   case GLITZ_FILL_REPEAT:
     surface->hint_mask |= GLITZ_INT_HINT_REPEAT_MASK;
     surface->hint_mask &= ~GLITZ_INT_HINT_MIRRORED_MASK;
     surface->hint_mask &= ~GLITZ_INT_HINT_PAD_MASK;
+    surface->hint_mask &= ~GLITZ_INT_HINT_CLIP_MASK;
     break;
   case GLITZ_FILL_REFLECT:
     surface->hint_mask |= GLITZ_INT_HINT_REPEAT_MASK;
     surface->hint_mask |= GLITZ_INT_HINT_MIRRORED_MASK;
     surface->hint_mask &= ~GLITZ_INT_HINT_PAD_MASK;
+    surface->hint_mask &= ~GLITZ_INT_HINT_CLIP_MASK;
     break;
   }
+
+  glitz_filter_set_type (surface, surface->filter);
 }
 slim_hidden_def(glitz_surface_set_fill);
 
@@ -374,17 +368,6 @@ glitz_surface_set_component_alpha (glitz_surface_t *surface,
 slim_hidden_def(glitz_surface_set_component_alpha);
 
 void
-glitz_surface_set_correctness_hint (glitz_surface_t *surface,
-                                    glitz_correctness_hint_t hint)
-{
-  if (hint == GLITZ_CORRECTNESS_HINT_QUALITY)
-    surface->hint_mask |= GLITZ_INT_HINT_QUALITY_CORRECTNESS_MASK;
-  else
-    surface->hint_mask &= ~GLITZ_INT_HINT_QUALITY_CORRECTNESS_MASK;
-}
-slim_hidden_def(glitz_surface_set_correctness_hint);
-
-void
 glitz_surface_set_filter (glitz_surface_t *surface,
                           glitz_filter_t filter,
                           glitz_fixed16_16_t *params,
@@ -392,36 +375,36 @@ glitz_surface_set_filter (glitz_surface_t *surface,
 {
   glitz_status_t status;
   
-  status = glitz_filter_set_params (&surface->filter_params, filter,
-                                    params, n_params);
+  status = glitz_filter_set_params (surface, filter, params, n_params);
   if (status) {
     glitz_surface_status_add (surface, glitz_status_to_status_mask (status));
   } else {
     switch (filter) {
     case GLITZ_FILTER_NEAREST:
       surface->hint_mask &= ~GLITZ_INT_HINT_FRAGMENT_FILTER_MASK;
-      surface->hint_mask &= ~GLITZ_INT_HINT_LINEAR_TRANSFORM_MASK;
-      surface->hint_mask &= ~GLITZ_INT_HINT_LINEAR_NON_TRANSFORM_MASK;
+      surface->hint_mask &= ~GLITZ_INT_HINT_LINEAR_TRANSFORM_FILTER_MASK;
       surface->hint_mask &= ~GLITZ_INT_HINT_WINDOW_SPACE_TEXCOORDS_MASK;
+      surface->hint_mask &= ~GLITZ_INT_HINT_IGNORE_REPEAT_MASK;
       break;
     case GLITZ_FILTER_BILINEAR:
       surface->hint_mask &= ~GLITZ_INT_HINT_FRAGMENT_FILTER_MASK;
-      surface->hint_mask |= GLITZ_INT_HINT_LINEAR_TRANSFORM_MASK;
-      surface->hint_mask &= ~GLITZ_INT_HINT_LINEAR_NON_TRANSFORM_MASK;
+      surface->hint_mask |= GLITZ_INT_HINT_LINEAR_TRANSFORM_FILTER_MASK;
       surface->hint_mask &= ~GLITZ_INT_HINT_WINDOW_SPACE_TEXCOORDS_MASK;
+      surface->hint_mask &= ~GLITZ_INT_HINT_IGNORE_REPEAT_MASK;
       break;
     case GLITZ_FILTER_CONVOLUTION:
+    case GLITZ_FILTER_GAUSSIAN:
       surface->hint_mask |= GLITZ_INT_HINT_FRAGMENT_FILTER_MASK;
-      surface->hint_mask |= GLITZ_INT_HINT_LINEAR_TRANSFORM_MASK;
-      surface->hint_mask &= ~GLITZ_INT_HINT_LINEAR_NON_TRANSFORM_MASK;
+      surface->hint_mask |= GLITZ_INT_HINT_LINEAR_TRANSFORM_FILTER_MASK;
       surface->hint_mask &= ~GLITZ_INT_HINT_WINDOW_SPACE_TEXCOORDS_MASK;
+      surface->hint_mask &= ~GLITZ_INT_HINT_IGNORE_REPEAT_MASK;
       break;
     case GLITZ_FILTER_LINEAR_GRADIENT:
     case GLITZ_FILTER_RADIAL_GRADIENT:
       surface->hint_mask |= GLITZ_INT_HINT_FRAGMENT_FILTER_MASK;
-      surface->hint_mask |= GLITZ_INT_HINT_LINEAR_TRANSFORM_MASK;
-      surface->hint_mask |= GLITZ_INT_HINT_LINEAR_NON_TRANSFORM_MASK;
+      surface->hint_mask &= ~GLITZ_INT_HINT_LINEAR_TRANSFORM_FILTER_MASK;
       surface->hint_mask |= GLITZ_INT_HINT_WINDOW_SPACE_TEXCOORDS_MASK;
+      surface->hint_mask |= GLITZ_INT_HINT_IGNORE_REPEAT_MASK;
       break;
     }
     surface->filter = filter;
@@ -436,14 +419,6 @@ glitz_surface_set_polyedge (glitz_surface_t *surface,
   surface->polyedge = polyedge;
 }
 slim_hidden_def(glitz_surface_set_polyedge);
-
-void
-glitz_surface_set_polyopacity (glitz_surface_t *surface,
-                               unsigned short polyopacity)
-{
-  surface->polyopacity = polyopacity;
-}
-slim_hidden_def(glitz_surface_set_polyopacity);
 
 int
 glitz_surface_get_width (glitz_surface_t *surface)
@@ -628,6 +603,12 @@ glitz_surface_update_state (glitz_surface_t *surface)
     
     surface->update_mask &= ~GLITZ_UPDATE_VIEWPORT_MASK;
   }
+
+  if (surface->update_mask & GLITZ_UPDATE_SCISSOR_MASK) {
+    gl->disable (GLITZ_GL_SCISSOR_TEST);
+    
+    surface->update_mask &= ~GLITZ_UPDATE_SCISSOR_MASK;
+  }
   
   if (surface->update_mask & GLITZ_UPDATE_SCISSOR_MASK) {
     gl->disable (GLITZ_GL_SCISSOR_TEST);
@@ -790,7 +771,7 @@ glitz_surface_get_gl_texture (glitz_surface_t *surface,
 
   glitz_texture_bind (surface->gl, texture);
 
-  if (SURFACE_LINEAR_TRANSFORM (surface))
+  if (SURFACE_LINEAR_TRANSFORM_FILTER (surface))
     glitz_texture_ensure_filter (surface->gl, texture, GLITZ_GL_LINEAR);
   else
     glitz_texture_ensure_filter (surface->gl, texture, GLITZ_GL_NEAREST);
@@ -845,12 +826,17 @@ slim_hidden_def(glitz_surface_get_features);
 void
 glitz_surface_clip_rectangles (glitz_surface_t *surface,
                                glitz_clip_operator_t op,
+                               int x_offset,
+                               int y_offset,
                                const glitz_rectangle_t *rects,
                                int n_rects)
 {
   if ((op == GLITZ_CLIP_OPERATOR_SET ||op == GLITZ_CLIP_OPERATOR_UNION) &&
-      n_rects == 1 && rects->x <= 0 && rects->y <= 0 &&
-      rects->width >= surface->width && rects->height >= surface->height) {
+      n_rects == 1 &&
+      (rects->x + x_offset) <= 0 &&
+      (rects->y + y_offset) <= 0 &&
+      (rects->width + x_offset) >= surface->width &&
+      (rects->height + y_offset) >= surface->height) {
     *surface->stencil_mask = 0x0;
     surface->update_mask |= GLITZ_UPDATE_STENCIL_OP_MASK;
     return;
@@ -861,12 +847,15 @@ glitz_surface_clip_rectangles (glitz_surface_t *surface,
     rect.width = surface->width;
     rect.height = surface->height;
     
-    glitz_stencil_rectangles (surface,
-                              GLITZ_STENCIL_OPERATOR_CLEAR,
+    glitz_stencil_rectangles (GLITZ_STENCIL_OPERATOR_CLEAR,
+                              surface,
+                              0, 0,
                               &rect, 1);
   }
   
-  glitz_stencil_rectangles (surface, (glitz_stencil_operator_t) op,
+  glitz_stencil_rectangles ((glitz_stencil_operator_t) op,
+                            surface,
+                            x_offset, y_offset,
                             rects, n_rects);
 }
 slim_hidden_def(glitz_surface_clip_rectangles);
@@ -874,6 +863,8 @@ slim_hidden_def(glitz_surface_clip_rectangles);
 void
 glitz_surface_clip_trapezoids (glitz_surface_t *surface,
                                glitz_clip_operator_t op,
+                               int x_offset,
+                               int y_offset,
                                const glitz_trapezoid_t *traps,
                                int n_traps)
 {
@@ -884,12 +875,13 @@ glitz_surface_clip_trapezoids (glitz_surface_t *surface,
     rect.width = surface->width;
     rect.height = surface->height;
     
-    glitz_stencil_rectangles (surface,
-                              GLITZ_STENCIL_OPERATOR_CLEAR,
-                              &rect, 1);
+    glitz_stencil_rectangles (GLITZ_STENCIL_OPERATOR_CLEAR,
+                              surface, 0, 0, &rect, 1);
   }
   
-  glitz_stencil_trapezoids (surface, (glitz_stencil_operator_t) op,
+  glitz_stencil_trapezoids ((glitz_stencil_operator_t) op,
+                            surface,
+                            x_offset, y_offset,
                             traps, n_traps);
 }
 slim_hidden_def(glitz_surface_clip_trapezoids);
@@ -897,6 +889,8 @@ slim_hidden_def(glitz_surface_clip_trapezoids);
 void
 glitz_surface_clip_triangles (glitz_surface_t *surface,
                               glitz_clip_operator_t op,
+                              int x_offset,
+                              int y_offset,
                               const glitz_triangle_t *tris,
                               int n_tris)
 {
@@ -907,12 +901,13 @@ glitz_surface_clip_triangles (glitz_surface_t *surface,
     rect.width = surface->width;
     rect.height = surface->height;
     
-    glitz_stencil_rectangles (surface,
-                              GLITZ_STENCIL_OPERATOR_CLEAR,
-                              &rect, 1);
+    glitz_stencil_rectangles (GLITZ_STENCIL_OPERATOR_CLEAR,
+                              surface, 0, 0, &rect, 1);
   }
   
-  glitz_stencil_triangles (surface, (glitz_stencil_operator_t) op,
+  glitz_stencil_triangles ((glitz_stencil_operator_t) op,
+                           surface,
+                           x_offset, y_offset,
                            GLITZ_TRIANGLE_TYPE_NORMAL,
                            (glitz_point_fixed_t *) tris, n_tris * 3);
 }

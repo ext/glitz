@@ -406,67 +406,63 @@ _glitz_combine_map[GLITZ_SURFACE_TYPES][GLITZ_SURFACE_TYPES] = {
     { GLITZ_COMBINE_TYPE_SOLID_SOLID,  _glitz_combine_solid_solid,  0, 0 },
     { GLITZ_COMBINE_TYPE_ARGBF_SOLIDC, _glitz_combine_solid_solidc, 1, 0 }
   }
-};  
+};
+
+#define SURFACE_WRAP(surface, feature_mask) \
+  (SURFACE_REPEAT (surface)? \
+   ((surface)->texture.repeatable && \
+    ( \
+     (!SURFACE_MIRRORED (surface)) || \
+     ((feature_mask) & GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK) \
+     ) \
+    ) \
+   : \
+   (SURFACE_CLIP (surface) || \
+    (SURFACE_PAD (surface)? \
+     ((surface)->texture.repeatable || \
+      (surface)->texture.target != GLITZ_GL_TEXTURE_2D) \
+     : \
+     ((feature_mask) & GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK) \
+     ) \
+    ) \
+   )
 
 static glitz_surface_type_t
-_glitz_get_surface_type (glitz_surface_t *surface)
+_glitz_get_surface_type (glitz_surface_t *surface,
+                         unsigned long feature_mask)
 {
   if (surface == NULL)
     return GLITZ_SURFACE_TYPE_NULL;
 
-  if (SURFACE_SOLID (surface) && SURFACE_REPEAT (surface)) {
+  if (SURFACE_SOLID (surface) &&
+      (SURFACE_REPEAT (surface) || SURFACE_PAD (surface))) {
     if (SURFACE_COMPONENT_ALPHA (surface))
       return GLITZ_SURFACE_TYPE_SOLIDC;
     else
       return GLITZ_SURFACE_TYPE_SOLID;
   }
 
-  if (SURFACE_FRAGMENT_FILTER (surface)) {
-    if (SURFACE_COMPONENT_ALPHA (surface))
-      return GLITZ_SURFACE_TYPE_NA;
-    
-    if (surface->filter == GLITZ_FILTER_CONVOLUTION) {
-      if (surface->feature_mask & GLITZ_FEATURE_CONVOLUTION_FILTER_MASK)
+  if (SURFACE_WRAP (surface, feature_mask)) {
+    if (SURFACE_FRAGMENT_FILTER (surface)) {
+      if (SURFACE_COMPONENT_ALPHA (surface))
+        return GLITZ_SURFACE_TYPE_NA;
+
+      if (feature_mask & GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK)
         return GLITZ_SURFACE_TYPE_ARGBF;
-      
-    } else if (surface->feature_mask & GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK)
-      return GLITZ_SURFACE_TYPE_ARGBF;
     
-  } else if (SURFACE_COMPONENT_ALPHA (surface)) {
-    if (surface->feature_mask & GLITZ_FEATURE_COMPONENT_ALPHA_MASK)
-      return GLITZ_SURFACE_TYPE_ARGBC;
-  } else
-    return GLITZ_SURFACE_TYPE_ARGB;
-  
+    } else if (SURFACE_COMPONENT_ALPHA (surface)) {
+      if (feature_mask & GLITZ_FEATURE_COMPONENT_ALPHA_MASK)
+        return GLITZ_SURFACE_TYPE_ARGBC;
+    } else
+      return GLITZ_SURFACE_TYPE_ARGB;
+  }
+    
   return GLITZ_SURFACE_TYPE_NA;
 }
 
 static glitz_color_t _default_alpha_mask = {
   0xffff, 0xffff, 0xffff, 0xffff
 };
-
-#define SURFACE_HW_WRAP(surface) \
-  (SURFACE_REPEAT (surface)? \
-   ((surface)->texture.repeatable && \
-    ( \
-     (!SURFACE_MIRRORED (surface)) || \
-     ((surface)->feature_mask & GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK) \
-     ) \
-    ) \
-   : \
-   (SURFACE_PAD (surface)? \
-    ((surface)->texture.repeatable || \
-     (surface)->texture.target != GLITZ_GL_TEXTURE_2D) \
-    : \
-    ((surface)->feature_mask & GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK) \
-    ) \
-   )
-
-#define SURFACE_PROJECTIVE_TRANSFORM(surface) \
-  ((surface)->transform && \
-   (((surface)->transform->m[3] != 0.0) || \
-    ((surface)->transform->m[7] != 0.0) || \
-    ((surface)->transform->m[15] != 1.0)))
 
 void
 glitz_composite_op_init (glitz_composite_op_t *op,
@@ -487,15 +483,14 @@ glitz_composite_op_init (glitz_composite_op_t *op,
   op->dst = dst;
   op->count = 0;
   op->solid = NULL;
-  op->hw_wrap = 1;
   op->component_alpha = GLITZ_COMPONENT_ALPHA_NONE;
   op->vp = op->fp = 0;
   
-  src_type = _glitz_get_surface_type (src);
+  src_type = _glitz_get_surface_type (src, dst->feature_mask);
   if (src_type < 1)
     return;
 
-  mask_type = _glitz_get_surface_type (mask);
+  mask_type = _glitz_get_surface_type (mask, dst->feature_mask);
   if (mask_type < 0)
     return;
 
@@ -511,15 +506,6 @@ glitz_composite_op_init (glitz_composite_op_t *op,
     glitz_surface_ensure_solid (src);
     op->solid = &src->solid;
     op->src = NULL;
-  } else if (!SURFACE_HW_WRAP (src)) {
-    if (SURFACE_QUALITY_CORRECTNESS (dst) ||
-        SURFACE_PAD (src) ||
-        SURFACE_MIRRORED (src) ||
-        SURFACE_PROJECTIVE_TRANSFORM (src) ||
-        combine->fragment_processing)
-      return;
-    
-    op->hw_wrap = 0;
   }
   
   if (mask_type == GLITZ_SURFACE_TYPE_SOLID ||
@@ -536,17 +522,6 @@ glitz_composite_op_init (glitz_composite_op_t *op,
         op->component_alpha = GLITZ_COMPONENT_ALPHA_RGB;
     }
   } else if (mask_type != GLITZ_SURFACE_TYPE_NULL) {
-    if (!SURFACE_HW_WRAP (mask)) {
-      if (SURFACE_QUALITY_CORRECTNESS (dst) ||
-          SURFACE_PAD (mask) ||
-          SURFACE_MIRRORED (mask) ||
-          SURFACE_PROJECTIVE_TRANSFORM (mask) ||
-          combine->fragment_processing)
-        return;
-      
-      op->hw_wrap = 0;
-    }
-
     if (dst->feature_mask & GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK) {
       if (mask_type == GLITZ_SURFACE_TYPE_ARGBC) {
         if (mask->format->alpha_size)
@@ -556,8 +531,7 @@ glitz_composite_op_init (glitz_composite_op_t *op,
       }
       
       if (op->src) {
-        if (op->hw_wrap &&
-            (dst->feature_mask & GLITZ_FEATURE_MULTITEXTURE_MASK)) {
+        if (dst->feature_mask & GLITZ_FEATURE_MULTITEXTURE_MASK) {
           op->combine = combine;
         } else if ((dst->feature_mask &
                     GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK) &&
@@ -576,38 +550,12 @@ glitz_composite_op_init (glitz_composite_op_t *op,
   if (op->combine == combine) {
     op->type = combine->type;
     if (combine->fragment_processing) {
-      op->vp = glitz_get_vertex_program (op, src->filter);
-      op->fp = glitz_get_fragment_program (op, src->filter);
+      op->vp = glitz_filter_get_vertex_program (src, op);
+      op->fp = glitz_filter_get_fragment_program (src, op);
       if (op->vp == 0 || op->fp == 0)
         op->type = GLITZ_COMBINE_TYPE_NA;
     }
   }
-}
-
-void
-glitz_composite_op_set_alpha_mask (glitz_composite_op_t *op,
-                                   unsigned short red,
-                                   unsigned short green,
-                                   unsigned short blue,
-                                   unsigned short alpha)
-{
-  op->alpha_mask.red = red;
-  op->alpha_mask.green = green;
-  op->alpha_mask.blue = blue;
-  op->alpha_mask.alpha = alpha;
-}
-
-void
-glitz_composite_op_get_alpha_mask (glitz_composite_op_t *op,
-                                   unsigned short *red,
-                                   unsigned short *green,
-                                   unsigned short *blue,
-                                   unsigned short *alpha)
-{
-  if (red) *red = op->alpha_mask.red;
-  if (green) *green = op->alpha_mask.green;
-  if (blue) *blue = op->alpha_mask.blue;
-  if (alpha) *alpha = op->alpha_mask.alpha;
 }
 
 void

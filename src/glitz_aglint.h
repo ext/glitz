@@ -61,7 +61,6 @@ typedef struct _glitz_agl_context_t {
   AGLContext context;
   AGLPixelFormat pixel_format;
   glitz_bool_t offscreen;
-  glitz_gl_uint_t texture_indirections;
 } glitz_agl_context_t;
 
 typedef struct _glitz_agl_thread_info_t {
@@ -126,12 +125,6 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info);
 
 extern AGLPbuffer __internal_linkage
 glitz_agl_pbuffer_create (glitz_texture_t *texture);
-
-extern void __internal_linkage
-glitz_agl_pbuffer_bind (AGLPbuffer pbuffer,
-                        AGLContext context,
-                        glitz_texture_t *texture,
-                        glitz_gl_enum_t buffer);
 
 extern void __internal_linkage
 glitz_agl_pbuffer_destroy (AGLPbuffer pbuffer);

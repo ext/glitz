@@ -45,24 +45,6 @@ glitz_agl_pbuffer_create (glitz_texture_t *texture)
 }
 
 void 
-glitz_agl_pbuffer_bind (AGLPbuffer pbuffer,
-                        AGLContext context,
-                        glitz_texture_t *texture,
-                        glitz_gl_enum_t buffer)
-{
-  if (!texture->allocated) {
-    _glitz_agl_gl_proc_address.gen_textures (1, &texture->name);
-    texture->allocated = 1;
-  }
-  
-  glitz_texture_bind (&_glitz_agl_gl_proc_address, texture);
-
-  aglTexImagePBuffer (context, pbuffer, buffer);
-  
-  glitz_texture_unbind (&_glitz_agl_gl_proc_address, texture);
-}
-
-void 
 glitz_agl_pbuffer_destroy (AGLPbuffer pbuffer)
 {
   aglDestroyPBuffer (pbuffer);

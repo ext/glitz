@@ -1,3 +1,98 @@
+2004-08-18  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitzint.h: New filter system should now be working.
+	Added x_offset, y_offset to all polygon rendering functions.
+
+	* src/glitz_util.c: Added glitz_clamp_value.
+
+	* src/glitz_tri.c: Added x_offset, y_offset.
+	Don't use display list for multi-sampling as it turned out slower than
+	without display lists.
+	Added new glitz_add_triangles function.
+
+	* src/glitz_trap.c: Switch to new trapezoid type.
+	Added x_offset, y_offset.
+	Don't use display list for multi-sampling as it turned out slower than
+	without display lists.
+	Added new glitz_add_trapezoids function.
+
+	* src/glitz_surface.c (glitz_surface_init): HINT_CLIP default.
+	(glitz_surface_set_transform): Fixed projective transformations.
+	Removed glitz_surface_get_affine_transform.
+	(glitz_surface_set_fill): Added GLITZ_FILL_CLIP.
+	Removed correctness hint.
+	(glitz_surface_set_filter): Updated filter system.
+	Removed polyopacity.
+	Added x_offset, y_offset to clipping functions.
+
+	* src/glitz_stencil.c: Added x_offset, y_offset.
+
+	* src/glitz_rect.c: Added x_offset, y_offset.
+
+	* src/glitz_program.c: Added new much improved fragment programs
+	and new system for creating them.
+
+	* src/glitz_pixel.c (glitz_put_pixels): Removed broken render texture
+	support.
+
+	* src/glitz_glx_surface.c: Don't use render texture.
+
+	* src/glitz_glx_info.c: Removed display list functions.
+
+	* src/glitz_glx_format.c (_glitz_glx_format_compare): We rather have
+	single buffered non-multisample formats first.
+
+	* src/glitz_glx_extension.c: Don't use render texture.
+
+	* src/glitz_glx_context.c: Don't use render texture.
+	Don't check max texture indirections here.
+
+	* src/glitz_gl.h: Added some fragment program tokens.
+	Removed display list function prototypes.
+
+	* src/glitz_filter.c: Added new convolution and new gradient filters.
+
+	* src/glitz_compose.c: Added fill type clip.
+	(_glitz_get_surface_type): Tracking changes to new filter system.
+
+	* src/glitz_aglint.h: Don't use render texture.
+
+	* src/glitz_agl_surface.c: Don't use render texture.
+
+	* src/glitz_agl_pbuffer.c: Don't use render texture. We need a better
+	interface for that. GL_EXT_render_target looks promising.
+
+	* src/glitz_agl_info.c: Removed display list functions.
+
+	* src/glitz_agl_format.c (_glitz_agl_format_compare): We rather have
+	non-multisample formats first.
+
+	* src/glitz_agl_extension.c (glitz_agl_query_extensions): Don't check
+	max texture indirections here.
+
+	* src/glitz.h: Switch to the new trapezoid type.
+	Added GLITZ_FILTER_GAUSSIAN.
+	Added fill type CLIP, which works the same way as X Render; no image 
+	transformation, then dst rectangle is clipped to surface size. image
+	transformation, fill type transparent is used.
+	Removed correctness hint as highest quality is now always used.
+	Removed polyopacity as it's now a parameter to the composite polygon
+	functions.
+	Added x_offset and y_offset to all polygon rendering functions.
+	Added glitz_add_trapezoids and glitz_add_triangles.
+
+	* src/glitz.c: Removed the manual repeat fall-back as it was too many
+	problems with it and it just made everything a mess.
+	GL_ARB_texture_border_clamp is now required for normal transformations.
+	Switch to not using display lists for multi-sampling as it seems to
+	be faster.
+
+	* src/Makefile.am (libglitz_la_SOURCES): Removed glitz_matrix.c.
+
+	* TODO: Added new convolution and gradient filter.
+	Fixed projective transformations.
+	Added some notes about gamma correction.
+
 2004-08-10  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.h: Added glitz_surface_finish.

@@ -135,3 +135,13 @@ glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
   gl->pop_matrix ();
   gl->pop_attrib ();
 }
+
+void
+glitz_clamp_value (double *value, double min, double max)
+{
+  if (*value < min)
+    *value = min;
+  else if (*value > max)
+    *value = max;
+}
+

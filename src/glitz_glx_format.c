@@ -50,20 +50,18 @@ _glitz_glx_format_compare (const void *elem1,
       score[i] += 10;
     if (format[i]->alpha_size)
       score[i] += 10;
-    if (format[i]->depth_size)
-      score[i] += 5;
     if (format[i]->stencil_size)
       score[i] += (10 + format[i]->stencil_size);
     if (format[i]->doublebuffer)
-      score[i] += 10;
+      score[i] -= 10;
     if (format[i]->draw.onscreen)
-      score[i] += 10;
+      score[i] += 5;
     if (format[i]->draw.offscreen)
-      score[i] += 10;
+      score[i] += 5;
     if (format[i]->draw.offscreen && format[i]->draw.onscreen)
       score[i] += 5;
     if (format[i]->multisample.supported) 
-      score[i] += (10 + format[i]->multisample.samples);
+      score[i] -= (10 - format[i]->multisample.samples);
   }
   
   return score[1] - score[0];

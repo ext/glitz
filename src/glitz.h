@@ -54,10 +54,6 @@ typedef struct _glitz_point_fixed_t {
   glitz_fixed16_16_t x, y;
 } glitz_point_fixed_t;
 
-typedef struct _glitz_line_fixed_t {
-  glitz_point_fixed_t p1, p2;
-} glitz_line_fixed_t;
-
 typedef struct _glitz_rectangle_t {
   short x, y;
   unsigned short width, height;
@@ -67,18 +63,17 @@ typedef struct _glitz_triangle_t {
   glitz_point_fixed_t p1, p2, p3;
 } glitz_triangle_t;
 
+typedef struct _glitz_span_fixed_t {
+  glitz_fixed16_16_t left, right, y;
+} glitz_span_fixed_t;
+  
 typedef struct _glitz_trapezoid_t {
-  glitz_fixed16_16_t top, bottom;
-  glitz_line_fixed_t left, right;
+  glitz_span_fixed_t top, bottom;
 } glitz_trapezoid_t;
 
 typedef struct _glitz_transform_t {
   glitz_fixed16_16_t matrix[3][3];
 } glitz_transform_t;
-
-typedef struct _glitz_convolution_t {
-  glitz_fixed16_16_t matrix[3][3];
-} glitz_convolution_t;
 
 typedef struct {
   unsigned short red;
@@ -110,6 +105,7 @@ typedef enum {
   GLITZ_FILTER_NEAREST,
   GLITZ_FILTER_BILINEAR,
   GLITZ_FILTER_CONVOLUTION,
+  GLITZ_FILTER_GAUSSIAN,
   GLITZ_FILTER_LINEAR_GRADIENT,
   GLITZ_FILTER_RADIAL_GRADIENT
 } glitz_filter_t;
@@ -137,21 +133,20 @@ typedef enum {
 } glitz_operator_t;
 
 #define GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK        (1L <<  0)
-#define GLITZ_FEATURE_CONVOLUTION_FILTER_MASK       (1L <<  1)
-#define GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK        (1L <<  2)
-#define GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK (1L <<  3)
-#define GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK  (1L <<  4)
-#define GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK     (1L <<  5)
-#define GLITZ_FEATURE_MULTISAMPLE_MASK              (1L <<  6)
-#define GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK    (1L <<  7)
-#define GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK  (1L <<  8)
-#define GLITZ_FEATURE_MULTITEXTURE_MASK             (1L <<  9)
-#define GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK      (1L << 10)
-#define GLITZ_FEATURE_TEXTURE_ENV_DOT3_MASK         (1L << 11)  
-#define GLITZ_FEATURE_VERTEX_PROGRAM_MASK           (1L << 12)
-#define GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 13)
-#define GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 14)
-#define GLITZ_FEATURE_COMPONENT_ALPHA_MASK          (1L << 15)
+#define GLITZ_FEATURE_TEXTURE_RECTANGLE_MASK        (1L <<  1)
+#define GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK (1L <<  2)
+#define GLITZ_FEATURE_TEXTURE_MIRRORED_REPEAT_MASK  (1L <<  3)
+#define GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK     (1L <<  4)
+#define GLITZ_FEATURE_MULTISAMPLE_MASK              (1L <<  5)
+#define GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK    (1L <<  6)
+#define GLITZ_FEATURE_MULTISAMPLE_FILTER_HINT_MASK  (1L <<  7)
+#define GLITZ_FEATURE_MULTITEXTURE_MASK             (1L <<  8)
+#define GLITZ_FEATURE_TEXTURE_ENV_COMBINE_MASK      (1L <<  9)
+#define GLITZ_FEATURE_TEXTURE_ENV_DOT3_MASK         (1L << 10)  
+#define GLITZ_FEATURE_VERTEX_PROGRAM_MASK           (1L << 11)
+#define GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 12)
+#define GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 13)
+#define GLITZ_FEATURE_COMPONENT_ALPHA_MASK          (1L << 14)
 
 typedef enum {
   GLITZ_STANDARD_ARGB32,
@@ -231,6 +226,7 @@ glitz_surface_set_transform (glitz_surface_t *surface,
                              glitz_transform_t *transform);
 
 typedef enum {
+  GLITZ_FILL_CLIP,
   GLITZ_FILL_TRANSPARENT,
   GLITZ_FILL_NEAREST,
   GLITZ_FILL_REPEAT,
@@ -245,15 +241,6 @@ void
 glitz_surface_set_component_alpha (glitz_surface_t *surface,
                                    glitz_bool_t component_alpha);
 
-typedef enum {
-  GLITZ_CORRECTNESS_HINT_CAPABILITY,
-  GLITZ_CORRECTNESS_HINT_QUALITY
-} glitz_correctness_hint_t;
-  
-void
-glitz_surface_set_correctness_hint (glitz_surface_t *surface,
-                                    glitz_correctness_hint_t hint);
-
 void
 glitz_surface_set_filter (glitz_surface_t *surface,
                           glitz_filter_t filter,
@@ -263,10 +250,6 @@ glitz_surface_set_filter (glitz_surface_t *surface,
 void
 glitz_surface_set_polyedge (glitz_surface_t *surface,
                             glitz_polyedge_t polyedge);
-
-void
-glitz_surface_set_polyopacity (glitz_surface_t *surface,
-                               unsigned short polyopacity);
 
 typedef enum {
   GLITZ_POLYEDGE_SMOOTH_HINT_FAST,
@@ -287,18 +270,24 @@ typedef enum {
 void
 glitz_surface_clip_rectangles (glitz_surface_t *surface,
                                glitz_clip_operator_t op,
+                               int x_offset,
+                               int y_offset,
                                const glitz_rectangle_t *rects,
                                int n_rects);
   
 void
 glitz_surface_clip_trapezoids (glitz_surface_t *surface,
                                glitz_clip_operator_t op,
+                               int x_offset,
+                               int y_offset,
                                const glitz_trapezoid_t *traps,
                                int n_traps);
 
 void
 glitz_surface_clip_triangles (glitz_surface_t *surface,
                               glitz_clip_operator_t op,
+                              int x_offset,
+                              int y_offset,
                               const glitz_triangle_t *tris,
                               int n_tris);
   
@@ -482,6 +471,8 @@ glitz_fill_rectangle (glitz_operator_t op,
 void
 glitz_fill_rectangles (glitz_operator_t op,
                        glitz_surface_t *dst,
+                       int x_offset,
+                       int y_offset,
                        const glitz_color_t *color,
                        const glitz_rectangle_t *rects,
                        int n_rects);
@@ -492,9 +483,18 @@ glitz_fill_rectangles (glitz_operator_t op,
 void
 glitz_fill_trapezoids (glitz_operator_t op,
                        glitz_surface_t *dst,
+                       int x_offset,
+                       int y_offset,
                        const glitz_color_t *color,
                        const glitz_trapezoid_t *traps,
                        int n_traps);
+
+void
+glitz_add_trapezoids (glitz_surface_t *dst,
+                      int x_offset,
+                      int y_offset,
+                      const glitz_trapezoid_t *traps,
+                      int n_traps);
 
 void
 glitz_composite_trapezoids (glitz_operator_t op,
@@ -502,12 +502,17 @@ glitz_composite_trapezoids (glitz_operator_t op,
                             glitz_surface_t *dst,
                             int x_src,
                             int y_src,
+                            int x_offset,
+                            int y_offset,
+                            unsigned short opacity,
                             const glitz_trapezoid_t *traps,
                             int n_traps);
 
 void
 glitz_color_trapezoids (glitz_operator_t op,
                         glitz_surface_t *dst,
+                        int x_offset,
+                        int y_offset,
                         const glitz_color_trapezoid_t *color_traps,
                         int n_color_traps);
 
@@ -517,9 +522,18 @@ glitz_color_trapezoids (glitz_operator_t op,
 void
 glitz_fill_triangles (glitz_operator_t op,
                       glitz_surface_t *dst,
+                      int x_offset,
+                      int y_offset,
                       const glitz_color_t *color,
                       const glitz_triangle_t *tris,
                       int n_tris);
+
+void
+glitz_add_triangles (glitz_surface_t *dst,
+                     int x_offset,
+                     int y_offset,
+                     const glitz_triangle_t *tris,
+                     int n_tris);
   
 void
 glitz_composite_triangles (glitz_operator_t op,
@@ -527,6 +541,9 @@ glitz_composite_triangles (glitz_operator_t op,
                            glitz_surface_t *dst,
                            int x_src,
                            int y_src,
+                           int x_offset,
+                           int y_offset,
+                           unsigned short opacity,
                            const glitz_triangle_t *tris,
                            int n_tris);
 
@@ -536,21 +553,29 @@ glitz_composite_tri_strip (glitz_operator_t op,
                            glitz_surface_t *dst,
                            int x_src,
                            int y_src,
+                           int x_offset,
+                           int y_offset,
+                           unsigned short opacity,
                            const glitz_point_fixed_t *points,
                            int n_points);
 
-  void
+void
 glitz_composite_tri_fan (glitz_operator_t op,
                          glitz_surface_t *src,
                          glitz_surface_t *dst,
                          int x_src,
                          int y_src,
+                         int x_offset,
+                         int y_offset,
+                         unsigned short opacity,
                          const glitz_point_fixed_t *points,
                          int n_points);
   
 void
 glitz_color_triangles (glitz_operator_t op,
                        glitz_surface_t *dst,
+                       int x_offset,
+                       int y_offset,
                        const glitz_color_triangle_t *color_tris,
                        int n_color_tris);
   

@@ -137,11 +137,6 @@ typedef struct _glitz_gl_proc_address_list_t {
   glitz_gl_get_tex_level_parameter_iv_t get_tex_level_parameter_iv;
   glitz_gl_copy_tex_sub_image_2d_t copy_tex_sub_image_2d;
   glitz_gl_get_integer_v_t get_integer_v;
-  glitz_gl_delete_lists_t delete_lists;
-  glitz_gl_gen_lists_t gen_lists;
-  glitz_gl_new_list_t new_list;
-  glitz_gl_end_list_t end_list;
-  glitz_gl_call_list_t call_list;
   
   glitz_gl_active_texture_t active_texture;
   glitz_gl_multi_tex_coord_2d_t multi_tex_coord_2d;
@@ -197,18 +192,29 @@ typedef int glitz_combine_type_t;
 #define GLITZ_TEXTURE_RECT 2
 #define GLITZ_TEXTURE_LAST 3
 
-#define GLITZ_FRAGMENT_FILTER_CONVOLUTION     0
-#define GLITZ_FRAGMENT_FILTER_LINEAR_GRADIENT 1
-#define GLITZ_FRAGMENT_FILTER_RADIAL_GRADIENT 2
-#define GLITZ_FRAGMENT_FILTER_TYPES 3
+#define GLITZ_FP_CONVOLUTION                 0
+#define GLITZ_FP_LINEAR_GRADIENT_TRANSPARENT 1
+#define GLITZ_FP_LINEAR_GRADIENT_NEAREST     2
+#define GLITZ_FP_LINEAR_GRADIENT_REPEAT      3
+#define GLITZ_FP_LINEAR_GRADIENT_REFLECT     4
+#define GLITZ_FP_RADIAL_GRADIENT_TRANSPARENT 5
+#define GLITZ_FP_RADIAL_GRADIENT_NEAREST     6
+#define GLITZ_FP_RADIAL_GRADIENT_REPEAT      7
+#define GLITZ_FP_RADIAL_GRADIENT_REFLECT     8
+#define GLITZ_FP_TYPES                       9
 
-typedef struct _glitz_program_info_t {
-  glitz_gl_uint_t vertex[GLITZ_TEXTURE_LAST][GLITZ_TEXTURE_LAST];
-  glitz_gl_uint_t fragment[GLITZ_TEXTURE_LAST][GLITZ_TEXTURE_LAST];
-} glitz_program_info_t;
+typedef struct _glitz_program_t {
+  glitz_gl_int_t *name;
+  unsigned int size;
+} glitz_program_t;
+
+typedef struct _glitz_filter_map_t {
+  glitz_program_t fp[GLITZ_TEXTURE_LAST][GLITZ_TEXTURE_LAST];
+} glitz_filter_map_t;
 
 typedef struct _glitz_program_map_t {
-  glitz_program_info_t info[GLITZ_COMBINE_TYPES][GLITZ_FRAGMENT_FILTER_TYPES];
+  glitz_filter_map_t filters[GLITZ_COMBINE_TYPES][GLITZ_FP_TYPES];
+  glitz_gl_int_t vp;
 } glitz_program_map_t;
 
 typedef enum {
@@ -232,9 +238,9 @@ typedef struct _glitz_point_t {
   double x, y;
 } glitz_point_t;
 
-typedef struct _glitz_matrix_t {
-  double m[3][3];
-} glitz_matrix_t;
+typedef struct _glitz_vec_t {
+  double v[4];
+} glitz_vec4_t;
 
 typedef struct _glitz_texture {
   glitz_gl_uint_t name;
@@ -285,23 +291,22 @@ typedef struct glitz_surface_backend {
   (*make_current_read) (void *surface);
 } glitz_surface_backend_t;
 
-#define GLITZ_INT_HINT_SOLID_MASK                  (1L <<  3)
-#define GLITZ_INT_HINT_REPEAT_MASK                 (1L <<  4)
-#define GLITZ_INT_HINT_MIRRORED_MASK               (1L <<  5)
-#define GLITZ_INT_HINT_PAD_MASK                    (1L <<  6)
-#define GLITZ_INT_HINT_DIRTY_MASK                  (1L <<  7)
-#define GLITZ_INT_HINT_COMPONENT_ALPHA_MASK        (1L <<  8)
-#define GLITZ_INT_HINT_QUALITY_CORRECTNESS_MASK    (1L <<  9)
-#define GLITZ_INT_HINT_MULTISAMPLE_MASK            (1L << 10)
-#define GLITZ_INT_HINT_SOLID_DIRTY_MASK            (1L << 11)
-#define GLITZ_INT_HINT_DRAWABLE_DIRTY_MASK         (1L << 12)
-#define GLITZ_INT_HINT_POLYGON_OP_MASK             (1L << 13)
-#define GLITZ_INT_HINT_FRAGMENT_FILTER_MASK        (1L << 14)
-#define GLITZ_INT_HINT_LINEAR_TRANSFORM_MASK       (1L << 15)
-#define GLITZ_INT_HINT_LINEAR_NON_TRANSFORM_MASK   (1L << 16)
-#define GLITZ_INT_HINT_WINDOW_SPACE_TEXCOORDS_MASK (1L << 17)
-#define GLITZ_INT_HINT_RENDER_TEXTURE_MASK         (1L << 18)
-#define GLITZ_INT_HINT_DRAWABLE_MASK               (1L << 19)
+#define GLITZ_INT_HINT_SOLID_MASK                   (1L <<  3)
+#define GLITZ_INT_HINT_REPEAT_MASK                  (1L <<  4)
+#define GLITZ_INT_HINT_MIRRORED_MASK                (1L <<  5)
+#define GLITZ_INT_HINT_PAD_MASK                     (1L <<  6)
+#define GLITZ_INT_HINT_CLIP_MASK                    (1L <<  7)
+#define GLITZ_INT_HINT_DIRTY_MASK                   (1L <<  8)
+#define GLITZ_INT_HINT_COMPONENT_ALPHA_MASK         (1L <<  9)
+#define GLITZ_INT_HINT_MULTISAMPLE_MASK             (1L << 10)
+#define GLITZ_INT_HINT_SOLID_DIRTY_MASK             (1L << 11)
+#define GLITZ_INT_HINT_DRAWABLE_DIRTY_MASK          (1L << 12)
+#define GLITZ_INT_HINT_POLYGON_OP_MASK              (1L << 13)
+#define GLITZ_INT_HINT_FRAGMENT_FILTER_MASK         (1L << 14)
+#define GLITZ_INT_HINT_LINEAR_TRANSFORM_FILTER_MASK (1L << 15)
+#define GLITZ_INT_HINT_WINDOW_SPACE_TEXCOORDS_MASK  (1L << 16)
+#define GLITZ_INT_HINT_DRAWABLE_MASK                (1L << 17)
+#define GLITZ_INT_HINT_IGNORE_REPEAT_MASK           (1L << 18)
 
 #define SURFACE_OFFSCREEN(surface) \
   ((surface)->hint_mask & GLITZ_HINT_OFFSCREEN_MASK)
@@ -310,7 +315,8 @@ typedef struct glitz_surface_backend {
   ((surface)->hint_mask & GLITZ_INT_HINT_SOLID_MASK)
 
 #define SURFACE_REPEAT(surface) \
-  ((surface)->hint_mask & GLITZ_INT_HINT_REPEAT_MASK)
+  (((surface)->hint_mask & GLITZ_INT_HINT_REPEAT_MASK) && \
+   (!((surface)->hint_mask & GLITZ_INT_HINT_IGNORE_REPEAT_MASK)))
 
 #define SURFACE_MIRRORED(surface) \
   ((surface)->hint_mask & GLITZ_INT_HINT_MIRRORED_MASK)
@@ -323,9 +329,6 @@ typedef struct glitz_surface_backend {
 
 #define SURFACE_COMPONENT_ALPHA(surface) \
   ((surface)->hint_mask & GLITZ_INT_HINT_COMPONENT_ALPHA_MASK)
-
-#define SURFACE_QUALITY_CORRECTNESS(surface) \
-  ((surface)->hint_mask & GLITZ_INT_HINT_QUALITY_CORRECTNESS_MASK)
 
 #define SURFACE_MULTISAMPLE(surface) \
   ((surface)->hint_mask & GLITZ_INT_HINT_MULTISAMPLE_MASK)
@@ -342,20 +345,19 @@ typedef struct glitz_surface_backend {
 #define SURFACE_FRAGMENT_FILTER(surface) \
   ((surface)->hint_mask & GLITZ_INT_HINT_FRAGMENT_FILTER_MASK)
 
-#define SURFACE_LINEAR_TRANSFORM(surface) \
-  ((surface)->hint_mask & GLITZ_INT_HINT_LINEAR_TRANSFORM_MASK)
-
-#define SURFACE_LINEAR_NON_TRANSFORM(surface) \
-  ((surface)->hint_mask & GLITZ_INT_HINT_LINEAR_NON_TRANSFORM_MASK)
+#define SURFACE_LINEAR_TRANSFORM_FILTER(surface) \
+  ((surface)->hint_mask & GLITZ_INT_HINT_LINEAR_TRANSFORM_FILTER_MASK)
 
 #define SURFACE_WINDOW_SPACE_TEXCOORDS(surface) \
   ((surface)->hint_mask & GLITZ_INT_HINT_WINDOW_SPACE_TEXCOORDS_MASK)
 
-#define SURFACE_RENDER_TEXTURE(surface) \
-  ((surface)->hint_mask & GLITZ_INT_HINT_RENDER_TEXTURE_MASK)
-
 #define SURFACE_DRAWABLE(surface) \
   ((surface)->hint_mask & GLITZ_INT_HINT_DRAWABLE_MASK)
+
+#define SURFACE_CLIP(surface) \
+  (((surface)->hint_mask & GLITZ_INT_HINT_CLIP_MASK) && \
+   (!SURFACE_FRAGMENT_FILTER (surface)) && \
+   (!(surface)->transform))
 
 typedef struct _glitz_sample_offset {
   double x;
@@ -376,8 +378,6 @@ typedef struct _glitz_filter_params_t glitz_filter_params_t;
 typedef struct _glitz_projective_transform {
   double m[16];
   double m_norm[16];
-  glitz_matrix_t affine;
-  glitz_bool_t inverted;
 } glitz_projective_transform_t;
 
 #define GLITZ_UPDATE_VIEWPORT_MASK    (1L << 0)
@@ -430,8 +430,8 @@ typedef struct _glitz_render_t {
 
 typedef enum {
   GLITZ_COMPONENT_ALPHA_NONE = 0,
-  GLITZ_COMPONENT_ALPHA_RGB,
-  GLITZ_COMPONENT_ALPHA_ARGB
+  GLITZ_COMPONENT_ALPHA_RGB = 3,
+  GLITZ_COMPONENT_ALPHA_ARGB = 4
 } glitz_component_alpha_type_t;
 
 struct _glitz_composite_op_t {
@@ -444,7 +444,6 @@ struct _glitz_composite_op_t {
   glitz_color_t *solid;
   glitz_color_t alpha_mask;
   glitz_component_alpha_type_t component_alpha;
-  glitz_bool_t hw_wrap;
   glitz_gl_uint_t fp;
   glitz_gl_uint_t vp;
   int count;
@@ -454,16 +453,6 @@ typedef struct _glitz_extension_map {
   char *name;
   int mask;
 } glitz_extension_map;
-
-extern void __internal_linkage
-glitz_matrix_transform_point (glitz_matrix_t *matrix,
-                              double *x, double *y);
-
-extern glitz_status_t __internal_linkage
-glitz_matrix_invert (glitz_matrix_t *matrix);
-
-extern glitz_status_t __internal_linkage
-glitz_matrix_normalize (glitz_matrix_t *matrix);
 
 typedef enum glitz_int_operator {
   GLITZ_INT_OPERATOR_STENCIL_RECT_SET = 1000,
@@ -510,6 +499,9 @@ extern void __internal_linkage
 glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
                       int x,
                       int y);
+
+extern void __internal_linkage
+glitz_clamp_value (double *value, double min, double max);
 
 void
 glitz_texture_init (glitz_texture_t *texture,
@@ -615,9 +607,6 @@ glitz_surface_enable_anti_aliasing (glitz_surface_t *surface);
 extern void __internal_linkage
 glitz_surface_disable_anti_aliasing (glitz_surface_t *surface);
 
-extern glitz_matrix_t *__internal_linkage
-glitz_surface_get_affine_transform (glitz_surface_t *surface);
-
 extern unsigned long __internal_linkage
 glitz_status_to_status_mask (glitz_status_t status);
      
@@ -656,16 +645,18 @@ glitz_program_map_fini (glitz_gl_proc_address_list_t *gl,
                         glitz_program_map_t *map);
 
 extern glitz_gl_uint_t __internal_linkage
-glitz_get_vertex_program (glitz_composite_op_t *op,
-                          glitz_filter_t filter);
+glitz_get_vertex_program (glitz_composite_op_t *op);
 
 extern glitz_gl_uint_t __internal_linkage
 glitz_get_fragment_program (glitz_composite_op_t *op,
-                            glitz_filter_t filter);
+                            int fp_type,
+                            int id);
 
 extern void __internal_linkage
 glitz_int_fill_rectangles (glitz_operator_t op,
                            glitz_surface_t *dst,
+                           int x_offset,
+                           int y_offset,
                            const glitz_color_t *color,
                            const glitz_rectangle_t *rects,
                            int n_rects);
@@ -690,20 +681,26 @@ glitz_int_fill_triangles (glitz_operator_t op,
                           int n_points);
 
 extern void __internal_linkage
-glitz_stencil_rectangles (glitz_surface_t *dst,
-                          glitz_stencil_operator_t op,
+glitz_stencil_rectangles (glitz_stencil_operator_t op,
+                          glitz_surface_t *dst,
+                          int x_offset,
+                          int y_offset,
                           const glitz_rectangle_t *rects,
                           int n_rects);
 
 extern void __internal_linkage
-glitz_stencil_trapezoids (glitz_surface_t *dst,
-                          glitz_stencil_operator_t op,
+glitz_stencil_trapezoids (glitz_stencil_operator_t op,
+                          glitz_surface_t *dst,
+                          int x_offset,
+                          int y_offset,
                           const glitz_trapezoid_t *traps,
                           int n_traps);
 
 extern void __internal_linkage
-glitz_stencil_triangles (glitz_surface_t *dst,
-                         glitz_stencil_operator_t op,
+glitz_stencil_triangles (glitz_stencil_operator_t op,
+                         glitz_surface_t *dst,
+                         int x_offset,
+                         int y_offset,
                          glitz_triangle_type_t type,
                          const glitz_point_fixed_t *points,
                          int n_points);
@@ -713,20 +710,6 @@ glitz_composite_op_init (glitz_composite_op_t *op,
                          glitz_surface_t *src,
                          glitz_surface_t *mask,
                          glitz_surface_t *dst);
-
-extern void __internal_linkage
-glitz_composite_op_set_alpha_mask (glitz_composite_op_t *op,
-                                   unsigned short red,
-                                   unsigned short green,
-                                   unsigned short blue,
-                                   unsigned short alpha);
-
-extern void __internal_linkage
-glitz_composite_op_get_alpha_mask (glitz_composite_op_t *op,
-                                   unsigned short *red,
-                                   unsigned short *green,
-                                   unsigned short *blue,
-                                   unsigned short *alpha);
 
 extern void __internal_linkage
 glitz_composite_enable (glitz_composite_op_t *op);
@@ -742,10 +725,25 @@ extern void __internal_linkage
 glitz_pixel_buffer_unbind (glitz_pixel_buffer_t *buffer);
 
 extern glitz_status_t __internal_linkage
-glitz_filter_set_params (glitz_filter_params_t **filter_params,
+glitz_filter_set_params (glitz_surface_t *surface,
                          glitz_filter_t filter,
                          glitz_fixed16_16_t *params,
                          int n_params);
+
+extern void __internal_linkage
+glitz_filter_set_type (glitz_surface_t *surface,
+                       glitz_filter_t filter);
+
+extern void __internal_linkage
+glitz_filter_params_destroy (glitz_filter_params_t *params);
+
+extern glitz_gl_uint_t __internal_linkage
+glitz_filter_get_vertex_program (glitz_surface_t *surface,
+                                 glitz_composite_op_t *op);
+
+extern glitz_gl_uint_t __internal_linkage
+glitz_filter_get_fragment_program (glitz_surface_t *surface,
+                                   glitz_composite_op_t *op);
 
 extern void __internal_linkage
 glitz_filter_enable (glitz_surface_t *surface,
@@ -767,6 +765,8 @@ glitz_filter_enable (glitz_surface_t *surface,
 #  define IMAGE_BYTE_ORDER LSBFirst
 #  define BITMAP_BIT_ORDER LSBFirst
 #endif
+
+#define GLITZ_PI 3.14159265358979323846
 
 /* Fixed point updates from Carl Worth, USC, Information Sciences Institute */
 
@@ -831,10 +831,8 @@ slim_hidden_proto(glitz_surface_find_similar_standard_format)
 slim_hidden_proto(glitz_surface_set_transform)
 slim_hidden_proto(glitz_surface_set_fill)
 slim_hidden_proto(glitz_surface_set_component_alpha)
-slim_hidden_proto(glitz_surface_set_correctness_hint)
 slim_hidden_proto(glitz_surface_set_filter)
 slim_hidden_proto(glitz_surface_set_polyedge)
-slim_hidden_proto(glitz_surface_set_polyopacity)
 slim_hidden_proto(glitz_surface_get_width)
 slim_hidden_proto(glitz_surface_get_height)
 slim_hidden_proto(glitz_surface_update_size)
@@ -856,9 +854,11 @@ slim_hidden_proto(glitz_surface_get_hints)
 slim_hidden_proto(glitz_fill_rectangle)
 slim_hidden_proto(glitz_fill_rectangles)
 slim_hidden_proto(glitz_fill_trapezoids)
+slim_hidden_proto(glitz_add_trapezoids)
 slim_hidden_proto(glitz_composite_trapezoids)
 slim_hidden_proto(glitz_color_trapezoids)
 slim_hidden_proto(glitz_fill_triangles)
+slim_hidden_proto(glitz_add_triangles)
 slim_hidden_proto(glitz_composite_triangles)
 slim_hidden_proto(glitz_composite_tri_strip)
 slim_hidden_proto(glitz_composite_tri_fan)

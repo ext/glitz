@@ -50,8 +50,7 @@
 #define GLITZ_GLX_FEATURE_VERTEX_PROGRAM_MASK           (1L << 10)
 #define GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK         (1L << 11)
 #define GLITZ_GLX_FEATURE_GLX13_MASK                    (1L << 12)
-#define GLITZ_GLX_FEATURE_RENDER_TEXTURE_MASK           (1L << 13)
-#define GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 14)
+#define GLITZ_GLX_FEATURE_PIXEL_BUFFER_OBJECT_MASK      (1L << 13)
 
 typedef struct _glitz_glx_surface glitz_glx_surface_t;
 typedef struct _glitz_glx_screen_info_t glitz_glx_screen_info_t;
@@ -67,12 +66,6 @@ typedef struct _glitz_glx_static_proc_address_list_t {
   glitz_glx_make_context_current_t make_context_current;
   glitz_bool_t need_lookup;
 } glitz_glx_static_proc_address_list_t;
-
-typedef struct _glitz_glx_proc_address_list_t {
-  glitz_glx_bind_tex_image_t bind_tex_image;
-  glitz_glx_release_tex_image_t release_tex_image;
-  glitz_bool_t need_lookup;
-} glitz_glx_proc_address_list_t;
 
 typedef struct _glitz_glx_thread_info_t {
   glitz_glx_display_info_t **displays;
@@ -98,9 +91,7 @@ typedef struct _glitz_glx_context_t {
   GLXContext context;
   XID id;
   glitz_gl_proc_address_list_t gl;
-  glitz_glx_proc_address_list_t glx;
   GLXFBConfig fbconfig;
-  glitz_gl_uint_t texture_indirections;
 } glitz_glx_context_t;
 
 struct _glitz_glx_screen_info_t {
@@ -135,7 +126,6 @@ struct _glitz_glx_surface {
   glitz_glx_context_t *context;
   GLXDrawable drawable;
   GLXDrawable pbuffer;
-  glitz_bool_t render_texture;
 };
 
 extern void __internal_linkage

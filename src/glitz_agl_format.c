@@ -211,12 +211,10 @@ _glitz_agl_format_compare (const void *elem1,
       score[i] += 10;
     if (format[i]->alpha_size)
       score[i] += 10;
-    if (format[i]->depth_size)
-      score[i] += 5;
     if (format[i]->stencil_size)
-      score[i] += 10;
+      score[i] += (10 + format[i]->stencil_size);
     if (format[i]->multisample.supported) 
-      score[i] += (10 + format[i]->multisample.samples);
+      score[i] -= (10 - format[i]->multisample.samples);
   }
   
   return score[1] - score[0];
@@ -336,20 +334,12 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
       _glitz_add_format (thread_info, &format);
   }
 
-  if (!glitz_format_find_standard (thread_info->formats,
-                                   thread_info->n_formats,
-                                   GLITZ_FORMAT_OPTION_OFFSCREEN_MASK,
-                                   GLITZ_STANDARD_ARGB32)) {
-    
-    thread_info->feature_mask &= ~GLITZ_FEATURE_OFFSCREEN_DRAWING_MASK;
-  }
-
   qsort (thread_info->formats, thread_info->n_formats,
          sizeof (glitz_format_t), _glitz_agl_format_compare);
 
   glitz_format_for_each_texture_format (&_glitz_agl_add_texture_format,
-					&_glitz_agl_gl_proc_address,
-					(void *) thread_info);
+                                        &_glitz_agl_gl_proc_address,
+                                        (void *) thread_info);
   
   _glitz_move_out_ids (thread_info);
 }

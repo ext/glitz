@@ -32,9 +32,6 @@
 #include "glitz_glxint.h"
 
 static glitz_extension_map client_glx_extensions[] = {
-  /* NYI: Don't know of any driver that supports GLX_ARB_render_texture 
-    { "GLX_ARB_render_texture", GLITZ_GLX_FEATURE_RENDER_TEXTURE_MASK },
-   */
   { "GLX_ARB_multisample", GLITZ_GLX_FEATURE_CLIENT_MULTISAMPLE_MASK },
   { NULL, 0 }
 }, gl_extensions[] = {
@@ -141,9 +138,6 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
       GLITZ_GLX_FEATURE_TEXTURE_BORDER_CLAMP_MASK)
     screen_info->feature_mask |= GLITZ_FEATURE_TEXTURE_BORDER_CLAMP_MASK;
 
-  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_RENDER_TEXTURE_MASK)
-    screen_info->glx_feature_mask |= GLITZ_GLX_FEATURE_RENDER_TEXTURE_MASK;
-
   if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_MULTITEXTURE_MASK) {
     screen_info->feature_mask |= GLITZ_FEATURE_MULTITEXTURE_MASK;
 
@@ -170,10 +164,6 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info)
     if (screen_info->glx_feature_mask &
         GLITZ_GLX_FEATURE_FRAGMENT_PROGRAM_MASK)
       screen_info->feature_mask |= GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
-
-    if ((screen_info->feature_mask & GLITZ_FEATURE_VERTEX_PROGRAM_MASK) &&
-        (screen_info->feature_mask & GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK))
-      screen_info->feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
   }
 
   if (screen_info->glx_feature_mask &

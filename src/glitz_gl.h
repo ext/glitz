@@ -215,13 +215,13 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 
 #define GLITZ_GL_MULTISAMPLE_FILTER_HINT 0x8534
 
-#define GLITZ_GL_VERTEX_PROGRAM         0x8620
-#define GLITZ_GL_PROGRAM_STRING         0x8628
-#define GLITZ_GL_PROGRAM_FORMAT_ASCII   0x8875
-#define GLITZ_GL_PROGRAM_ERROR_POSITION 0x864B
-
-#define GLITZ_GL_FRAGMENT_PROGRAM             0x8804
-#define GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS 0x880D
+#define GLITZ_GL_VERTEX_PROGRAM              0x8620
+#define GLITZ_GL_FRAGMENT_PROGRAM            0x8804
+#define GLITZ_GL_PROGRAM_STRING              0x8628
+#define GLITZ_GL_PROGRAM_FORMAT_ASCII        0x8875
+#define GLITZ_GL_PROGRAM_ERROR_POSITION      0x864B
+#define GLITZ_GL_PROGRAM_UNDER_NATIVE_LIMITS 0x88B6
+#define GLITZ_GL_PROGRAM_NATIVE_INSTRUCTIONS 0x88A2
 
 #define GLITZ_GL_PIXEL_PACK_BUFFER   0x88EB
 #define GLITZ_GL_PIXEL_UNPACK_BUFFER 0x88EC
@@ -392,16 +392,6 @@ typedef glitz_gl_void_t (* glitz_gl_get_integer_v_t)
      (glitz_gl_enum_t pname, glitz_gl_int_t *params);
 typedef glitz_gl_void_t (* glitz_gl_get_pointer_v_t)
      (glitz_gl_enum_t pname, glitz_gl_void_t **params);
-typedef glitz_gl_void_t (* glitz_gl_delete_lists_t)
-     (glitz_gl_uint_t list, glitz_gl_sizei_t range);
-typedef glitz_gl_uint_t (* glitz_gl_gen_lists_t)
-     (glitz_gl_sizei_t range);
-typedef glitz_gl_void_t (* glitz_gl_new_list_t)
-     (glitz_gl_uint_t list, glitz_gl_enum_t mode);
-typedef glitz_gl_void_t (* glitz_gl_end_list_t)
-     (glitz_gl_void_t);
-typedef glitz_gl_void_t (* glitz_gl_call_list_t)
-     (glitz_gl_uint_t list);
 typedef glitz_gl_void_t (* glitz_gl_active_texture_t)
      (glitz_gl_enum_t);
 typedef glitz_gl_void_t (* glitz_gl_multi_tex_coord_2d_t)

@@ -137,21 +137,8 @@ glitz_agl_query_extensions (glitz_agl_thread_info_t *thread_info)
       thread_info->feature_mask |= GLITZ_FEATURE_VERTEX_PROGRAM_MASK;
     
     if (thread_info->agl_feature_mask &
-        GLITZ_AGL_FEATURE_FRAGMENT_PROGRAM_MASK) {
-      glitz_gl_uint_t texture_indirections;
-
+        GLITZ_AGL_FEATURE_FRAGMENT_PROGRAM_MASK)
       thread_info->feature_mask |= GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
-    
-      _glitz_agl_gl_proc_address.get_program_iv
-        (GLITZ_GL_FRAGMENT_PROGRAM,
-         GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS,
-         &texture_indirections);
-      
-      /* Convolution filter programs require support for at least nine
-         texture indirections. */
-      if (texture_indirections >= 9)
-        thread_info->feature_mask |= GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
-    }
   }
   
   if (thread_info->agl_feature_mask &

@@ -32,67 +32,51 @@
 #include "glitzint.h"
 
 /* whether 't' is a well defined not obviously empty trapezoid */
-#define TRAPEZOID_VALID(t) ((t)->left.p1.y != (t)->left.p2.y && \
-			     (t)->right.p1.y != (t)->right.p2.y && \
-			     (int) ((t)->bottom - (t)->top) > 0)
-
-/* whether 't' is a well defined not obviously empty color trapezoid */
-#define COLORTRAPEZOID_VALID(t) ((t)->top.left <= (t)->top.right && \
+#define TRAPEZOID_VALID(t) ((t)->top.left <= (t)->top.right && \
 			     (t)->bottom.left <= (t)->bottom.right && \
 			     (int) ((t)->bottom.y - (t)->top.y) >= 0)
 
-static glitz_fixed16_16_t
-glitz_line_fixed_x (const glitz_line_fixed_t *l,
-                    glitz_fixed16_16_t y,
-                    int ceil)
-{
-  glitz_fixed_32_32 ex = (glitz_fixed_32_32) (y - l->p1.y) *
-    (l->p2.x - l->p1.x);
-  glitz_fixed16_16_t dy = l->p2.y - l->p1.y;
-  
-  if (ceil)
-    ex += (dy - 1);
-  
-  return l->p1.x + (glitz_fixed16_16_t) (ex / dy);
-}
-
 static void
-glitz_trapezoid_bounds (int n_traps,
+glitz_trapezoid_bounds (int x_offset,
+                        int y_offset,
+                        int n_traps,
                         const glitz_trapezoid_t *traps,
                         glitz_bounding_box_t *box)
 {
-  box->y1 = MAXSHORT;
-  box->y2 = MINSHORT;
   box->x1 = MAXSHORT;
   box->x2 = MINSHORT;
+  box->y1 = MAXSHORT;
+  box->y2 = MINSHORT;
   
   for (; n_traps; n_traps--, traps++) {
-    int16_t x1, y1, x2, y2;
-    
+    int x1, y1, x2, y2;
+
     if (!TRAPEZOID_VALID (traps))
       continue;
     
-    y1 = FIXED_TO_INT (traps->top);
-    if (y1 < box->y1)
-      box->y1 = y1;
-
-    y2 = FIXED_TO_INT (FIXED_CEIL (traps->bottom));
-    if (y2 > box->y2)
-      box->y2 = y2;
-
-    x1 = FIXED_TO_INT (MIN (glitz_line_fixed_x (&traps->left, traps->top, 0),
-                            glitz_line_fixed_x (&traps->left,
-                                                traps->bottom, 0)));
+    x1 = MIN (FIXED_TO_INT (traps->top.left),
+              FIXED_TO_INT (traps->bottom.left));
     if (x1 < box->x1)
       box->x1 = x1;
-
-    x2 = FIXED_TO_INT (FIXED_CEIL
-                       (MAX (glitz_line_fixed_x (&traps->right, traps->top, 1),
-                             glitz_line_fixed_x (&traps->right,
-                                                 traps->bottom, 1))));
+    
+    x2 = MAX (FIXED_TO_INT (FIXED_CEIL (traps->top.right)),
+              FIXED_TO_INT (FIXED_CEIL (traps->bottom.right)));
     if (x2 > box->x2)
       box->x2 = x2;
+    
+    y1 = FIXED_TO_INT (traps->top.y);
+    if (y1 < box->y1)
+      box->y1 = y1;
+    
+    y2 = FIXED_TO_INT (FIXED_CEIL (traps->bottom.y));
+    if (y2 > box->y2)
+      box->y2 = y2;
   }
+
+  box->x1 += x_offset;
+  box->x2 += x_offset;
+  box->y1 += y_offset;
+  box->y2 += y_offset;
 }
 
 void
@@ -105,74 +89,63 @@ glitz_int_fill_trapezoids (glitz_operator_t op,
                            int n_traps)
 {
   glitz_gl_vertex_2d_t vertex_2d;
-  glitz_gl_uint_t list = 0;
+  static glitz_sample_offset_t zero_offset = { 0.0, 0.0 };
+  glitz_sample_offset_t *offset;
+  int i, passes;
 
   dst->gl->color_4us (color->red, color->green, color->blue, color->alpha);
 
   glitz_set_operator (dst->gl, op);
 
   if (dst->multi_sample) {
-    list = dst->gl->gen_lists (1);
-    dst->gl->new_list (list, GLITZ_GL_COMPILE);
+    passes = dst->multi_sample->n_samples;
+    offset = dst->multi_sample->offsets;
+  } else {
+    passes = 1;
+    offset = &zero_offset;
   }
-    
-  dst->gl->begin (GLITZ_GL_QUADS);
 
   vertex_2d = dst->gl->vertex_2d;
-  for (; n_traps; n_traps--, traps++) {
-    double top, bottom;
-    
-    if (!TRAPEZOID_VALID (traps))
-      continue;
-    
-    top = y_offset + FIXED_TO_DOUBLE (traps->top);
-    bottom = y_offset + FIXED_TO_DOUBLE (traps->bottom);
+  
+  dst->gl->begin (GLITZ_GL_QUADS);
 
-    vertex_2d (x_offset +
-               FIXED_TO_DOUBLE (glitz_line_fixed_x
-                                (&traps->left, traps->top, 0)), top);
-    vertex_2d (x_offset +
-               FIXED_TO_DOUBLE (glitz_line_fixed_x
-                                (&traps->right, traps->top, 1)), top);
-    vertex_2d (x_offset +
-               FIXED_TO_DOUBLE (glitz_line_fixed_x
-                                (&traps->right, traps->bottom, 1)), bottom);
-    vertex_2d (x_offset +
-               FIXED_TO_DOUBLE (glitz_line_fixed_x
-                                (&traps->left, traps->bottom, 0)), bottom);
+  for (; n_traps; n_traps--, traps++) {
+    double top, topleft, topright;
+    double bottom, bottomleft, bottomright;
+    
+      if (!TRAPEZOID_VALID (traps))
+        continue;
+
+      top = y_offset + FIXED_TO_DOUBLE (traps->top.y);
+      bottom = y_offset + FIXED_TO_DOUBLE (traps->bottom.y);
+      bottomleft = x_offset + FIXED_TO_DOUBLE (traps->bottom.left);
+      topleft = x_offset + FIXED_TO_DOUBLE (traps->top.left);
+      topright = x_offset + FIXED_TO_DOUBLE (traps->top.right);
+      bottomright = x_offset + FIXED_TO_DOUBLE (traps->bottom.right);
+      
+      for (i = 0; i < passes; i++) {
+        vertex_2d (offset[i].x + bottomleft, offset[i].y + bottom);
+        vertex_2d (offset[i].x + topleft, offset[i].y + top);
+        vertex_2d (offset[i].x + topright, offset[i].y + top);
+        vertex_2d (offset[i].x + bottomright, offset[i].y + bottom);
+    }
   }
 
   dst->gl->end ();
-
-  if (list) {
-    int i;
-    
-    dst->gl->end_list ();
-    
-    dst->gl->matrix_mode (GLITZ_GL_MODELVIEW);
-
-    for (i = 0; i < dst->multi_sample->n_samples; i++) {
-      dst->gl->translate_d (dst->multi_sample->offsets[i].x,
-                            -dst->multi_sample->offsets[i].y, 0.0);
-      dst->gl->call_list (list);
-      dst->gl->translate_d (-dst->multi_sample->offsets[i].x,
-                            dst->multi_sample->offsets[i].y, 0.0);
-    }
-
-    dst->gl->delete_lists (list, 1);
-  }
 }
 
 void
 glitz_fill_trapezoids (glitz_operator_t op,
                        glitz_surface_t *dst,
+                       int x_offset,
+                       int y_offset,
                        const glitz_color_t *color,
                        const glitz_trapezoid_t *traps,
                        int n_traps)
 {
   glitz_bounding_box_t bounds;
   
-  glitz_trapezoid_bounds (n_traps, traps, &bounds);
+  glitz_trapezoid_bounds (x_offset, y_offset, n_traps, traps, &bounds);
   if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
       bounds.x2 < 0 || bounds.y2 < 0)
     return;
@@ -183,7 +156,9 @@ glitz_fill_trapezoids (glitz_operator_t op,
     return;
   }
   
-  glitz_int_fill_trapezoids (op, dst, 0, 0, color, traps, n_traps);
+  glitz_int_fill_trapezoids (op, dst,
+                             x_offset, y_offset,
+                             color, traps, n_traps);
 
   glitz_surface_dirty (dst, &bounds);
   glitz_surface_pop_current (dst);
@@ -191,58 +166,98 @@ glitz_fill_trapezoids (glitz_operator_t op,
 slim_hidden_def(glitz_fill_trapezoids);
 
 void
+glitz_add_trapezoids (glitz_surface_t *dst,
+                      int x_offset,
+                      int y_offset,
+                      const glitz_trapezoid_t *traps,
+                      int n_traps)
+{
+  glitz_bounding_box_t bounds;
+  glitz_color_t color;
+  
+  glitz_trapezoid_bounds (x_offset, y_offset, n_traps, traps, &bounds);
+  if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
+      bounds.x2 < 0 || bounds.y2 < 0)
+    return;
+
+  glitz_surface_enable_anti_aliasing (dst);
+
+  if (!glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
+    glitz_surface_pop_current (dst);
+    return;
+  }
+
+  if (dst->multi_sample)
+    color.red = color.green = color.blue = color.alpha =
+      0xffff / dst->multi_sample->n_samples;
+  else
+    color.red = color.green = color.blue = color.alpha = 0xffff;
+  
+  glitz_int_fill_trapezoids (GLITZ_OPERATOR_ADD, dst,
+                             x_offset, y_offset,
+                             &color, traps, n_traps);
+
+  glitz_surface_disable_anti_aliasing (dst);
+
+  glitz_surface_dirty (dst, &bounds);
+  glitz_surface_pop_current (dst);
+}
+slim_hidden_def(glitz_add_trapezoids);
+
+void
 glitz_composite_trapezoids (glitz_operator_t op,
                             glitz_surface_t *src,
                             glitz_surface_t *dst,
                             int x_src,
                             int y_src,
+                            int x_offset,
+                            int y_offset,
+                            unsigned short opacity,
                             const glitz_trapezoid_t *traps,
                             int n_traps)
 {
-  glitz_bounding_box_t trap_bounds;
-  int x_dst, y_dst;
+  glitz_bounding_box_t bounds;
   glitz_rectangle_t rect;
 
   if (n_traps == 0)
     return;
-
-  x_dst = traps[0].left.p1.x >> 16;
-  y_dst = traps[0].left.p1.y >> 16;
 
   if (dst->format->stencil_size < ((*dst->stencil_mask)? 2: 1)) {
     glitz_surface_status_add (dst, GLITZ_STATUS_NOT_SUPPORTED_MASK);
     return;
   }
 
-  glitz_trapezoid_bounds (n_traps, traps, &trap_bounds);
-  if (trap_bounds.x1 > dst->width || trap_bounds.y1 > dst->height ||
-      trap_bounds.x2 < 0 || trap_bounds.y2 < 0)
+  glitz_trapezoid_bounds (x_offset, y_offset, n_traps, traps, &bounds);
+  if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
+      bounds.x2 < 0 || bounds.y2 < 0)
     return;
 
-  rect.x = trap_bounds.x1;
-  rect.y = trap_bounds.y1;
-  rect.width = trap_bounds.x2 - trap_bounds.x1;
-  rect.height = trap_bounds.y2 - trap_bounds.y1;
+  rect.x = bounds.x1;
+  rect.y = bounds.y1;
+  rect.width = bounds.x2 - bounds.x1;
+  rect.height = bounds.y2 - bounds.y1;
 
   glitz_surface_enable_anti_aliasing (dst);
 
   if (*dst->stencil_mask == 0x0)
-    glitz_stencil_rectangles (dst,
-                              GLITZ_STENCIL_OPERATOR_CLEAR,
-                              &rect, 1);
+    glitz_stencil_rectangles (GLITZ_STENCIL_OPERATOR_CLEAR,
+                              dst, 0, 0, &rect, 1);
   
-  glitz_stencil_trapezoids (dst,
-                            GLITZ_STENCIL_OPERATOR_INCR_EQUAL,
+  glitz_stencil_trapezoids (GLITZ_STENCIL_OPERATOR_INCR_EQUAL,
+                            dst,
+                            x_offset, y_offset,
                             traps, n_traps);
-  
+
+  dst->polyopacity = opacity;
   dst->hint_mask |= GLITZ_INT_HINT_POLYGON_OP_MASK;
 
   glitz_composite (op,
                    src,
                    NULL,
                    dst,
-                   x_src + trap_bounds.x1 - x_dst,
-                   y_src + trap_bounds.y1 - y_dst,
+                   x_src + bounds.x1,
+                   y_src + bounds.y1,
                    0, 0,
                    rect.x, rect.y,
                    rect.width, rect.height);
@@ -252,9 +267,8 @@ glitz_composite_trapezoids (glitz_operator_t op,
   glitz_surface_disable_anti_aliasing (dst);
   
   if (*dst->stencil_mask != 0x1)
-    glitz_stencil_rectangles (dst,
-                              GLITZ_STENCIL_OPERATOR_DECR_LESS,
-                              &rect, 1);
+    glitz_stencil_rectangles (GLITZ_STENCIL_OPERATOR_DECR_LESS,
+                              dst, 0, 0, &rect, 1);
   else
     *dst->stencil_mask = 0x0;
 
@@ -263,19 +277,21 @@ glitz_composite_trapezoids (glitz_operator_t op,
 slim_hidden_def(glitz_composite_trapezoids);
 
 static void
-glitz_color_trapezoid_bounds (int n_color_traps,
+glitz_color_trapezoid_bounds (int x_offset,
+                              int y_offset,
+                              int n_color_traps,
                               const glitz_color_trapezoid_t *color_traps,
                               glitz_bounding_box_t *box)
 {
-  box->y1 = MAXSHORT;
-  box->y2 = MINSHORT;
   box->x1 = MAXSHORT;
   box->x2 = MINSHORT;
+  box->y1 = MAXSHORT;
+  box->y2 = MINSHORT;
   
   for (; n_color_traps; n_color_traps--, color_traps++) {
-    int16_t x1, y1, x2, y2;
+    int x1, y1, x2, y2;
 
-    if (!COLORTRAPEZOID_VALID (color_traps))
+    if (!TRAPEZOID_VALID (color_traps))
       continue;
     
     x1 = MIN (FIXED_TO_INT (color_traps->top.left),
@@ -296,23 +312,28 @@ glitz_color_trapezoid_bounds (int n_color_traps,
     if (y2 > box->y2)
       box->y2 = y2;
   }
+
+  box->x1 += x_offset;
+  box->x2 += x_offset;
+  box->y1 += y_offset;
+  box->y2 += y_offset;
 }
 
 void
 glitz_color_trapezoids (glitz_operator_t op,
                         glitz_surface_t *dst,
+                        int x_offset,
+                        int y_offset,
                         const glitz_color_trapezoid_t *color_traps,
                         int n_color_traps)
 {
   glitz_gl_vertex_2d_t vertex_2d;
   glitz_gl_color_4us_t color_4us;
   glitz_bounding_box_t bounds;
-  int index;
-  glitz_bool_t shade = 0;
   
-  glitz_color_trapezoid_bounds (n_color_traps, color_traps, &bounds);
-  if (bounds.y1 >= bounds.y2 || bounds.x1 >= bounds.x2 ||
-      bounds.x1 > dst->width || bounds.y1 > dst->height ||
+  glitz_color_trapezoid_bounds (x_offset, y_offset,
+                                n_color_traps, color_traps, &bounds);
+  if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
       bounds.x2 < 0 || bounds.y2 < 0)
     return;
   
@@ -324,25 +345,7 @@ glitz_color_trapezoids (glitz_operator_t op,
 
   glitz_set_operator (dst->gl, op);
 
-  for (index = 0; index < n_color_traps; index++) {
-    
-    if (!COLORTRAPEZOID_VALID (&color_traps[index]))
-      continue;
-    
-    if (memcmp (&color_traps[index].top.right_color,
-                &color_traps[index].top.left_color,
-                sizeof (glitz_color_t)) ||
-        memcmp (&color_traps[index].bottom.right_color,
-                &color_traps[index].bottom.left_color,
-                sizeof (glitz_color_t)) ||
-        memcmp (&color_traps[index].top.left_color,
-                &color_traps[index].bottom.left_color,
-                sizeof (glitz_color_t))) {
-      dst->gl->shade_model (GLITZ_GL_SMOOTH);
-      shade = 1;
-      break;
-    }
-  }
+  dst->gl->shade_model (GLITZ_GL_SMOOTH);
   
   dst->gl->begin (GLITZ_GL_QUADS);
 
@@ -350,42 +353,41 @@ glitz_color_trapezoids (glitz_operator_t op,
   color_4us = dst->gl->color_4us;
   for (; n_color_traps; n_color_traps--, color_traps++) {
     
-    if (!COLORTRAPEZOID_VALID (color_traps))
+    if (!TRAPEZOID_VALID (color_traps))
       continue;
 
     color_4us (color_traps->bottom.left_color.red,
                color_traps->bottom.left_color.green,
                color_traps->bottom.left_color.blue,
                color_traps->bottom.left_color.alpha);
-    vertex_2d (FIXED_TO_DOUBLE (color_traps->bottom.left),
-               FIXED_TO_DOUBLE (color_traps->bottom.y));
+    vertex_2d (x_offset + FIXED_TO_DOUBLE (color_traps->bottom.left),
+               y_offset + FIXED_TO_DOUBLE (color_traps->bottom.y));
 
-    if (shade)
-      color_4us (color_traps->top.left_color.red,
-                 color_traps->top.left_color.green,
-                 color_traps->top.left_color.blue,
-                 color_traps->top.left_color.alpha);
-    vertex_2d (FIXED_TO_DOUBLE (color_traps->top.left),
-               FIXED_TO_DOUBLE (color_traps->top.y));
+    color_4us (color_traps->top.left_color.red,
+               color_traps->top.left_color.green,
+               color_traps->top.left_color.blue,
+               color_traps->top.left_color.alpha);
+    vertex_2d (x_offset + FIXED_TO_DOUBLE (color_traps->top.left),
+               y_offset + FIXED_TO_DOUBLE (color_traps->top.y));
 
-    if (shade)
-      color_4us (color_traps->top.right_color.red,
-                 color_traps->top.right_color.green,
-                 color_traps->top.right_color.blue,
-                 color_traps->top.right_color.alpha);
-    vertex_2d (FIXED_TO_DOUBLE (color_traps->top.right),
-               FIXED_TO_DOUBLE (color_traps->top.y));
+    color_4us (color_traps->top.right_color.red,
+               color_traps->top.right_color.green,
+               color_traps->top.right_color.blue,
+               color_traps->top.right_color.alpha);
+    vertex_2d (x_offset + FIXED_TO_DOUBLE (color_traps->top.right),
+               y_offset + FIXED_TO_DOUBLE (color_traps->top.y));
 
-    if (shade)
-      color_4us (color_traps->bottom.right_color.red,
-                 color_traps->bottom.right_color.green,
-                 color_traps->bottom.right_color.blue,
-                 color_traps->bottom.right_color.alpha);
-    vertex_2d (FIXED_TO_DOUBLE (color_traps->bottom.right),
-               FIXED_TO_DOUBLE (color_traps->bottom.y));
+    color_4us (color_traps->bottom.right_color.red,
+               color_traps->bottom.right_color.green,
+               color_traps->bottom.right_color.blue,
+               color_traps->bottom.right_color.alpha);
+    vertex_2d (x_offset + FIXED_TO_DOUBLE (color_traps->bottom.right),
+               y_offset + FIXED_TO_DOUBLE (color_traps->bottom.y));
   }
   
   dst->gl->end ();
+
+  dst->gl->shade_model (GLITZ_GL_FLAT);
 
   glitz_surface_dirty (dst, &bounds);
   glitz_surface_pop_current (dst);

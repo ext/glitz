@@ -31,8 +31,10 @@
 #include "glitzint.h"
 
 void
-glitz_stencil_rectangles (glitz_surface_t *dst,
-                          glitz_stencil_operator_t op,
+glitz_stencil_rectangles (glitz_stencil_operator_t op,
+                          glitz_surface_t *dst,
+                          int x_offset,
+                          int y_offset,
                           const glitz_rectangle_t *rects,
                           int n_rects)
 {
@@ -79,6 +81,8 @@ glitz_stencil_rectangles (glitz_surface_t *dst,
 
   glitz_int_fill_rectangles (rect_op,
                              dst,
+                             x_offset,
+                             y_offset,
                              &color,
                              rects,
                              n_rects);
@@ -93,7 +97,7 @@ glitz_stencil_rectangles (glitz_surface_t *dst,
     glitz_set_stencil_operator (dst->gl, GLITZ_STENCIL_OPERATOR_INTERSECT,
                                 *dst->stencil_mask);
     glitz_int_fill_rectangles (GLITZ_INT_OPERATOR_STENCIL_RECT_SRC,
-                               dst, &color, &rect, 1);
+                               dst, 0, 0, &color, &rect, 1);
   } else if (op == GLITZ_STENCIL_OPERATOR_INCR_EQUAL)
     *dst->stencil_mask |= 0x1;
 
@@ -105,10 +109,12 @@ glitz_stencil_rectangles (glitz_surface_t *dst,
 }
 
 void
-glitz_stencil_trapezoids (glitz_surface_t *dst,
-                       glitz_stencil_operator_t op,
-                       const glitz_trapezoid_t *traps,
-                       int n_traps)
+glitz_stencil_trapezoids (glitz_stencil_operator_t op,
+                          glitz_surface_t *dst,
+                          int x_offset,
+                          int y_offset,
+                          const glitz_trapezoid_t *traps,
+                          int n_traps)
 {
   static glitz_color_t color = { 0x0000, 0x0000, 0x0000, 0x0000 };
 
@@ -146,7 +152,7 @@ glitz_stencil_trapezoids (glitz_surface_t *dst,
 
   glitz_int_fill_trapezoids (GLITZ_OPERATOR_SRC,
                              dst,
-                             0, 0,
+                             x_offset, y_offset,
                              &color,
                              traps,
                              n_traps);
@@ -161,7 +167,7 @@ glitz_stencil_trapezoids (glitz_surface_t *dst,
     glitz_set_stencil_operator (dst->gl, GLITZ_STENCIL_OPERATOR_INTERSECT,
                                 *dst->stencil_mask);
     glitz_int_fill_rectangles (GLITZ_INT_OPERATOR_STENCIL_RECT_SRC,
-                               dst, &color, &rect, 1);
+                               dst, 0, 0, &color, &rect, 1);
   } else if (op == GLITZ_STENCIL_OPERATOR_INCR_EQUAL)
     *dst->stencil_mask |= 0x1;
 
@@ -173,8 +179,10 @@ glitz_stencil_trapezoids (glitz_surface_t *dst,
 }
 
 void
-glitz_stencil_triangles (glitz_surface_t *dst,
-                         glitz_stencil_operator_t op,
+glitz_stencil_triangles (glitz_stencil_operator_t op,
+                         glitz_surface_t *dst,
+                         int x_offset,
+                         int y_offset,
                          glitz_triangle_type_t type,
                          const glitz_point_fixed_t *points,
                          int n_points)                               
@@ -216,7 +224,7 @@ glitz_stencil_triangles (glitz_surface_t *dst,
   glitz_int_fill_triangles (GLITZ_OPERATOR_SRC,
                             dst,
                             type,
-                            0, 0,
+                            x_offset, y_offset,
                             &color,                        
                             points,
                             n_points);
@@ -231,7 +239,7 @@ glitz_stencil_triangles (glitz_surface_t *dst,
     glitz_set_stencil_operator (dst->gl, GLITZ_STENCIL_OPERATOR_INTERSECT,
                                 *dst->stencil_mask);
     glitz_int_fill_rectangles (GLITZ_INT_OPERATOR_STENCIL_RECT_SRC,
-                               dst, &color, &rect, 1);
+                               dst, 0, 0, &color, &rect, 1);
   } else if (op == GLITZ_STENCIL_OPERATOR_INCR_EQUAL)
     *dst->stencil_mask |= 0x1;
 

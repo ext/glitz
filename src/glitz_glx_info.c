@@ -91,11 +91,6 @@ glitz_gl_proc_address_list_t _glitz_gl_proc_address = {
   (glitz_gl_get_tex_level_parameter_iv_t) glGetTexLevelParameteriv,
   (glitz_gl_copy_tex_sub_image_2d_t) glCopyTexSubImage2D,
   (glitz_gl_get_integer_v_t) glGetIntegerv,
-  (glitz_gl_delete_lists_t) glDeleteLists,
-  (glitz_gl_gen_lists_t) glGenLists,
-  (glitz_gl_new_list_t) glNewList,
-  (glitz_gl_end_list_t) glEndList,
-  (glitz_gl_call_list_t) glCallList,
 
   (glitz_gl_active_texture_t) 0,
   (glitz_gl_multi_tex_coord_2d_t) 0,
@@ -410,11 +405,7 @@ glitz_glx_create_root_context (glitz_glx_screen_info_t *screen_info)
           &_glitz_gl_proc_address,
           sizeof (glitz_gl_proc_address_list_t));
   
-  memset (&screen_info->root_context.glx, 0,
-          sizeof (glitz_glx_proc_address_list_t));
-  
-  screen_info->root_context.gl.need_lookup =
-    screen_info->root_context.glx.need_lookup = 1;
+  screen_info->root_context.gl.need_lookup = 1;
 }
 
 glitz_glx_screen_info_t *

@@ -34,7 +34,6 @@ libglitz_la_SOURCES = \
 	glitz_trap.c \
 	glitz_tri.c \
 	glitz_status.c \
-	glitz_matrix.c \
 	glitz_util.c \
 	glitz_format.c \
 	glitz_program.c \

@@ -678,9 +678,7 @@ glitz_put_pixels (glitz_surface_t *dst,
     format = _glitz_best_gl_pixel_format (dst->format);
   }
 
-  if (SURFACE_RENDER_TEXTURE (dst))
-    to_drawable = 0;
-  else if (SURFACE_DRAWABLE (dst))
+  if (SURFACE_DRAWABLE (dst))
     to_drawable = 1;
   else
     to_drawable = 0;

@@ -38,18 +38,18 @@
          dst)
 
 static void
-glitz_rectangle_bounds (int n_rects,
+glitz_rectangle_bounds (int x_offset,
+                        int y_offset,
+                        int n_rects,
                         const glitz_rectangle_t *rects,
                         glitz_bounding_box_t *box)
 {
-  box->x1 = rects->x;
-  box->x2 = rects->x + rects->width;
-  box->y1 = rects->y;
-  box->y2 = rects->y + rects->height;
-  rects++;
-  n_rects--;
-    
-  while (n_rects-- > 0) {
+  box->x1 = MAXSHORT;
+  box->x2 = MINSHORT;
+  box->y1 = MAXSHORT;
+  box->y2 = MINSHORT;
+  
+  for (; n_rects; n_rects--, rects++) {
     if (rects->x < box->x1)
       box->x1 = rects->x;
     else if ((rects->x + rects->width) > box->x2)
@@ -58,13 +58,19 @@ glitz_rectangle_bounds (int n_rects,
       box->y1 = rects->y;
     else if ((rects->y + rects->height) > box->y2)
       box->y2 = rects->y + rects->height;
-    rects++;
   }
+
+  box->x1 += x_offset;
+  box->x2 += x_offset;
+  box->y1 += y_offset;
+  box->y2 += y_offset;
 }
 
 void
 glitz_int_fill_rectangles (glitz_operator_t op,
                            glitz_surface_t *dst,
+                           int x_offset,
+                           int y_offset,
                            const glitz_color_t *color,
                            const glitz_rectangle_t *rects,
                            int n_rects)
@@ -91,8 +97,8 @@ glitz_int_fill_rectangles (glitz_operator_t op,
   if (clear_mask) {
     for (; n_rects; n_rects--, rects++) {
       gl->enable (GLITZ_GL_SCISSOR_TEST);
-      gl->scissor (rects->x,
-                   dst->height - (rects->y + rects->height),
+      gl->scissor (x_offset + rects->x,
+                   dst->height - (y_offset + rects->y + rects->height),
                    rects->width,
                    rects->height);
       gl->clear (clear_mask);
@@ -108,10 +114,11 @@ glitz_int_fill_rectangles (glitz_operator_t op,
     gl->begin (GLITZ_GL_QUADS);
       
     for (; n_rects; n_rects--, rects++) {
-      vertex_2i (rects->x, rects->y);
-      vertex_2i (rects->x + rects->width, rects->y);
-      vertex_2i (rects->x + rects->width, rects->y + rects->height);
-      vertex_2i (rects->x, rects->y + rects->height);
+      vertex_2i (x_offset + rects->x, y_offset + rects->y);
+      vertex_2i (x_offset + rects->x + rects->width, y_offset + rects->y);
+      vertex_2i (x_offset + rects->x + rects->width,
+                 y_offset + rects->y + rects->height);
+      vertex_2i (x_offset + rects->x, y_offset + rects->y + rects->height);
     }
   
     gl->end ();
@@ -171,7 +178,7 @@ glitz_fill_rectangle (glitz_operator_t op,
     return;
   }
 
-  glitz_int_fill_rectangles (op, dst, color, &rect, 1);
+  glitz_int_fill_rectangles (op, dst, 0, 0, color, &rect, 1);
 
   glitz_surface_dirty (dst, &bounds);
   glitz_surface_pop_current (dst);
@@ -181,13 +188,15 @@ slim_hidden_def(glitz_fill_rectangle);
 void
 glitz_fill_rectangles (glitz_operator_t op,
                        glitz_surface_t *dst,
+                       int x_offset,
+                       int y_offset,
                        const glitz_color_t *color,
                        const glitz_rectangle_t *rects,
                        int n_rects)
 {
   glitz_bounding_box_t bounds;
   
-  glitz_rectangle_bounds (n_rects, rects, &bounds);
+  glitz_rectangle_bounds (x_offset, y_offset, n_rects, rects, &bounds);
   if (bounds.x1 > dst->width || bounds.y1 > dst->height ||
       bounds.x2 < 0 || bounds.y2 < 0)
     return;
@@ -205,7 +214,8 @@ glitz_fill_rectangles (glitz_operator_t op,
     return;
   }
 
-  glitz_int_fill_rectangles (op, dst, color, rects, n_rects);
+  glitz_int_fill_rectangles (op, dst, x_offset, y_offset,
+                             color, rects, n_rects);
 
   glitz_surface_dirty (dst, &bounds);
   glitz_surface_pop_current (dst);

@@ -193,19 +193,12 @@ _glitz_glx_set_features (glitz_glx_surface_t *surface)
   surface->base.feature_mask &= ~GLITZ_FEATURE_COMPONENT_ALPHA_MASK;
   surface->base.feature_mask &= ~GLITZ_FEATURE_VERTEX_PROGRAM_MASK;
   surface->base.feature_mask &= ~GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
-  surface->base.feature_mask &= ~GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
   surface->base.feature_mask &= ~GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK;
 
-  if (surface->context->glx.need_lookup) {
+  if (surface->context->gl.need_lookup) {
     glitz_glx_context_push_current (surface, GLITZ_CN_SURFACE_CONTEXT_CURRENT);
     glitz_glx_context_pop_current (surface);
   }
-
-  if ((surface->screen_info->glx_feature_mask &
-       GLITZ_GLX_FEATURE_RENDER_TEXTURE_MASK) &&
-      surface->context->glx.bind_tex_image &&
-      surface->context->glx.release_tex_image)
-    surface->render_texture = 1;
 
   if (surface->context->gl.active_texture &&
       surface->context->gl.multi_tex_coord_2d) {
@@ -225,16 +218,8 @@ _glitz_glx_set_features (glitz_glx_surface_t *surface)
         surface->base.feature_mask |= GLITZ_FEATURE_VERTEX_PROGRAM_MASK;
         
         if (surface->screen_info->feature_mask &
-            GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK) {
+            GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK)
           surface->base.feature_mask |= GLITZ_FEATURE_FRAGMENT_PROGRAM_MASK;
-      
-          if (surface->context->texture_indirections >= 9) {
-            /* Convolution filter programs require support for at least nine
-               texture indirections. */
-            surface->base.feature_mask |=
-              GLITZ_FEATURE_CONVOLUTION_FILTER_MASK;
-          }
-        }
       }
     }
   }
