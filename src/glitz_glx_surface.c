@@ -84,6 +84,23 @@ _glitz_glx_surface_pop_current (void *abstract_surface)
     glitz_surface_setup_environment (&surface->base);
 }
 
+static glitz_bool_t
+_glitz_glx_surface_make_current_read (void *abstract_surface)
+{
+  glitz_glx_surface_t *surface = (glitz_glx_surface_t *) abstract_surface;
+  glitz_glx_static_proc_address_list_t *glx =
+    &surface->screen_info->display_info->thread_info->glx;
+
+  if (glx->make_context_current && surface->drawable)
+    return
+      glx->make_context_current (surface->screen_info->display_info->display,
+                                 glXGetCurrentDrawable (),
+                                 surface->drawable,
+                                 glXGetCurrentContext ());
+  else
+    return 0;
+}
+
 static const struct glitz_surface_backend glitz_glx_surface_backend = {
   _glitz_glx_surface_create_similar,
   _glitz_glx_surface_destroy,
@@ -91,7 +108,8 @@ static const struct glitz_surface_backend glitz_glx_surface_backend = {
   _glitz_glx_surface_pop_current,
   _glitz_glx_surface_get_texture,
   _glitz_glx_surface_update_size,
-  _glitz_glx_surface_flush
+  _glitz_glx_surface_flush,
+  _glitz_glx_surface_make_current_read
 };
 
 static glitz_bool_t
@@ -121,7 +139,9 @@ _glitz_glx_surface_get_texture (void *abstract_surface)
   
   if (surface->base.hint_mask & GLITZ_INT_HINT_DIRTY_MASK) {
     glitz_texture_copy_surface (&surface->base.texture, &surface->base,
-                                &surface->base.dirty_box);
+                                &surface->base.dirty_box,
+                                surface->base.dirty_box.x1,
+                                surface->base.dirty_box.y1);
     surface->base.hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
   }
   

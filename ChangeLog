@@ -1,3 +1,34 @@
+2004-05-13  David Reveman  <c99drn@cs.umu.se>
+
+	* TODO: Added copy area operation.
+
+	* src/glitz.h: Added copy area operation.
+
+	* src/glitz_agl_surface.c: Added _glitz_agl_surface_make_current_read.
+
+	* src/glitz_glx_surface.c: Added _glitz_glx_surface_make_current_read.
+
+	* src/glitz_glx_info.c (glitz_glx_proc_address_lookup): Lookup 
+	function glXMakeContextCurrent.
+
+	* src/glitz_glxext.h: Added use of GLX 1.3 function 
+	glXMakeContextCurrent.
+
+	* src/glitz_glxint.h: Added use of GLX 1.3 function 
+	glXMakeContextCurrent.
+
+	* src/glitz_surface.c: Added glitz_surface_make_current_read.
+	_glitz_surface_try_push_current -> glitz_surface_try_push_current.
+
+	* src/glitzint.h: Added backend function make_current_read.
+	Added x_src and y_src parameters to glitz_texture_copy_surface.
+	glitz_programs_fini should not be declared with __internal_linkage
+	macro as it's used by the backend libraries.
+	Added glitz_surface_make_current_read, glitz_surface_try_push_current
+	and glitz_set_raster_pos.
+
+	* src/glitz.c: Added glitz_copy_area.
+
 2004-05-11  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.1.2.

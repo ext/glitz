@@ -105,6 +105,8 @@ typedef GLXPbuffer (* glitz_glx_create_pbuffer_t)
      (Display *display, GLXFBConfig config, const int *attrib_list);
 typedef void (* glitz_glx_destroy_pbuffer_t)
      (Display *display, GLXPbuffer pbuffer);
+typedef Bool (* glitz_glx_make_context_current_t)
+     (Display *display, GLXDrawable draw, GLXDrawable read, GLXContext ctx);
 
 #ifndef GLX_ARB_multisample
 #define GLX_SAMPLE_BUFFERS_ARB              0x186a0

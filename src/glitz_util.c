@@ -190,3 +190,27 @@ glitz_uint_to_power_of_two (unsigned int *value)
 
   *value = x;
 }
+
+void
+glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
+                      int x,
+                      int y)
+{
+  gl->push_attrib (GLITZ_GL_TRANSFORM_BIT | GLITZ_GL_VIEWPORT_BIT);
+  gl->matrix_mode (GLITZ_GL_PROJECTION);
+  gl->push_matrix ();
+  gl->load_identity ();
+  gl->matrix_mode (GLITZ_GL_MODELVIEW);
+  gl->push_matrix ();
+  gl->load_identity ();
+  gl->depth_range (0, 1);
+  gl->viewport (-1, -1, 2, 2);
+  
+  gl->raster_pos_2d (0, 0);
+  gl->bitmap (0, 0, 1, 1, x, y, NULL);
+  
+  gl->pop_matrix ();
+  gl->matrix_mode (GLITZ_GL_PROJECTION);
+  gl->pop_matrix ();
+  gl->pop_attrib ();
+}

@@ -271,6 +271,9 @@ typedef struct glitz_surface_backend {
 
   void
   (*flush) (void *surface);
+
+  glitz_bool_t
+  (*make_current_read) (void *surface);
 } glitz_surface_backend_t;
 
 #define GLITZ_INT_HINT_REPEAT_MASK               (1L << 4)
@@ -447,8 +450,12 @@ extern void __internal_linkage
 glitz_uint_to_power_of_two (unsigned int *value);
 
 void
-glitz_texture_init (glitz_gl_proc_address_list_t *gl,
-                    glitz_texture_t *texture,
+glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
+                      int x,
+                      int y);
+
+void
+glitz_texture_init (glitz_texture_t *texture,
                     unsigned int width,
                     unsigned int height,
                     unsigned int texture_format,
@@ -479,7 +486,9 @@ glitz_texture_unbind (glitz_gl_proc_address_list_t *gl,
 void
 glitz_texture_copy_surface (glitz_texture_t *texture,
                             glitz_surface_t *surface,
-                            glitz_bounding_box_t *box);
+                            glitz_bounding_box_t *box,
+                            int x_src,
+                            int y_src);
 
 void
 glitz_surface_init (glitz_surface_t *surface,
@@ -510,8 +519,15 @@ glitz_bool_t
 glitz_surface_push_current (glitz_surface_t *surface,
                             glitz_constraint_t constraint);
 
+extern glitz_bool_t __internal_linkage
+glitz_surface_try_push_current (glitz_surface_t *surface,
+                                glitz_constraint_t constraint);
+
 void
 glitz_surface_pop_current (glitz_surface_t *surface);
+
+extern glitz_bool_t __internal_linkage
+glitz_surface_make_current_read (glitz_surface_t *surface);
 
 extern void __internal_linkage
 glitz_surface_bounds (glitz_surface_t *surface,
@@ -604,7 +620,7 @@ extern void __internal_linkage
 glitz_program_disable (glitz_program_type_t type,
                        glitz_surface_t *dst);
 
-extern void __internal_linkage
+void
 glitz_programs_fini (glitz_gl_proc_address_list_t *gl,
                      glitz_programs_t *programs);
 
@@ -741,8 +757,6 @@ slim_hidden_proto(glitz_surface_get_width)
 slim_hidden_proto(glitz_surface_get_height)
 slim_hidden_proto(glitz_surface_update_size)
 slim_hidden_proto(glitz_surface_flush)
-slim_hidden_proto(glitz_surface_read_pixels)
-slim_hidden_proto(glitz_surface_draw_pixels)
 slim_hidden_proto(glitz_surface_get_status)
 slim_hidden_proto(glitz_surface_get_gl_texture)
 slim_hidden_proto(glitz_surface_gl_begin)
@@ -767,6 +781,6 @@ slim_hidden_proto(glitz_color_range_create)
 slim_hidden_proto(glitz_color_range_get_data)
 slim_hidden_proto(glitz_color_range_put_back_data)
 slim_hidden_proto(glitz_color_range_set_filter)
-slim_hidden_proto(glitz_color_range_set_extend)     
+slim_hidden_proto(glitz_color_range_set_extend)
 
 #endif /* GLITZINT_H_INCLUDED */

@@ -498,6 +498,16 @@ glitz_composite (glitz_operator_t op,
                  int y_dst,
                  int width,
                  int height);
+
+void
+glitz_copy_area (glitz_surface_t *src,
+                 glitz_surface_t *dst,
+                 int x_src,
+                 int y_src,
+                 int width,
+                 int height,
+                 int x_dst,
+                 int y_dst);
   
 #if defined(__cplusplus) || defined(c_plusplus)
 }

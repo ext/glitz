@@ -60,6 +60,7 @@ typedef struct _glitz_glx_static_proc_address_list_t {
   glitz_glx_get_visual_from_fbconfig_t get_visual_from_fbconfig;
   glitz_glx_create_pbuffer_t create_pbuffer;
   glitz_glx_destroy_pbuffer_t destroy_pbuffer;
+  glitz_glx_make_context_current_t make_context_current;
   glitz_bool_t need_lookup;
 } glitz_glx_static_proc_address_list_t;
 

@@ -89,10 +89,16 @@ _glitz_programmatic_surface_get_texture (void *abstract_surface)
 }
 
 static void
-_glitz_programmatic_surface_realize (void *abstract_surface) {}
+_glitz_programmatic_surface_update_size (void *abstract_surface) {}
 
 static void
-_glitz_programmatic_surface_show (void *abstract_surface) {}
+_glitz_programmatic_surface_flush (void *abstract_surface) {}
+
+static glitz_bool_t
+_glitz_programmatic_surface_make_current_read (void *abstract_surface)
+{
+  return 0;
+}
 
 static const struct glitz_surface_backend
 glitz_programmatic_surface_backend = {
@@ -101,8 +107,9 @@ glitz_programmatic_surface_backend = {
   _glitz_programmatic_surface_push_current,
   _glitz_programmatic_surface_pop_current,
   _glitz_programmatic_surface_get_texture,
-  _glitz_programmatic_surface_realize,
-  _glitz_programmatic_surface_show
+  _glitz_programmatic_surface_update_size,
+  _glitz_programmatic_surface_flush,
+  _glitz_programmatic_surface_make_current_read
 };
 
 glitz_programmatic_surface_t *
@@ -124,7 +131,7 @@ _glitz_programmatic_surface_create (void)
   
   glitz_surface_init (&surface->base,
                       &glitz_programmatic_surface_backend,
-                      NULL, NULL, 1, 1, NULL, 0);
+                      NULL, NULL, MAXSHORT, MAXSHORT, NULL, 0);
 
   surface->base.hint_mask |= GLITZ_HINT_PROGRAMMATIC_MASK;
   

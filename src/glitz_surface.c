@@ -57,7 +57,7 @@ glitz_surface_init (glitz_surface_t *surface,
   surface->gl = gl;
 
   if (surface->gl)
-    glitz_texture_init (gl, &surface->texture,
+    glitz_texture_init (&surface->texture,
                         width, height,
                         glitz_get_gl_format_from_bpp (format->bpp),
                         texture_mask);
@@ -155,9 +155,9 @@ glitz_surface_push_current (glitz_surface_t *surface,
   return 1;
 }
 
-static glitz_bool_t
-_glitz_surface_try_push_current (glitz_surface_t *surface,
-                                 glitz_constraint_t constraint)
+glitz_bool_t
+glitz_surface_try_push_current (glitz_surface_t *surface,
+                                glitz_constraint_t constraint)
 {
   if (!surface->backend->push_current (surface, constraint))
     return 0;
@@ -422,30 +422,6 @@ glitz_surface_update_size (glitz_surface_t *surface)
 }
 slim_hidden_def(glitz_surface_update_size);
 
-static void
-_glitz_set_raster_pos (glitz_gl_proc_address_list_t *gl,
-                       int x,
-                       int y)
-{
-  gl->push_attrib (GLITZ_GL_TRANSFORM_BIT | GLITZ_GL_VIEWPORT_BIT);
-  gl->matrix_mode (GLITZ_GL_PROJECTION);
-  gl->push_matrix ();
-  gl->load_identity ();
-  gl->matrix_mode (GLITZ_GL_MODELVIEW);
-  gl->push_matrix ();
-  gl->load_identity ();
-  gl->depth_range (0, 1);
-  gl->viewport (-1, -1, 2, 2);
-  
-  gl->raster_pos_2d (0, 0);
-  gl->bitmap (0, 0, 1, 1, x, y, NULL);
-  
-  gl->pop_matrix ();
-  gl->matrix_mode (GLITZ_GL_PROJECTION);
-  gl->pop_matrix ();
-  gl->pop_attrib ();
-}
-
 void
 glitz_surface_flush (glitz_surface_t *surface,
                      int x,
@@ -473,7 +449,7 @@ glitz_surface_flush (glitz_surface_t *surface,
         surface->gl->disable (GLITZ_GL_DITHER);
         glitz_set_operator (surface->gl, GLITZ_OPERATOR_SRC);
 
-        _glitz_set_raster_pos (surface->gl, x, surface->height - (y + height));
+        glitz_set_raster_pos (surface->gl, x, surface->height - (y + height));
         surface->gl->copy_pixels (x, surface->height - (y + height),
                                   width, height, GLITZ_GL_COLOR);
         
@@ -485,6 +461,12 @@ glitz_surface_flush (glitz_surface_t *surface,
   }
 }
 slim_hidden_def(glitz_surface_flush);
+
+glitz_bool_t
+glitz_surface_make_current_read (glitz_surface_t *surface)
+{
+  return surface->backend->make_current_read (surface);
+}
 
 void
 glitz_surface_dirty (glitz_surface_t *surface,
@@ -582,8 +564,8 @@ glitz_surface_read_pixels (glitz_surface_t *surface,
   /* We currently read the whole image to a temporary buffer and then
      copy the part we want, not very efficient. We only want to read the
      area requested. I think it can be fixed with glPixelStore parameters. */
-  if (_glitz_surface_try_push_current (surface,
-                                       GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+  if (glitz_surface_try_push_current (surface,
+                                      GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
 
     if (format == GLITZ_GL_LUMINANCE_ALPHA)
       rowstride = surface->width * 2;
@@ -654,7 +636,6 @@ glitz_surface_read_pixels (glitz_surface_t *surface,
   if (pixel_buf)
     free (pixel_buf);
 }
-slim_hidden_def(glitz_surface_read_pixels);
 
 void
 glitz_surface_draw_pixels (glitz_surface_t *surface,
@@ -664,7 +645,7 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
                            unsigned int height,
                            char *pixels)
 {
-  unsigned char *pixel_buf = NULL;
+  char *pixel_buf = NULL;
   glitz_gl_enum_t format, type;
   int bytes_per_pixel;
   glitz_bool_t drawable = 0;
@@ -683,8 +664,8 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
   type = glitz_get_gl_data_type_from_bpp (surface->format->bpp);
 
   drawable =
-    _glitz_surface_try_push_current (surface,
-                                     GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
+    glitz_surface_try_push_current (surface,
+                                    GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
   
   if (format == GLITZ_GL_LUMINANCE_ALPHA) {
     int i, j, k, src_rowstride, dst_rowstride;
@@ -730,10 +711,10 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
 
     if (format == GLITZ_GL_LUMINANCE_ALPHA) {
       surface->gl->pixel_zoom (1.0, 1.0);
-      _glitz_set_raster_pos (surface->gl, x, surface->height - y - height);
+      glitz_set_raster_pos (surface->gl, x, surface->height - y - height);
     } else {
       surface->gl->pixel_zoom (1.0, -1.0);
-      _glitz_set_raster_pos (surface->gl, x, surface->height - y);
+      glitz_set_raster_pos (surface->gl, x, surface->height - y);
     }
 
     surface->gl->draw_pixels (width, height, format, type, pixels);
@@ -761,7 +742,6 @@ glitz_surface_draw_pixels (glitz_surface_t *surface,
   if (pixel_buf)
     free (pixel_buf);
 }
-slim_hidden_def(glitz_surface_draw_pixels);
 
 void
 glitz_surface_get_gl_texture (glitz_surface_t *surface,

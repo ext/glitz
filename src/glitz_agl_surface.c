@@ -86,6 +86,12 @@ _glitz_agl_surface_pop_current (void *abstract_surface)
     glitz_surface_setup_environment (&surface->base);
 }
 
+static glitz_bool_t
+_glitz_agl_surface_make_current_read (void *abstract_surface)
+{
+  return 0;
+}
+
 static const struct glitz_surface_backend glitz_agl_surface_backend = {
   _glitz_agl_surface_create_similar,
   _glitz_agl_surface_destroy,
@@ -93,7 +99,8 @@ static const struct glitz_surface_backend glitz_agl_surface_backend = {
   _glitz_agl_surface_pop_current,
   _glitz_agl_surface_get_texture,
   _glitz_agl_surface_update_size,
-  _glitz_agl_surface_flush
+  _glitz_agl_surface_flush,
+  _glitz_agl_surface_make_current_read
 };
 
 static glitz_texture_t *
@@ -107,7 +114,9 @@ _glitz_agl_surface_get_texture (void *abstract_surface) {
       return &surface->base.texture;
     } else 
       glitz_texture_copy_surface (&surface->base.texture, &surface->base,
-                                  &surface->base.dirty_box);
+                                  &surface->base.dirty_box,
+                                  surface->base.dirty_box.x1,
+                                  surface->base.dirty_box.y1);
     
     surface->base.hint_mask &= ~GLITZ_INT_HINT_DIRTY_MASK;
   }

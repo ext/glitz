@@ -588,7 +588,7 @@ glitz_composite (glitz_operator_t op,
   clip.x1 = x_dst;
   clip.y1 = y_dst;
   clip.x2 = clip.x1 + width;
-  clip.y2 = clip.y1 + height;  
+  clip.y2 = clip.y1 + height;
   
   gl->scissor (clip.x1, dst->height - (clip.y1 + height), width, height);
   
@@ -873,4 +873,113 @@ glitz_composite (glitz_operator_t op,
 
   if (intermediate)
     glitz_surface_destroy (intermediate);
+}
+
+void
+glitz_copy_area (glitz_surface_t *src,
+                 glitz_surface_t *dst,
+                 int x_src,
+                 int y_src,
+                 int width,
+                 int height,
+                 int x_dst,
+                 int y_dst)
+{
+  glitz_bounding_box_t box, src_box, dst_box;
+  int status;
+  
+  if (SURFACE_PROGRAMMATIC (dst) || SURFACE_PROGRAMMATIC (src))
+    return;
+
+  box.x1 = x_src;
+  box.y1 = y_src;
+  box.x2 = box.x1 + width;
+  box.y2 = box.y1 + height;
+
+  src_box.x1 = src_box.y1 = 0;
+  src_box.x2 = src->width;
+  src_box.y2 = src->height;
+
+  glitz_intersect_bounding_box (&box, &src_box, &src_box);
+
+  box.x1 = x_dst;
+  box.y1 = y_dst;
+  box.x2 = box.x1 + (src_box.x2 - src_box.x1);
+  box.y2 = box.y1 + (src_box.y2 - src_box.y1);
+
+  dst_box.x1 = dst_box.y1 = 0;
+  dst_box.x2 = dst->width;
+  dst_box.y2 = dst->height;
+
+  glitz_intersect_bounding_box (&box, &dst_box, &dst_box);
+
+  x_src = src_box.x1;
+  y_src = src_box.y1;
+  width = dst_box.x2 - dst_box.x1;
+  height = dst_box.y2 - dst_box.y1;
+  x_dst = dst_box.x1;
+  y_dst = dst_box.y1;
+
+  if (width <= 0 || height <= 0) {
+    glitz_surface_status_add (dst, GLITZ_STATUS_BAD_COORDINATE_MASK);
+    return;
+  }
+
+  status = 0;
+  if (glitz_surface_try_push_current (dst,
+                                      GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+    if (src != dst)
+      status = glitz_surface_make_current_read (src);
+    else
+      status = 1;
+
+    if (status) {
+      if (src->format->doublebuffer)
+        dst->gl->read_buffer (GLITZ_GL_BACK);
+      if (dst->format->doublebuffer)
+        dst->gl->draw_buffer (GLITZ_GL_BACK);
+      
+      dst->gl->disable (GLITZ_GL_SCISSOR_TEST);
+      dst->gl->disable (GLITZ_GL_DITHER);    
+      glitz_set_operator (dst->gl, GLITZ_OPERATOR_SRC);
+      
+      dst->gl->pixel_zoom (1.0, 1.0);
+      glitz_set_raster_pos (dst->gl, x_dst, dst->height - (y_dst + height));
+      dst->gl->copy_pixels (x_src, src->height - (y_src + height),
+                            width, height, GLITZ_GL_COLOR);
+    } else
+      glitz_composite (GLITZ_OPERATOR_SRC, src, NULL, dst,
+                       x_src, y_src, 0, 0, x_dst, y_dst, width, height);
+    status = 1;
+    glitz_surface_pop_current (dst);
+  }
+
+  if (!status) {
+    if (glitz_surface_try_push_current (src,
+                                        GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
+      glitz_texture_copy_surface (&dst->texture, src,
+                                  &dst_box, x_src, y_src);
+      status = 1;
+    }
+    glitz_surface_pop_current (src);
+  }
+
+  if (!status) {
+    int rowstride, bytes_per_pixel;
+    char *pixel_buf;
+    
+    bytes_per_pixel = MAX ((dst->format->bpp / 8), (src->format->bpp / 8));
+    
+    rowstride = width * bytes_per_pixel;
+    rowstride = (rowstride + 3) & -4;
+    pixel_buf = malloc (height * rowstride);
+    if (!pixel_buf) {
+      glitz_surface_status_add (dst, GLITZ_STATUS_NO_MEMORY_MASK);
+      return;
+    }
+    glitz_surface_read_pixels (src, x_src, y_src, width, height, pixel_buf);
+    glitz_surface_draw_pixels (dst, x_dst, y_dst, width, height, pixel_buf);
+  }
+  
+  glitz_surface_dirty (dst, &dst_box);
 }

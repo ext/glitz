@@ -48,8 +48,7 @@ _glitz_texture_find_best_target (unsigned int width,
 }
 
 void
-glitz_texture_init (glitz_gl_proc_address_list_t *gl,
-                    glitz_texture_t *texture,
+glitz_texture_init (glitz_texture_t *texture,
                     unsigned int width,
                     unsigned int height,
                     unsigned int texture_format,
@@ -214,8 +213,12 @@ glitz_texture_unbind (glitz_gl_proc_address_list_t *gl,
 void
 glitz_texture_copy_surface (glitz_texture_t *texture,
                             glitz_surface_t *surface,
-                            glitz_bounding_box_t *box)
+                            glitz_bounding_box_t *box,
+                            int x_src,
+                            int y_src)
 {
+  int x_dst, y_dst, width, height;
+  
   glitz_surface_push_current (surface, GLITZ_CN_SURFACE_DRAWABLE_CURRENT);
   
   glitz_texture_bind (surface->gl, texture);
@@ -223,16 +226,20 @@ glitz_texture_copy_surface (glitz_texture_t *texture,
   if (!texture->allocated)
     _glitz_texture_allocate (surface->gl, texture);
 
-  if (box->x1 < 0) box->x1 = 0;
-  if (box->y1 < 0) box->y1 = 0;
-  if (box->x2 > surface->width) box->x2 = surface->width;
-  if (box->y2 > surface->height) box->y2 = surface->height;
-
+  if (x_src < 0) x_src = 0;
+  if (y_src < 0) y_src = 0;
+  
+  x_dst = (box->x1 > 0)? box->x1: 0;
+  y_dst = (box->y1 > 0)? box->y1: 0;
+  width = (box->x2 < (int) texture->width)?
+    box->x2 - x_dst: (int) texture->width - x_dst;
+  height = (box->x2 < (int) texture->height)?
+    box->y2 - y_dst: (int) texture->height - y_dst;
+  
   surface->gl->copy_tex_sub_image_2d (texture->target, 0,
-                                      box->x1, box->y1,
-                                      box->x1, box->y1,
-                                      box->x2 - box->x1,
-                                      box->y2 - box->y1);
+                                      x_dst, y_dst,
+                                      x_src, y_src,
+                                      width, height);
   
   surface->gl->flush ();
 

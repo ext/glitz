@@ -8,7 +8,9 @@ config.h.in
 config.log
 config.status
 configure
-libglxc.pc
+glitz.pc
+glitz-glx.pc
+glitz-agl.pc
 libtool
 stamp-h
 stamp-h.in

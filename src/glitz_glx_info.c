@@ -132,6 +132,8 @@ glitz_glx_proc_address_lookup (glitz_glx_thread_info_t *info)
     glitz_glx_get_proc_address (info, "glXCreatePbuffer");
   info->glx.destroy_pbuffer = (glitz_glx_destroy_pbuffer_t)
     glitz_glx_get_proc_address (info, "glXDestroyPbuffer");
+  info->glx.make_context_current = (glitz_glx_make_context_current_t)
+    glitz_glx_get_proc_address (info, "glXMakeContextCurrent");
   
   info->glx.need_lookup = 0;
 }
