@@ -1,3 +1,15 @@
+2004-05-28  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_glx_info.c (glitz_glx_screen_info_get): screen_info to
+	proc_address_lookup.
+
+	* src/glitz_glxint.h: screen_info to proc_address_lookup.
+
+	* src/glitz_glx_context.c (glitz_glx_context_proc_address_lookup): 
+	Only check the number of texture indirections if fragment program
+	extension is supported.
+	(glitz_glx_context_make_current): screen_info to proc_address_lookup.
+
 2004-05-27  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz.c (glitz_copy_area): Coordinate calculation fix.

@@ -170,7 +170,7 @@ extern glitz_glx_surface_t *__internal_linkage
 glitz_glx_context_pop_current (glitz_glx_surface_t *surface);
 
 extern void __internal_linkage
-glitz_glx_context_proc_address_lookup (glitz_glx_thread_info_t *thread_info,
+glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
                                        glitz_glx_context_t *context);
 
 extern void __internal_linkage

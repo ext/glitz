@@ -197,9 +197,12 @@ glitz_glx_context_destroy (glitz_glx_screen_info_t *screen_info,
 }
 
 void
-glitz_glx_context_proc_address_lookup (glitz_glx_thread_info_t *thread_info,
+glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
                                        glitz_glx_context_t *context)
 {
+  glitz_glx_thread_info_t *thread_info =
+    screen_info->display_info->thread_info;
+    
   context->glx.bind_tex_image_arb =
     (glitz_glx_bind_tex_image_arb_t)
     glitz_glx_get_proc_address (thread_info, "glXBindTexImageARB");
@@ -233,10 +236,13 @@ glitz_glx_context_proc_address_lookup (glitz_glx_thread_info_t *thread_info,
     (glitz_gl_get_program_iv_arb_t)
     glitz_glx_get_proc_address (thread_info, "glGetProgramivARB");
 
-  if (context->gl.get_program_iv_arb) {
-    context->gl.get_program_iv_arb (GLITZ_GL_FRAGMENT_PROGRAM_ARB,
-                                    GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS_ARB,
-                                    &context->texture_indirections);
+  if (screen_info->feature_mask & GLITZ_FEATURE_ARB_FRAGMENT_PROGRAM_MASK) {
+    if (context->gl.get_program_iv_arb) {
+      context->gl.get_program_iv_arb
+        (GLITZ_GL_FRAGMENT_PROGRAM_ARB,
+         GLITZ_GL_MAX_PROGRAM_TEX_INDIRECTIONS_ARB,
+         &context->texture_indirections);
+    }
   }
   
   context->gl.need_lookup = 0;
@@ -279,8 +285,8 @@ glitz_glx_context_make_current (glitz_glx_surface_t *surface,
                   drawable, context);
 
   if (surface->context->gl.need_lookup)
-    glitz_glx_context_proc_address_lookup
-      (surface->screen_info->display_info->thread_info, surface->context);
+    glitz_glx_context_proc_address_lookup (surface->screen_info,
+                                           surface->context);
 }
 
 static void

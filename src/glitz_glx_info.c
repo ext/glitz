@@ -414,8 +414,8 @@ glitz_glx_screen_info_get (Display *display,
     glPixelStorei (GL_PACK_ALIGNMENT, 4);
     glPixelStorei (GL_UNPACK_ALIGNMENT, 4);
 
-    glitz_glx_context_proc_address_lookup
-      (screen_info->display_info->thread_info, &screen_info->root_context);
+    glitz_glx_context_proc_address_lookup (screen_info,
+                                           &screen_info->root_context);
     
     glitz_glx_query_extensions (screen_info);
     glitz_glx_query_formats (screen_info);
