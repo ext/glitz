@@ -48,11 +48,11 @@ glitz_rectangle_bounds (const glitz_rectangle_t *rects,
   for (; n_rects; n_rects--, rects++) {
     if (rects->x < box->x1)
       box->x1 = rects->x;
-    else if ((rects->x + rects->width) > box->x2)
+    if ((rects->x + rects->width) > box->x2)
       box->x2 = rects->x + rects->width;
     if (rects->y < box->y1)
       box->y1 = rects->y;
-    else if ((rects->y + rects->height) > box->y2)
+    if ((rects->y + rects->height) > box->y2)
       box->y2 = rects->y + rects->height;
   }
 }
@@ -81,7 +81,7 @@ glitz_set_rectangles (glitz_surface_t *dst,
     dst->flags |= GLITZ_SURFACE_FLAG_DRAWABLE_DIRTY_MASK;
     return;
   }
-  
+
   if (glitz_surface_push_current (dst, GLITZ_CN_SURFACE_DRAWABLE_CURRENT)) {
     gl->clear_color (color->red / (glitz_gl_clampf_t) 0xffff,
                      color->green / (glitz_gl_clampf_t) 0xffff,
@@ -144,6 +144,7 @@ glitz_set_rectangles (glitz_surface_t *dst,
   
   glitz_surface_pop_current (dst);
 }
+slim_hidden_def(glitz_set_rectangles);
 
 void
 glitz_set_rectangle (glitz_surface_t *dst,

@@ -1,4 +1,13 @@
+2004-09-11  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz.c (glitz_composite): Oh, I'm good at these, not the
+	first time I accidentally replaced x with y. 
+
 2004-09-10  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_rect.c: Added missing hidden_def to glitz_set_rectangles.
+	(glitz_rectangle_bounds): hmm, how did this function turn up like
+	this, well now it's fixed
 
 	* src/glitzint.h: Added PROJECTIVE_TRANSFORM flag.
 

@@ -223,8 +223,8 @@ glitz_composite (glitz_operator_t op,
 
     glitz_texture_set_tex_gen (gl,
                                stexture,
-                               rect.x1 - y_src,
-                               rect.y1 - x_src,
+                               rect.x1 - x_src,
+                               rect.y1 - y_src,
                                src->flags);
 
     if (src->transform) {
