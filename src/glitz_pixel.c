@@ -836,8 +836,9 @@ glitz_set_pixels (glitz_surface_t      *dst,
                 }
                 
                 pixels = ptr +
-                    ((format->skip_lines + box.y1 - y_dst) * bytes_per_line) +
-                    ((format->xoffset + box.x1 - x_dst) * bytes_per_pixel);
+                    (format->skip_lines + y_dst + height - box.y2) *
+                    bytes_per_line +
+                    (format->xoffset + box.x1 - x_dst) * bytes_per_pixel;
             }
 
             gl->tex_sub_image_2d (texture->target, 0,

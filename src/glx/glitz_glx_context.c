@@ -192,6 +192,8 @@ static void
 _glitz_glx_context_initialize (glitz_glx_screen_info_t *screen_info,
                                glitz_glx_context_t     *context)
 {
+  const char *version;
+    
   glitz_backend_init (&context->backend,
                       glitz_glx_get_proc_address,
                       (void *) screen_info);
@@ -200,6 +202,21 @@ _glitz_glx_context_initialize (glitz_glx_screen_info_t *screen_info,
                                      context->max_viewport_dims);
 
   glitz_initiate_state (&_glitz_glx_gl_proc_address);
+
+  version = context->backend.gl.get_string (GLITZ_GL_VERSION);
+  if (version)
+  {
+    /* Having trouble with TexSubImage2D to NPOT GL_TEXTURE_2D textures when
+       using nvidia's binary driver. Seems like a driver issue, but I'm not
+       sure yet. Turning of NPOT GL_TEXTURE_2D textures until this have been
+       solved. */
+    if (strstr (version, "NVIDIA 61.11") ||
+        strstr (version, "NVIDIA 66.29"))
+    {
+      context->backend.feature_mask &=
+        ~GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK;
+    }
+  }
     
   context->initialized = 1;
 }
