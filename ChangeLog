@@ -1,3 +1,30 @@
+2004-09-21  David Reveman  <c99drn@cs.umu.se>
+
+	* src/glitz_glxint.h: Added create_new_context to 
+	glitz_glx_static_proc_address_list_t.
+	A GLXContext as parameter to glitz_glx_context_make_current.
+
+	* src/glitz_glxext.h: Added glitz_glx_create_new_context_t function
+	prototype.
+
+	* src/glitz_glx_surface.c (_glitz_glx_surface_destroy): A
+	GLXContext to glitz_glx_context_make_current.
+
+	* src/glitz_glx_pbuffer.c (glitz_glx_pbuffer_create): Only create
+	pbuffer if we've got a valid fbconfig.
+
+	* src/glitz_glx_info.c (glitz_glx_proc_address_lookup): Added
+	glXCreateNewContext.
+
+	* src/glitz_glx_context.c (_glitz_glx_context_create_glx12): Use
+	GLITZ_GL_TRUE instead of 1 for GL_TRUE.
+	(_glitz_glx_context_create_glx13): If now visual could be found
+	for a format the context should be created with glXCreateNewContext. 
+	(glitz_glx_context_make_current): The default GLXContext is now a
+	parameter.
+	(glitz_glx_context_update): Use root context as new context if no
+	real context is available.
+
 2004-09-20  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_filter.c (glitz_filter_set_params): Fixed number of color

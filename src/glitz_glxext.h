@@ -108,6 +108,9 @@ typedef void (* glitz_glx_destroy_pbuffer_t)
      (Display *display, GLXPbuffer pbuffer);
 typedef Bool (* glitz_glx_make_context_current_t)
      (Display *display, GLXDrawable draw, GLXDrawable read, GLXContext ctx);
+typedef GLXContext (* glitz_glx_create_new_context_t)
+     (Display *display, GLXFBConfig config, int render_type,
+      GLXContext share_list, Bool direct);
 
 #ifndef GLX_ARB_multisample
 #define GLX_SAMPLE_BUFFERS_ARB              0x186a0

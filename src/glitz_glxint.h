@@ -64,6 +64,7 @@ typedef struct _glitz_glx_static_proc_address_list_t {
   glitz_glx_create_pbuffer_t create_pbuffer;
   glitz_glx_destroy_pbuffer_t destroy_pbuffer;
   glitz_glx_make_context_current_t make_context_current;
+  glitz_glx_create_new_context_t create_new_context;
   glitz_bool_t need_lookup;
 } glitz_glx_static_proc_address_list_t;
 
@@ -155,6 +156,7 @@ glitz_glx_context_get_default (glitz_glx_screen_info_t *screen_info);
 
 extern void __internal_linkage
 glitz_glx_context_make_current (glitz_glx_surface_t *surface,
+                                GLXContext context,
                                 glitz_bool_t flush);
 
 extern glitz_glx_surface_t *__internal_linkage

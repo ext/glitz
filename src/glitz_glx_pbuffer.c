@@ -36,21 +36,24 @@ glitz_glx_pbuffer_create (glitz_glx_display_info_t *display_info,
                           GLXFBConfig fbconfig,
                           glitz_texture_t *texture)
 {
-  int pbuffer_attr[13], i = 0;
+  if (fbconfig) {
+    int pbuffer_attr[13], i = 0;
 
-  pbuffer_attr[i++] = GLX_PBUFFER_WIDTH;
-  pbuffer_attr[i++] = texture->width;
-  pbuffer_attr[i++] = GLX_PBUFFER_HEIGHT;
-  pbuffer_attr[i++] = texture->height;
-  pbuffer_attr[i++] = GLX_PRESERVED_CONTENTS;
-  pbuffer_attr[i++] = 1;
-  pbuffer_attr[i++] = GLX_LARGEST_PBUFFER;
-  pbuffer_attr[i++] = 0;
-  pbuffer_attr[i++] = 0;
-    
-  return
-    display_info->thread_info->glx.create_pbuffer (display_info->display,
-                                                   fbconfig, pbuffer_attr);
+    pbuffer_attr[i++] = GLX_PBUFFER_WIDTH;
+    pbuffer_attr[i++] = texture->width;
+    pbuffer_attr[i++] = GLX_PBUFFER_HEIGHT;
+    pbuffer_attr[i++] = texture->height;
+    pbuffer_attr[i++] = GLX_PRESERVED_CONTENTS;
+    pbuffer_attr[i++] = 1;
+    pbuffer_attr[i++] = GLX_LARGEST_PBUFFER;
+    pbuffer_attr[i++] = 0;
+    pbuffer_attr[i++] = 0;
+  
+    return
+      display_info->thread_info->glx.create_pbuffer (display_info->display,
+                                                     fbconfig, pbuffer_attr);
+  } else
+    return (GLXPbuffer) 0;
 }
 
 void 

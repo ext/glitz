@@ -150,6 +150,8 @@ glitz_glx_proc_address_lookup (glitz_glx_thread_info_t *info)
     glitz_glx_get_proc_address (info, "glXDestroyPbuffer");
   info->glx.make_context_current = (glitz_glx_make_context_current_t)
     glitz_glx_get_proc_address (info, "glXMakeContextCurrent");
+  info->glx.create_new_context = (glitz_glx_create_new_context_t)
+    glitz_glx_get_proc_address (info, "glXCreateNewContext");
   info->glx.get_proc_address = (glitz_glx_get_proc_address_t)
     glitz_glx_get_proc_address (info, "glXGetProcAddressARB");
   

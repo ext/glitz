@@ -52,7 +52,8 @@ _glitz_glx_context_create_glx12 (glitz_glx_screen_info_t *screen_info,
   }
 
   context->context = glXCreateContext (screen_info->display_info->display,
-                                       &vis_infos[i], share_list, 1);
+                                       &vis_infos[i], share_list,
+                                       GLITZ_GL_TRUE);
   context->id = visualid;  
   context->fbconfig = (XID) 0;
 
@@ -85,18 +86,22 @@ _glitz_glx_context_create_glx13 (glitz_glx_screen_info_t *screen_info,
   if (i < n_fbconfigs)
     vinfo = glx->get_visual_from_fbconfig (screen_info->display_info->display,
                                            fbconfigs[i]);
-  
+
+  context->id = fbconfigid;
   if (vinfo) {
     context->context = glXCreateContext (screen_info->display_info->display,
-                                         vinfo, share_list, 1);
-    context->id = fbconfigid;
-    context->fbconfig = fbconfigs[i];
+                                         vinfo, share_list, GLITZ_GL_TRUE);
     XFree (vinfo);
-  } else {
-    context->context = NULL;
-    context->id = fbconfigid;
+  } else if (glx->create_new_context)
+    context->context =
+      glx->create_new_context (screen_info->display_info->display,
+                               fbconfigs[i], GLX_RGBA_TYPE, share_list,
+                               GLITZ_GL_TRUE);
+  
+  if (context->context)
+    context->fbconfig = fbconfigs[i];
+  else
     context->fbconfig = NULL;
-  }
 
   if (fbconfigs)
     XFree (fbconfigs);
@@ -335,9 +340,9 @@ glitz_glx_context_proc_address_lookup (glitz_glx_screen_info_t *screen_info,
 
 void
 glitz_glx_context_make_current (glitz_glx_surface_t *surface,
+                                GLXContext context,
                                 glitz_bool_t flush)
 {
-  GLXContext context;
   Drawable drawable;
 
   if (flush)
@@ -347,7 +352,6 @@ glitz_glx_context_make_current (glitz_glx_surface_t *surface,
     drawable = surface->screen_info->root_drawable;
     context = surface->screen_info->root_context.context;
   } else {
-    context = surface->context->context;
     drawable = surface->drawable;
     surface->base.update_mask |= GLITZ_UPDATE_ALL_MASK;
   }
@@ -365,22 +369,28 @@ glitz_glx_context_update (glitz_glx_surface_t *surface,
                           glitz_constraint_t constraint)
 {
   GLXContext context = glXGetCurrentContext ();
+  GLXContext newcontext;
+
+  if (surface->context->context)
+    newcontext = surface->context->context;
+  else
+    newcontext = surface->screen_info->root_context.context;
   
   switch (constraint) {
   case GLITZ_CN_NONE:
     break;
   case GLITZ_CN_ANY_CONTEXT_CURRENT:
     if (context == NULL)
-      glitz_glx_context_make_current (surface, 0);
+      glitz_glx_context_make_current (surface, newcontext, 0);
     break;
   case GLITZ_CN_SURFACE_CONTEXT_CURRENT:
-    if (context != surface->context->context)
-      glitz_glx_context_make_current (surface, (context)? 1: 0);
+    if (context != newcontext)
+      glitz_glx_context_make_current (surface, newcontext, (context)? 1: 0);
     break;
   case GLITZ_CN_SURFACE_DRAWABLE_CURRENT:
-    if ((context != surface->context->context) ||
+    if ((context != newcontext) ||
         (glXGetCurrentDrawable () != surface->drawable))
-      glitz_glx_context_make_current (surface, (context)? 1: 0);
+      glitz_glx_context_make_current (surface, newcontext, (context)? 1: 0);
     break;
   }
 }

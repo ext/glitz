@@ -256,7 +256,7 @@ _glitz_glx_surface_destroy (void *abstract_surface)
   if (surface->drawable &&
       (glXGetCurrentDrawable () == surface->drawable)) {
     surface->drawable = None;
-    glitz_glx_context_make_current (surface, 0);
+    glitz_glx_context_make_current (surface, (GLXContext) 0, 0);
   }
 
   if (surface->pbuffer)
