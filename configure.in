@@ -170,18 +170,7 @@ glitz-agl.pc
 dnl ===========================================================================
 
 echo ""
-echo "Building backends:"
-
-if [[ "x$use_glx" = "xyes" ]]; then
-   echo "  glx: Yes";
-else
-   echo "  glx: No";
-fi
-
-if [[ "x$use_agl" = "xyes" ]]; then
-   echo "  agl: Yes";
-else
-   echo "  agl: No";
-fi
-
+echo "glitz will be compiled with the following backends:"
+echo "  GLX: $use_glx"
+echo "  AGL: $use_agl"
 echo ""

@@ -1,3 +1,7 @@
+2004-04-10  David Reveman  <c99drn@cs.umu.se>
+
+	* configure.in: Backend detection similar to cairo.
+
 2004-04-06  David Reveman  <c99drn@cs.umu.se>
 
 	* ChangeLog: Added name to ChangeLog entries.
