@@ -418,7 +418,7 @@ glitz_set_clip_operator (glitz_gl_proc_address_list_t *gl,
                          glitz_int_clip_operator_t op,
                          int mask);
 
-extern void __internal_linkage
+void
 glitz_intersect_bounding_box (glitz_bounding_box_t *box1,
                               glitz_bounding_box_t *box2,
                               glitz_bounding_box_t *return_box);
