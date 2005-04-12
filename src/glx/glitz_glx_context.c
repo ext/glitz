@@ -104,6 +104,101 @@ _glitz_glx_context_create_using_fbconfig (glitz_glx_screen_info_t *screen_info,
     XFree (fbconfigs);
 }
 
+static glitz_context_t *
+_glitz_glx_create_context (void                    *abstract_drawable,
+                           glitz_drawable_format_t *format)
+{
+  glitz_glx_drawable_t *drawable = (glitz_glx_drawable_t *) abstract_drawable;
+  glitz_glx_screen_info_t *screen_info = drawable->screen_info;
+  int format_id = screen_info->format_ids[format->id];
+  glitz_glx_context_t *context;
+  
+  context = malloc (sizeof (glitz_glx_context_t));
+  if (!context)
+    return NULL;
+
+  _glitz_context_init (&context->base, &drawable->base);
+  
+  if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_FBCONFIG_MASK)
+      _glitz_glx_context_create_using_fbconfig (screen_info,
+                                                format_id,
+                                                screen_info->root_context,
+                                                context);
+  else
+      _glitz_glx_context_create (screen_info,
+                                 format_id,
+                                 screen_info->root_context,
+                                 context);
+
+  return (glitz_context_t *) context;
+}
+
+static void
+_glitz_glx_context_destroy (void *abstract_context)
+{
+  glitz_glx_context_t *context = (glitz_glx_context_t *) abstract_context;
+  glitz_glx_drawable_t *drawable = (glitz_glx_drawable_t *)
+      context->base.drawable;
+  
+  if (drawable->screen_info->display_info->thread_info->cctx == &context->base)
+  {
+      glXMakeCurrent (drawable->screen_info->display_info->display,
+                      None, NULL);
+  
+      drawable->screen_info->display_info->thread_info->cctx = NULL;
+  }
+
+  glXDestroyContext (drawable->screen_info->display_info->display,
+                     context->context);
+
+  _glitz_context_fini (&context->base);
+  
+  free (context);
+}
+
+static void
+_glitz_glx_copy_context (void          *abstract_src,
+                         void          *abstract_dst,
+                         unsigned long mask)
+{
+  glitz_glx_context_t  *src = (glitz_glx_context_t *) abstract_src;
+  glitz_glx_context_t  *dst = (glitz_glx_context_t *) abstract_dst;
+  glitz_glx_drawable_t *drawable = (glitz_glx_drawable_t *)
+      src->base.drawable;
+
+  glXCopyContext (drawable->screen_info->display_info->display,
+                  src->context, dst->context, mask);
+}
+
+static void
+_glitz_glx_make_current (void *abstract_context,
+                         void *abstract_drawable)
+{
+  glitz_glx_context_t  *context = (glitz_glx_context_t *) abstract_context;
+  glitz_glx_drawable_t *drawable = (glitz_glx_drawable_t *) abstract_drawable;
+  glitz_glx_display_info_t *display_info = drawable->screen_info->display_info;
+  
+  if ((glXGetCurrentContext () != context->context) ||
+      (glXGetCurrentDrawable () != drawable->drawable))
+    glXMakeCurrent (display_info->display, drawable->drawable,
+                    context->context);
+
+  display_info->thread_info->cctx = &context->base;
+}
+
+static glitz_function_pointer_t
+_glitz_glx_context_get_proc_address (void       *abstract_context,
+                                     const char *name)
+{
+  glitz_glx_context_t  *context = (glitz_glx_context_t *) abstract_context;
+  glitz_glx_drawable_t *drawable = (glitz_glx_drawable_t *)
+      context->base.drawable;
+
+  _glitz_glx_make_current (context, drawable);
+  
+  return glitz_glx_get_proc_address (name, drawable->screen_info);
+}
+
 glitz_glx_context_t *
 glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
                        glitz_drawable_format_t *format)
@@ -143,7 +238,7 @@ glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
                                format_id,
                                screen_info->root_context,
                                context);
-
+  
   if (!screen_info->root_context)
     screen_info->root_context = context->context;
 
@@ -156,8 +251,13 @@ glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
   context->backend.push_current = glitz_glx_push_current;
   context->backend.pop_current = glitz_glx_pop_current;
   context->backend.swap_buffers = glitz_glx_swap_buffers;
-  context->backend.make_current_read = glitz_glx_make_current_read;
-
+  
+  context->backend.create_context = _glitz_glx_create_context;
+  context->backend.destroy_context = _glitz_glx_context_destroy;
+  context->backend.copy_context = _glitz_glx_copy_context;
+  context->backend.make_current = _glitz_glx_make_current;
+  context->backend.get_proc_address = _glitz_glx_context_get_proc_address;
+  
   context->backend.drawable_formats = screen_info->formats;
   context->backend.n_drawable_formats = screen_info->n_formats;
 
@@ -203,7 +303,7 @@ _glitz_glx_context_initialize (glitz_glx_screen_info_t *screen_info,
 
   glitz_initiate_state (&_glitz_glx_gl_proc_address);
 
-  version = context->backend.gl.get_string (GLITZ_GL_VERSION);
+  version = (const char *) context->backend.gl.get_string (GLITZ_GL_VERSION);
   if (version)
   {
     /* Having trouble with TexSubImage2D to NPOT GL_TEXTURE_2D textures when
@@ -223,15 +323,27 @@ _glitz_glx_context_initialize (glitz_glx_screen_info_t *screen_info,
 
 static void
 _glitz_glx_context_make_current (glitz_glx_drawable_t *drawable,
-                                 glitz_bool_t         flush)
+                                 glitz_bool_t         finish)
 {
-  if (flush)
-    glFlush ();
+  glitz_glx_display_info_t *display_info = drawable->screen_info->display_info;
+                                 
+  if (finish)
+    glFinish ();
 
-  glXMakeCurrent (drawable->screen_info->display_info->display,
+  if (display_info->thread_info->cctx)
+  {
+      glitz_context_t *ctx = display_info->thread_info->cctx;
+
+      if (ctx->lose_current)
+          ctx->lose_current (ctx->closure);
+
+      display_info->thread_info->cctx = NULL;
+  }
+
+  glXMakeCurrent (display_info->display,
                   drawable->drawable,
                   drawable->context->context);
-
+  
   drawable->base.update_all = 1;
   
   if (!drawable->context->initialized)
@@ -247,11 +359,20 @@ _glitz_glx_context_update (glitz_glx_drawable_t *drawable,
   switch (constraint) {
   case GLITZ_NONE:
     break;
-  case GLITZ_ANY_CONTEXT_CURRENT:
-    context = glXGetCurrentContext ();
-    if (context == (GLXContext) 0)
+  case GLITZ_ANY_CONTEXT_CURRENT: {
+    glitz_glx_display_info_t *dinfo = drawable->screen_info->display_info;
+    
+    if (dinfo->thread_info->cctx)
+    {
       _glitz_glx_context_make_current (drawable, 0);
-    break;
+    }
+    else
+    {
+      context = glXGetCurrentContext ();
+      if (context == (GLXContext) 0)
+        _glitz_glx_context_make_current (drawable, 0);
+    }
+    } break;
   case GLITZ_CONTEXT_CURRENT:
     context = glXGetCurrentContext ();
     if (context != drawable->context->context)

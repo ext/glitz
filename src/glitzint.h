@@ -87,8 +87,6 @@
 
 #define GLITZ_CONTEXT_STACK_SIZE 16
 
-typedef void (*glitz_function_pointer_t) (void);
-
 typedef struct _glitz_gl_proc_address_list_t {
   
   /* core */
@@ -332,8 +330,25 @@ typedef struct glitz_backend {
   void
   (*swap_buffers)              (void *drawable);
 
-  glitz_status_t
-  (*make_current_read)         (void *drawable);
+  glitz_context_t *
+  (*create_context)            (void                    *drawable,
+                                glitz_drawable_format_t *format);
+
+  void
+  (*destroy_context)           (void *context);
+
+  void
+  (*copy_context)              (void          *src,
+                                void          *dst,
+                                unsigned long mask);
+
+  void
+  (*make_current)              (void *context,
+                                void *drawable);
+
+  glitz_function_pointer_t
+  (*get_proc_address)          (void       *context,
+                                const char *name);
 
   glitz_gl_proc_address_list_t gl;
   
@@ -574,6 +589,16 @@ struct _glitz_surface {
 #define GLITZ_GL_SURFACE(surface) \
   glitz_gl_proc_address_list_t *gl = &(surface)->drawable->backend->gl;
 
+struct _glitz_context {
+  glitz_drawable_t              *drawable;
+  glitz_surface_t               *surface;
+  int                           ref_count;
+  void                          *closure;
+  glitz_lose_current_function_t lose_current;
+  glitz_box_t                   scissor;
+  glitz_box_t                   viewport;
+};
+
 typedef struct _glitz_composite_op_t glitz_composite_op_t;
 
 typedef void (*glitz_combine_function_t) (glitz_composite_op_t *);
@@ -726,13 +751,13 @@ glitz_surface_push_current (glitz_surface_t    *surface,
 extern void __internal_linkage
 glitz_surface_pop_current (glitz_surface_t *surface);
 
-extern glitz_status_t __internal_linkage
-glitz_surface_make_current_read (glitz_surface_t *surface);
-
 extern void __internal_linkage
 glitz_surface_damage (glitz_surface_t *surface,
                       glitz_box_t     *box,
                       int             what);
+
+extern void __internal_linkage
+glitz_surface_sync_drawable (glitz_surface_t *surface);
 
 extern void __internal_linkage
 glitz_surface_status_add (glitz_surface_t *surface,
@@ -832,6 +857,13 @@ extern glitz_bool_t __internal_linkage
 glitz_framebuffer_complete (glitz_gl_proc_address_list_t *gl,
                             glitz_framebuffer_t          *framebuffer,
                             glitz_texture_t              *texture);
+
+void
+_glitz_context_init (glitz_context_t  *context,
+                     glitz_drawable_t *drawable);
+
+void
+_glitz_context_fini (glitz_context_t *context);
 
 
 #define MAXSHORT SHRT_MAX
@@ -944,5 +976,15 @@ slim_hidden_proto(glitz_multi_array_reset)
 slim_hidden_proto(glitz_set_multi_array)
 slim_hidden_proto(glitz_buffer_set_data)
 slim_hidden_proto(glitz_buffer_get_data)
+slim_hidden_proto(glitz_context_create)
+slim_hidden_proto(glitz_context_destroy)
+slim_hidden_proto(glitz_context_reference)
+slim_hidden_proto(glitz_context_copy)
+slim_hidden_proto(glitz_context_set_user_data)
+slim_hidden_proto(glitz_context_get_proc_address)
+slim_hidden_proto(glitz_context_make_current)
+slim_hidden_proto(glitz_context_set_surface)
+slim_hidden_proto(glitz_context_set_viewport)
+slim_hidden_proto(glitz_context_set_scissor)
 
 #endif /* GLITZINT_H_INCLUDED */

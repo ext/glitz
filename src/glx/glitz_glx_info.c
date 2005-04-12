@@ -277,6 +277,8 @@ _glitz_glx_thread_info_fini (glitz_glx_thread_info_t *thread_info)
     dlclose (thread_info->dlhand);
     thread_info->dlhand = NULL;
   }
+  
+  thread_info->cctx = NULL;
 }
 
 #ifdef XTHREADS
@@ -295,6 +297,7 @@ _glitz_glx_thread_info_init (glitz_glx_thread_info_t *thread_info)
   thread_info->n_displays = 0;
   thread_info->gl_library = NULL;
   thread_info->dlhand = NULL;
+  thread_info->cctx = NULL;
 }
 
 static void

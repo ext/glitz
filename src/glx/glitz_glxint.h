@@ -64,6 +64,7 @@ typedef struct _glitz_glx_thread_info_t {
   int                      n_displays;
   char                     *gl_library;
   void                     *dlhand;
+  glitz_context_t          *cctx;
 } glitz_glx_thread_info_t;
 
 struct _glitz_glx_display_info_t {
@@ -80,6 +81,7 @@ typedef struct _glitz_glx_context_info_t {
 } glitz_glx_context_info_t;
 
 typedef struct _glitz_glx_context_t {
+  glitz_context_t   base;
   GLXContext        context;
   glitz_format_id_t id;
   GLXFBConfig       fbconfig;
@@ -163,6 +165,10 @@ glitz_glx_push_current (void               *abstract_drawable,
 
 extern glitz_surface_t __internal_linkage *
 glitz_glx_pop_current (void *abstract_drawable);
+
+void
+glitz_glx_make_current (void               *abstract_drawable,
+                        glitz_constraint_t constraint);
 
 extern glitz_status_t __internal_linkage
 glitz_glx_make_current_read (void *abstract_surface);

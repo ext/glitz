@@ -374,6 +374,61 @@ glitz_surface_set_clip_region (glitz_surface_t *surface,
 glitz_bool_t
 glitz_surface_valid_target (glitz_surface_t *surface);
 
+
+/* glitz_context.c */
+
+typedef struct _glitz_context glitz_context_t;
+
+glitz_context_t *
+glitz_context_create (glitz_drawable_t        *drawable,
+                      glitz_drawable_format_t *format);
+void
+glitz_context_destroy (glitz_context_t *context);
+
+void
+glitz_context_reference (glitz_context_t *context);
+
+void
+glitz_context_copy (glitz_context_t *src,
+                    glitz_context_t *dst,
+                    unsigned long   mask);
+
+typedef void (*glitz_lose_current_function_t) (void *closure);
+
+void
+glitz_context_set_user_data (glitz_context_t               *context,
+                             void                          *closure,
+                             glitz_lose_current_function_t lose_current);
+
+typedef void (*glitz_function_pointer_t) (void);
+
+glitz_function_pointer_t
+glitz_context_get_proc_address (glitz_context_t *context,
+                                const char      *name);
+
+void
+glitz_context_make_current (glitz_context_t *context);
+
+/* XXX: The following context functions are part of a temporary solution and
+   will be removed soon. It should not be possible to attach a surface to a
+   context. Only drawables can be used with contexts. */
+void
+glitz_context_set_surface (glitz_context_t *context,
+                           glitz_surface_t *surface);
+
+void
+glitz_context_set_viewport (glitz_context_t *context,
+                            int             x,
+                            int             y,
+                            int             width,
+                            int             height);
+void
+glitz_context_set_scissor (glitz_context_t *context,
+                           int             x,
+                           int             y,
+                           int             width,
+                           int             height);
+
   
 /* glitz_rect.c */
 

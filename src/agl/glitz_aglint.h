@@ -49,6 +49,7 @@ typedef struct _glitz_agl_context_info_t {
 } glitz_agl_context_info_t;
 
 typedef struct _glitz_agl_context_t {
+  glitz_context_t   base;
   AGLContext        context;
   glitz_format_id_t id;
   AGLPixelFormat    pixel_format;
@@ -71,6 +72,7 @@ typedef struct _glitz_agl_thread_info_t {
   int                      context_stack_size;
   AGLContext               root_context;
   unsigned long            agl_feature_mask;
+  glitz_context_t          *cctx;
   glitz_program_map_t      program_map;
 } glitz_agl_thread_info_t;
 
@@ -122,9 +124,6 @@ glitz_agl_push_current (void               *abstract_drawable,
 
 extern glitz_surface_t __internal_linkage *
 glitz_agl_pop_current (void *abstract_drawable);
-
-extern glitz_status_t __internal_linkage
-glitz_agl_make_current_read (void *abstract_surface);
 
 extern void __internal_linkage
 glitz_agl_destroy (void *abstract_drawable);

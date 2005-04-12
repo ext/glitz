@@ -29,12 +29,6 @@
 
 #include "glitz_glxint.h"
 
-glitz_status_t
-glitz_glx_make_current_read (void *abstract_surface)
-{
-  return GLITZ_STATUS_NOT_SUPPORTED;
-}
-
 static glitz_glx_drawable_t *
 _glitz_glx_create_drawable (glitz_glx_screen_info_t *screen_info,
                             glitz_glx_context_t     *context,
@@ -73,7 +67,7 @@ _glitz_glx_create_drawable (glitz_glx_screen_info_t *screen_info,
     free (drawable);
     return NULL;
   }
-
+  
   screen_info->drawables++;
   
   return drawable;
@@ -139,7 +133,7 @@ glitz_glx_create_drawable_for_window (Display                 *display,
   screen_info = glitz_glx_screen_info_get (display, screen);
   if (!screen_info)
     return NULL;
- 
+  
   context = glitz_glx_context_get (screen_info, format);
   if (!context)
     return NULL;

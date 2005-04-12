@@ -29,12 +29,6 @@
 
 #include "glitz_aglint.h"
 
-glitz_status_t
-glitz_agl_make_current_read (void *abstract_surface)
-{
-  return GLITZ_STATUS_NOT_SUPPORTED;
-}
-
 static glitz_agl_drawable_t *
 _glitz_agl_create_drawable (glitz_agl_thread_info_t *thread_info,
                             glitz_agl_context_t     *context,

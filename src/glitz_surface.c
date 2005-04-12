@@ -236,8 +236,8 @@ _glitz_surface_sync_texture (glitz_surface_t *surface)
     }
 }
 
-static void
-_glitz_surface_sync_drawable (glitz_surface_t *surface)
+void
+glitz_surface_sync_drawable (glitz_surface_t *surface)
 {   
     if (REGION_NOTEMPTY (&surface->drawable_damage))
     {
@@ -440,7 +440,7 @@ _glitz_surface_update_state (glitz_surface_t *surface)
         height   = surface->texture.height;
     }
     
-    if (drawable->update_all                          ||
+    if (drawable->update_all                         ||
         drawable->viewport.x      != surface->x      ||
         drawable->viewport.y      != surface->y      ||
         drawable->viewport.width  != surface->box.x2 ||
@@ -560,7 +560,7 @@ glitz_surface_push_current (glitz_surface_t    *surface,
               glitz_framebuffer_unbind (&surface->attached->backend->gl);
               
           _glitz_surface_update_state (surface);
-          _glitz_surface_sync_drawable (surface);
+          glitz_surface_sync_drawable (surface);
       }
   }
   else
@@ -601,15 +601,6 @@ glitz_surface_pop_current (glitz_surface_t *surface)
 
   if (other)
     _glitz_surface_update_state (other);
-}
-
-glitz_status_t
-glitz_surface_make_current_read (glitz_surface_t *surface)
-{
-  if (surface->attached)
-    return surface->attached->backend->make_current_read (surface->attached);
-  else
-    return surface->drawable->backend->make_current_read (surface->drawable);
 }
 
 void

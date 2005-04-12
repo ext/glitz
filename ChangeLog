@@ -1,3 +1,28 @@
+2005-04-12  David Reveman  <davidr@novell.com>
+
+	* src/glx/glitz_glx_context.c (_glitz_glx_context_make_current): 
+	* src/agl/glitz_agl_context.c: 
+	(_glitz_agl_context_make_current): Call glFinish before switching
+	context.
+
+	* src/Makefile.am (libglitz_la_SOURCES): 
+	* src/agl/glitz_glx_info.c: 
+	* src/agl/glitz_agl_info.c: 
+	* src/glx/glitz_glx_context.c:
+	* src/agl/glitz_agl_context.c:
+	* src/glitzint.h: 
+	* src/glitz.h: Added glitz_context_t interface.
+
+	* src/agl/glitz_glxint.h: 
+	* src/agl/glitz_aglint.h: 
+	* src/agl/glitz_glx_info.c: 
+	* src/agl/glitz_agl_info.c: 
+	* src/agl/glitz_glx_drawable.c: 
+	* src/agl/glitz_agl_drawable.c: 
+	* src/glitzint.h: 
+	* src/glitz_surface.c: 
+	* src/glitz.c (glitz_copy_area): Removed use of "make current read".
+
 2005-03-16  David Reveman  <davidr@novell.com>
 
 	* src/glitz_pixel.c (glitz_get_pixels): Fix y-offset when returning

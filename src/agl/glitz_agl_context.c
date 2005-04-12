@@ -102,6 +102,137 @@ _glitz_agl_get_proc_address (const char *name, void *closure)
   return address;
 }
 
+static glitz_context_t *
+_glitz_agl_create_context (void                    *abstract_drawable,
+                           glitz_drawable_format_t *format)
+{
+  glitz_agl_drawable_t *drawable = (glitz_agl_drawable_t *) abstract_drawable;
+  glitz_agl_thread_info_t *thread_info = drawable->thread_info;
+  glitz_agl_context_t *context;
+  
+  context = malloc (sizeof (glitz_agl_context_t));
+  if (!context)
+    return NULL;
+
+  context->context =
+    aglCreateContext (thread_info->pixel_formats[format->id],
+                      thread_info->root_context);
+  
+  _glitz_context_init (&context->base, &drawable->base);
+
+  context->pbuffer = 0;
+
+  return (glitz_context_t *) context;
+}
+
+static void
+_glitz_agl_context_destroy (void *abstract_context)
+{
+  glitz_agl_context_t *context = (glitz_agl_context_t *) abstract_context;
+  glitz_agl_drawable_t *drawable = (glitz_agl_drawable_t *)
+      context->base.drawable;
+
+  if (drawable->thread_info->cctx == &context->base)
+  {
+      aglSetCurrentContext (NULL);
+
+      drawable->thread_info->cctx = NULL;
+  }
+
+  aglDestroyContext (context->context);
+
+  _glitz_context_fini (&context->base);
+  
+  free (context);
+}
+
+static void
+_glitz_agl_copy_context (void          *abstract_src,
+                         void          *abstract_dst,
+                         unsigned long mask)
+{
+  glitz_agl_context_t  *src = (glitz_agl_context_t *) abstract_src;
+  glitz_agl_context_t  *dst = (glitz_agl_context_t *) abstract_dst;
+
+  aglCopyContext (src->context, dst->context, mask);
+}
+
+static void
+_glitz_agl_make_current (void *abstract_context,
+                         void *abstract_drawable)
+{
+  glitz_agl_context_t  *context = (glitz_agl_context_t *) abstract_context;
+  glitz_agl_drawable_t *drawable = (glitz_agl_drawable_t *) abstract_drawable;
+  int update = 0;
+  
+  if (aglGetCurrentContext () != context->context)
+  {
+      update = 1;
+  }
+  else
+  {
+      if (drawable->pbuffer)
+      {
+          AGLPbuffer pbuffer;
+          GLuint unused;
+
+          aglGetPBuffer (context->context, &pbuffer,
+                         &unused, &unused, &unused);
+        
+        if (pbuffer != drawable->pbuffer)
+            update = 1;
+        
+      }
+      else if (drawable->drawable)
+      {
+          if (aglGetDrawable (context->context) != drawable->drawable)
+              update = 1;
+      }
+  }
+  
+  if (update)
+  {
+      if (drawable->pbuffer) {
+          aglSetPBuffer (context->context, drawable->pbuffer, 0, 0,
+                         aglGetVirtualScreen (context->context));
+          context->pbuffer = 1;
+      }
+      else
+      {
+          if (context->pbuffer) {
+              aglSetDrawable (context->context, NULL);
+              context->pbuffer = 0;
+          }
+          aglSetDrawable (context->context, drawable->drawable);
+      }
+
+      aglSetCurrentContext (context->context);
+  }
+  
+  drawable->thread_info->cctx = &context->base;
+}
+
+static glitz_function_pointer_t
+_glitz_agl_context_get_proc_address (void       *abstract_context,
+                                     const char *name)
+{
+  glitz_agl_context_t  *context = (glitz_agl_context_t *) abstract_context;
+  glitz_agl_drawable_t *drawable = (glitz_agl_drawable_t *)
+      context->base.drawable;
+  glitz_function_pointer_t func;
+  CFBundleRef bundle;
+
+  _glitz_agl_make_current (context, drawable);
+
+  bundle = _glitz_agl_get_bundle ("OpenGL.framework");
+
+  func = _glitz_agl_get_proc_address (name, (void *) bundle);
+
+  _glitz_agl_release_bundle (bundle);
+
+  return func;
+}
+
 glitz_agl_context_t *
 glitz_agl_context_get (glitz_agl_thread_info_t *thread_info,
                        glitz_drawable_format_t *format)
@@ -151,8 +282,13 @@ glitz_agl_context_get (glitz_agl_thread_info_t *thread_info,
   context->backend.push_current = glitz_agl_push_current;
   context->backend.pop_current = glitz_agl_pop_current;
   context->backend.swap_buffers = glitz_agl_swap_buffers;
-  context->backend.make_current_read = glitz_agl_make_current_read;
 
+  context->backend.create_context = _glitz_agl_create_context;
+  context->backend.destroy_context = _glitz_agl_context_destroy;
+  context->backend.copy_context = _glitz_agl_copy_context;
+  context->backend.make_current = _glitz_agl_make_current;
+  context->backend.get_proc_address = _glitz_agl_context_get_proc_address;
+  
   context->backend.drawable_formats = thread_info->formats;
   context->backend.n_drawable_formats = thread_info->n_formats;
 
@@ -207,10 +343,20 @@ _glitz_agl_context_initialize (glitz_agl_thread_info_t *thread_info,
 
 static void
 _glitz_agl_context_make_current (glitz_agl_drawable_t *drawable,
-                                 glitz_bool_t         flush)
+                                 glitz_bool_t         finish)
 {
-  if (flush)
-    glFlush ();
+  if (finish)
+    glFinish ();
+
+  if (drawable->thread_info->cctx)
+  {
+      glitz_context_t *ctx = drawable->thread_info->cctx;
+
+      if (ctx->lose_current)
+          ctx->lose_current (ctx->closure);
+
+      drawable->thread_info->cctx = NULL;
+  }
   
   if (drawable->pbuffer) {
     aglSetPBuffer (drawable->context->context, drawable->pbuffer, 0, 0,

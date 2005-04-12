@@ -187,6 +187,7 @@ static glitz_agl_thread_info_t _thread_info = {
   0,
   NULL,
   0,
+  NULL,
   { 0 }
 };
 
@@ -224,6 +225,8 @@ glitz_agl_thread_info_init (glitz_agl_thread_info_t *thread_info)
   thread_info->root_context = NULL;
 
   thread_info->agl_feature_mask = 0;
+
+  thread_info->cctx = NULL;
 
   glitz_program_map_init (&thread_info->program_map);
 

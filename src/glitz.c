@@ -399,19 +399,14 @@ glitz_copy_area (glitz_surface_t *src,
     {
         if (src->attached == dst->attached)
         {
+            glitz_box_t box, *clip = dst->clip;
+            int         n_clip = dst->n_clip;
+
             if (REGION_NOTEMPTY (&src->drawable_damage))
             {
                 glitz_surface_push_current (src, GLITZ_DRAWABLE_CURRENT);
                 glitz_surface_pop_current (src);
             }
-            status = GLITZ_STATUS_SUCCESS;
-        } else
-            status = glitz_surface_make_current_read (src);
-
-        if (!status)
-        {
-            glitz_box_t box, *clip = dst->clip;
-            int         n_clip = dst->n_clip;
             
             gl->read_buffer (src->buffer);
             gl->draw_buffer (dst->buffer);

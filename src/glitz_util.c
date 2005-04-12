@@ -351,7 +351,6 @@ glitz_clamp_value (glitz_float_t *value,
 void
 glitz_initiate_state (glitz_gl_proc_address_list_t *gl)
 {
-  gl->disable (GLITZ_GL_DEPTH_TEST); 
   gl->hint (GLITZ_GL_PERSPECTIVE_CORRECTION_HINT, GLITZ_GL_FASTEST);
   gl->disable (GLITZ_GL_CULL_FACE);
   gl->depth_mask (GLITZ_GL_FALSE);  
