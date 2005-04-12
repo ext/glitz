@@ -6,7 +6,7 @@ dnl ===========================================================================
 
 # Package version number, (as distinct from shared library version)
 # This must be manually synchronized with the version in src/glitz.h
-GLITZ_VERSION=0.4.1
+GLITZ_VERSION=0.4.2
 # libtool shared library version
 
 # Increment if the interface has additions, changes, removals.
