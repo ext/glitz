@@ -165,7 +165,7 @@ glitz_egl_swap_buffers (void *abstract_drawable);
 slim_hidden_proto(glitz_egl_init)
 slim_hidden_proto(glitz_egl_fini)
 slim_hidden_proto(glitz_egl_find_config)
-slim_hidden_proto(glitz_egl_create_window_surface)
+slim_hidden_proto(glitz_egl_create_surface)
 slim_hidden_proto(glitz_egl_create_pbuffer_surface)
 
 #endif /* GLITZ_EGLINT_H_INCLUDED */

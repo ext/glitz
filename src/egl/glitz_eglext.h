@@ -29,28 +29,5 @@
 #define GLITZ_EGLEXT_H_INCLUDED
 
 
-typedef glitz_function_pointer_t (* glitz_egl_get_proc_address_t)
-     (const glitz_gl_ubyte_t *);
-typedef EGLConfig *(* glitz_egl_get_configs_t)
-     (EGLDisplay egl_display, EGLScreenMESA egl_screen, int *n_elements);
-typedef int (* glitz_egl_get_config_attrib_t)
-     (EGLDisplay egl_display, EGLConfig egl_config, int attribute, int *value);
-typedef EGLSurface (* glitz_egl_create_pbuffer_t)
-     (EGLDisplay egl_display, EGLConfig egl_config, const int *attrib_list);
-typedef void (* glitz_egl_destroy_pbuffer_t)
-     (EGLDisplay egl_display, EGLSurface egl_pbuffer);
-typedef void (* glitz_egl_query_drawable_t)
-     (EGLDisplay egl_display, EGLSurface egl_surface,
-      int attribute, unsigned int *value);
-typedef EGLBoolean (* glitz_egl_make_context_current_t)
-     (EGLDisplay egl_display, EGLSurface egl_draw, EGLSurface egl_read, EGLContext egl_ctx);
-typedef EGLContext (* glitz_egl_create_new_context_t)
-     (EGLDisplay egl_display, EGLConfig egl_config, int render_type,
-      EGLContext egl_share_list, EGLBoolean direct);
-
-typedef EGLBoolean *(* glitz_egl_bind_tex_image_t)
-     (EGLDisplay egl_display, EGLSurface egl_pbuffer, int buffer);
-typedef EGLBoolean (* glitz_egl_release_tex_image_t)
-     (EGLDisplay egl_display, EGLSurface egl_pbuffer, int buffer);
 
 #endif /* GLITZ_EGLEXT_H_INCLUDED */

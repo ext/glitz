@@ -117,18 +117,18 @@ glitz_egl_create_pbuffer (void                    *abstract_templ,
 }
 
 glitz_drawable_t *
-glitz_egl_create_window_surface (EGLDisplay              display,
-                                      EGLScreenMESA           screen,
-                                      glitz_drawable_format_t *format,
-                                      NativeWindowType        window,
-                                      unsigned int            width,
-                                      unsigned int            height)
+glitz_egl_create_surface (EGLDisplay              egl_display,
+                          EGLScreenMESA           egl_screen,
+                          glitz_drawable_format_t *format,
+                          EGLSurface              egl_surface,
+                          unsigned int            width,
+                          unsigned int            height)
 {
   glitz_egl_surface_t *surface;
   glitz_egl_screen_info_t *screen_info;
   glitz_egl_context_t *context;
 
-  screen_info = glitz_egl_screen_info_get (display, screen);
+  screen_info = glitz_egl_screen_info_get (egl_display, egl_screen);
   if (!screen_info)
     return NULL;
   
@@ -137,14 +137,14 @@ glitz_egl_create_window_surface (EGLDisplay              display,
     return NULL;
   
   surface = _glitz_egl_create_surface (screen_info, context, format,
-                                         window,
+                                         egl_surface,
                                          width, height);
   if (!surface)
     return NULL;
 
   return &surface->base;
 }
-slim_hidden_def(glitz_egl_create_window_surface);
+slim_hidden_def(glitz_egl_create_surface);
 
 glitz_drawable_t *
 glitz_egl_create_pbuffer_surface (EGLDisplay              display,
