@@ -1,4 +1,4 @@
-SUBDIRS = . glx agl
+SUBDIRS = . glx agl egl
 
 lib_LTLIBRARIES = libglitz.la
 include_HEADERS = glitz.h
