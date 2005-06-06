@@ -479,7 +479,6 @@ glitz_composite_op_init (glitz_composite_op_t *op,
   op->type = GLITZ_COMBINE_TYPE_NA;
   op->combine = NULL;
   op->alpha_mask = _default_alpha_mask;
-  op->gl = &dst->drawable->backend->gl;
   op->src = src;
   op->mask = mask;
   op->dst = dst;
@@ -488,8 +487,17 @@ glitz_composite_op_init (glitz_composite_op_t *op,
   op->per_component = 0;
   op->fp = 0;
 
-  feature_mask = dst->attached->backend->feature_mask;
-
+  if (dst->attached)
+  {
+      op->gl = &dst->attached->backend->gl;
+      feature_mask = dst->attached->backend->feature_mask;
+  }
+  else
+  {
+      op->gl = &dst->drawable->backend->gl;
+      feature_mask = dst->drawable->backend->feature_mask;
+  }
+  
   src_type = _glitz_get_surface_type (src, feature_mask);
   if (src_type < 1)
     return;

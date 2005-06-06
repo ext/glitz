@@ -413,8 +413,6 @@ glitz_copy_area (glitz_surface_t *src,
       
             glitz_set_operator (gl, GLITZ_OPERATOR_SRC);
       
-            gl->disable (GLITZ_GL_SCISSOR_TEST);
-
             x_src += src->x;
             y_src += src->y;
 
@@ -440,6 +438,11 @@ glitz_copy_area (glitz_surface_t *src,
                                           dst->attached->height -
                                           (dst->y + box.y2));
 
+                    gl->scissor (dst->x + box.x1,
+                                 dst->attached->height - (dst->y + box.y2),
+                                 box.x2 - box.x1,
+                                 box.y2 - box.y1);
+
                     gl->copy_pixels (x_src + (box.x1 - x_dst),
                                      src->attached->height -
                                      (y_src + (box.y2 - y_dst)),
@@ -453,8 +456,6 @@ glitz_copy_area (glitz_surface_t *src,
                 
                 clip++;
             }
-
-            gl->enable (GLITZ_GL_SCISSOR_TEST);
         }
         else
         {

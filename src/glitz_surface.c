@@ -573,7 +573,7 @@ glitz_surface_push_current (glitz_surface_t    *surface,
           if (surface->drawable->backend->feature_mask &
               GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK)
           {
-              if (glitz_framebuffer_complete (&surface->attached->backend->gl,
+              if (glitz_framebuffer_complete (&surface->drawable->backend->gl,
                                               &surface->framebuffer,
                                               &surface->texture))
               {       

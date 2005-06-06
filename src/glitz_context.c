@@ -37,7 +37,6 @@ _glitz_context_init (glitz_context_t  *context,
     
     context->ref_count    = 1;
     context->drawable     = drawable;
-    context->surface      = NULL;
     context->closure      = NULL;
     context->lose_current = NULL;
 }
@@ -46,8 +45,6 @@ void
 _glitz_context_fini (glitz_context_t *context)
 {
     glitz_drawable_destroy (context->drawable);
-    if (context->surface)
-        glitz_surface_destroy (context->surface);
 }
 
 glitz_context_t *
@@ -112,124 +109,19 @@ slim_hidden_def(glitz_context_get_proc_address);
 void
 glitz_context_make_current (glitz_context_t *context)
 {
-    glitz_surface_t *surface = context->surface;
-
-    if (surface->attached)
-    {
-        glitz_box_t *scissor  = &context->scissor;
-        glitz_box_t *viewport = &context->viewport;
-        
-        GLITZ_GL_SURFACE (surface);
-
-        surface->attached->backend->make_current (context, surface->attached);
-
-        glitz_surface_sync_drawable (surface);
-
-        REGION_EMPTY (&surface->texture_damage);
-        REGION_INIT (&surface->texture_damage, &context->scissor);
-
-        gl->enable (GLITZ_GL_SCISSOR_TEST);
-
-        gl->scissor (surface->x + scissor->x1,
-                     surface->attached->height - surface->y - scissor->y2,
-                     scissor->x2 - scissor->x1,
-                     scissor->y2 - scissor->y1);
-
-        gl->viewport (surface->x + viewport->x1,
-                      surface->attached->height - surface->y - viewport->y2,
-                      viewport->x2 - viewport->x1,
-                      viewport->y2 - viewport->y1);
-
-        gl->draw_buffer (surface->buffer);
-    }
-    else if (surface->drawable->backend->feature_mask &
-             GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK)
-    {
-        surface->drawable->backend->make_current (context, surface->drawable);
-
-        if (!glitz_framebuffer_complete (&surface->drawable->backend->gl,
-                                         &surface->framebuffer,
-                                         &surface->texture))
-            glitz_surface_status_add (surface,
-                                      GLITZ_STATUS_NOT_SUPPORTED_MASK);
-    }
+    context->drawable->backend->make_current (context, context->drawable);
 }
 slim_hidden_def(glitz_context_make_current);
 
 void
-glitz_context_set_surface (glitz_context_t *context,
-                           glitz_surface_t *surface)
+glitz_context_bind_texture (glitz_context_t *context,
+                            glitz_surface_t *surface)
 {
-    glitz_surface_reference (surface);
-
-    if (context->surface)
-        glitz_surface_destroy (context->surface);
-
-    context->surface  = surface;
-    context->scissor  = surface->box;
-    context->viewport = surface->box;
-}
-slim_hidden_def(glitz_context_set_surface);
-
-void
-glitz_context_set_scissor (glitz_context_t *context,
-                           int             x,
-                           int             y,
-                           int             width,
-                           int             height)
-{
-    glitz_surface_t *surface = context->surface;
+    glitz_gl_proc_address_list_t *gl = &context->drawable->backend->gl;
     
-    GLITZ_GL_SURFACE (surface);
-
-    if (surface->attached)
-    {
-        glitz_box_t *scissor = &context->scissor;
-        
-        *scissor = surface->box;
-        if (x > 0)
-            scissor->x1 = x;
-        if (y > 0)
-            scissor->y2 -= y;
-        if (x + width < scissor->x2)
-            scissor->x2 = x + width;
-        if (y + height < scissor->y2)
-            scissor->y1 = scissor->y2 - y - height;
-
-        gl->scissor (surface->x + scissor->x1,
-                     surface->attached->height - surface->y - scissor->y2,
-                     scissor->x2 - scissor->x1,
-                     scissor->y2 - scissor->y1);
-    } else
-        gl->scissor (x, y, width, height);
+    if (!surface->texture.name)
+        gl->gen_textures (1, &surface->texture.name);
+  
+    gl->bind_texture (surface->texture.target, surface->texture.name);
 }
-slim_hidden_def(glitz_context_set_scissor);
-
-void
-glitz_context_set_viewport (glitz_context_t *context,
-                            int             x,
-                            int             y,
-                            int             width,
-                            int             height)
-{
-    glitz_surface_t *surface = context->surface;
-    
-    GLITZ_GL_SURFACE (surface);
-
-    if (surface->attached)
-    {
-        glitz_box_t *viewport = &context->viewport;
-        
-        viewport->x1 = x;
-        viewport->y1 = surface->box.y2 - y - height;
-        viewport->x2 = x + width;
-        viewport->y2 = surface->box.y2 - y;
-        
-        gl->viewport (surface->x + viewport->x1,
-                      surface->attached->height - surface->y - viewport->y2,
-                      viewport->x2 - viewport->x1,
-                      viewport->y2 - viewport->y1);
-    } else
-        gl->viewport (x, y, width, height);
-}
-slim_hidden_def(glitz_context_set_viewport);
+slim_hidden_def(glitz_context_bind_texture);

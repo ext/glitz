@@ -590,13 +590,10 @@ struct _glitz_surface {
   glitz_gl_proc_address_list_t *gl = &(surface)->drawable->backend->gl;
 
 struct _glitz_context {
-  glitz_drawable_t              *drawable;
-  glitz_surface_t               *surface;
   int                           ref_count;
+  glitz_drawable_t              *drawable;
   void                          *closure;
   glitz_lose_current_function_t lose_current;
-  glitz_box_t                   scissor;
-  glitz_box_t                   viewport;
 };
 
 typedef struct _glitz_composite_op_t glitz_composite_op_t;
@@ -983,8 +980,6 @@ slim_hidden_proto(glitz_context_copy)
 slim_hidden_proto(glitz_context_set_user_data)
 slim_hidden_proto(glitz_context_get_proc_address)
 slim_hidden_proto(glitz_context_make_current)
-slim_hidden_proto(glitz_context_set_surface)
-slim_hidden_proto(glitz_context_set_viewport)
-slim_hidden_proto(glitz_context_set_scissor)
+slim_hidden_proto(glitz_context_bind_texture)
 
 #endif /* GLITZINT_H_INCLUDED */

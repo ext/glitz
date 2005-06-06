@@ -409,27 +409,11 @@ glitz_context_get_proc_address (glitz_context_t *context,
 void
 glitz_context_make_current (glitz_context_t *context);
 
-/* XXX: The following context functions are part of a temporary solution and
-   will be removed soon. It should not be possible to attach a surface to a
-   context. Only drawables can be used with contexts. */
 void
-glitz_context_set_surface (glitz_context_t *context,
-                           glitz_surface_t *surface);
+glitz_context_bind_texture (glitz_context_t *context,
+                            glitz_surface_t *surface);
 
-void
-glitz_context_set_viewport (glitz_context_t *context,
-                            int             x,
-                            int             y,
-                            int             width,
-                            int             height);
-void
-glitz_context_set_scissor (glitz_context_t *context,
-                           int             x,
-                           int             y,
-                           int             width,
-                           int             height);
 
-  
 /* glitz_rect.c */
 
 void

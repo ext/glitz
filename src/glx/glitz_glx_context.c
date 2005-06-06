@@ -354,37 +354,35 @@ static void
 _glitz_glx_context_update (glitz_glx_drawable_t *drawable,
                            glitz_constraint_t   constraint)
 {
-  GLXContext context;
-  
-  switch (constraint) {
-  case GLITZ_NONE:
-    break;
-  case GLITZ_ANY_CONTEXT_CURRENT: {
     glitz_glx_display_info_t *dinfo = drawable->screen_info->display_info;
+    GLXContext context = NULL;
     
-    if (dinfo->thread_info->cctx)
-    {
-      _glitz_glx_context_make_current (drawable, 0);
-    }
-    else
-    {
-      context = glXGetCurrentContext ();
-      if (context == (GLXContext) 0)
-        _glitz_glx_context_make_current (drawable, 0);
-    }
-    } break;
+    switch (constraint) {
+    case GLITZ_NONE:
+        break;
+    case GLITZ_ANY_CONTEXT_CURRENT:
+        if (!dinfo->thread_info->cctx)
+            context = glXGetCurrentContext ();
+        
+        if (context == (GLXContext) 0)
+            _glitz_glx_context_make_current (drawable, 0);
+        break;
   case GLITZ_CONTEXT_CURRENT:
-    context = glXGetCurrentContext ();
-    if (context != drawable->context->context)
-      _glitz_glx_context_make_current (drawable, (context)? 1: 0);
-    break;
-  case GLITZ_DRAWABLE_CURRENT:
-    context = glXGetCurrentContext ();
-    if ((context != drawable->context->context) ||
-        (glXGetCurrentDrawable () != drawable->drawable))
-      _glitz_glx_context_make_current (drawable, (context)? 1: 0);
-    break;
-  }
+      if (!dinfo->thread_info->cctx)
+          context = glXGetCurrentContext ();
+
+      if (context != drawable->context->context)
+          _glitz_glx_context_make_current (drawable, (context)? 1: 0);
+      break;
+    case GLITZ_DRAWABLE_CURRENT:
+        if (!dinfo->thread_info->cctx)
+            context = glXGetCurrentContext ();
+
+        if ((context != drawable->context->context) ||
+            (glXGetCurrentDrawable () != drawable->drawable))
+            _glitz_glx_context_make_current (drawable, (context)? 1: 0);
+        break;
+    }
 }
 
 void
