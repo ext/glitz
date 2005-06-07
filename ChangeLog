@@ -1,3 +1,9 @@
+2005-06-07  David Reveman  <davidr@novell.com>
+
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.3.
+
+	* configure.in: Bump version to 0.4.3. 
+
 2005-06-06  David Reveman  <davidr@novell.com>
 
 	* src/glx/glitz_glx_context.c (_glitz_glx_context_update): Fix minor
