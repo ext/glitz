@@ -203,7 +203,7 @@ AC_ARG_ENABLE(egl,
   AC_HELP_STRING([--enable-egl], [Enable glitz's EGL backend]),
   [use_egl=$enableval], [use_egl=no])
 
-EGL_LIBS="-lGL"
+EGL_LIBS="-lGL -lEGL"
 EGL_CFLAGS="$EGL_CFLAGS"
     
 if test "x$use_egl" = "xyes"; then
