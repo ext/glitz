@@ -125,7 +125,7 @@ glitz_egl_get_proc_address (const char *name,
   glitz_function_pointer_t address = NULL;
 
   if (screen_info->egl_feature_mask & GLITZ_EGL_FEATURE_GET_PROC_ADDRESS_MASK)
-    address = eglGetProcAddress ((glitz_gl_ubyte_t *) name);
+    address = eglGetProcAddress ((char *) name);
   
   if (!address) {
     if (!info->dlhand)
@@ -173,7 +173,7 @@ _glitz_egl_thread_info_fini (glitz_egl_thread_info_t *thread_info)
   
   thread_info->cctx = NULL;
 }
-#define PTHREADS
+
 #ifdef PTHREADS
 
 /* thread safe */

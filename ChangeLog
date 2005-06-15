@@ -1,3 +1,11 @@
+2005-06-15  David Reveman  <davidr@novell.com>
+
+	* src/egl/glitz_egl_info.c (glitz_egl_get_proc_address): Shut up
+	compiler.
+	PTHREADS is now defined in config.h.
+
+	* configure.in: Check for libpthread when building glitz-egl.
+
 2005-06-07  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.3.
