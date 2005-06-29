@@ -89,10 +89,6 @@ _glitz_add_format (glitz_glx_screen_info_t *screen_info,
                    glitz_drawable_format_t *format,
                    XID                     id)
 {
-  if (!glitz_drawable_format_find (screen_info->formats,
-                                   screen_info->n_formats,
-                                   GLITZ_DRAWABLE_FORMAT_ALL_EXCEPT_ID_MASK,
-                                   format, 0)) {
     int n = screen_info->n_formats;
     
     screen_info->formats =
@@ -107,7 +103,6 @@ _glitz_add_format (glitz_glx_screen_info_t *screen_info,
       screen_info->format_ids[n] = id;
       screen_info->n_formats++;
     }
-  }
 }
 
 static void
@@ -317,6 +312,71 @@ glitz_glx_find_drawable_format (Display                       *display,
                                      mask, templ, count);
 }
 slim_hidden_def(glitz_glx_find_drawable_format);
+
+glitz_drawable_format_t *
+glitz_glx_find_drawable_format_for_visual (Display  *display,
+                                           int       screen,
+                                           VisualID  visual_id)
+{
+    glitz_drawable_format_t *format = NULL;
+    glitz_glx_screen_info_t *screen_info;
+    int                     i; 
+
+    screen_info = glitz_glx_screen_info_get (display, screen);
+    if (!screen_info)
+        return NULL;
+
+    if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_FBCONFIG_MASK)
+    {
+        glitz_glx_static_proc_address_list_t *glx = &screen_info->glx;
+        GLXFBConfig                          *fbconfigs;
+        int                                  fid, n_fbconfigs;
+        
+        fid = -1;
+        fbconfigs = glx->get_fbconfigs (display, screen, &n_fbconfigs);
+        for (i = 0; i < n_fbconfigs; i++)
+        {
+            XVisualInfo *visinfo;
+            
+            visinfo = glx->get_visual_from_fbconfig (display, fbconfigs[i]);
+            if (visinfo && visinfo->visualid == visual_id)
+            {
+                int value;
+
+                glx->get_fbconfig_attrib (display, fbconfigs[i],
+                                          GLX_FBCONFIG_ID, &value);
+                for (fid = 0; fid < screen_info->n_formats; fid++)
+                {
+                    if (screen_info->format_ids[fid] == value)
+                    {
+                        format = screen_info->formats + fid;
+                        break;
+                    }
+                }
+                
+                if (format)
+                    break;
+            }
+        }
+        
+        if (fbconfigs)
+            XFree (fbconfigs);
+    }
+    else
+    {
+        for (i = 0; i < screen_info->n_formats; i++)
+        {
+            if (visual_id == screen_info->format_ids[i])
+            {
+                format = screen_info->formats + i;
+                break;
+            }
+        }
+    }
+    
+    return format;
+}
+slim_hidden_def(glitz_glx_find_drawable_format_for_visual);
 
 XVisualInfo *
 glitz_glx_get_visual_info_from_format (Display                 *display,

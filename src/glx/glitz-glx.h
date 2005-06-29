@@ -53,6 +53,11 @@ glitz_glx_find_drawable_format (Display                       *display,
                                 const glitz_drawable_format_t *templ,
                                 int                           count);
   
+glitz_drawable_format_t *
+glitz_glx_find_drawable_format_for_visual (Display  *display,
+					   int       screen,
+					   VisualID  visual_id);
+
 XVisualInfo *
 glitz_glx_get_visual_info_from_format (Display                 *display,
                                        int                     screen,

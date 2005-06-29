@@ -184,6 +184,7 @@ glitz_glx_swap_buffers (void *abstract_drawable);
 slim_hidden_proto(glitz_glx_init)
 slim_hidden_proto(glitz_glx_fini)
 slim_hidden_proto(glitz_glx_find_drawable_format)
+slim_hidden_proto(glitz_glx_find_drawable_format_for_visual)
 slim_hidden_proto(glitz_glx_get_visual_info_from_format)
 slim_hidden_proto(glitz_glx_create_drawable_for_window)
 slim_hidden_proto(glitz_glx_create_pbuffer_drawable)

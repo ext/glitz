@@ -1,3 +1,11 @@
+2005-06-29  David Reveman  <davidr@novell.com>
+
+	* src/glx/glitz_glxint.h: 
+	* src/glx/glitz-glx.h: 
+	* src/glx/glitz_glx_format.c (_glitz_add_format): Add drawable
+	formats for all GLX visuals.
+	Add glitz_glx_find_drawable_format_for_visual. (Radek Doulík)
+
 2005-06-15  David Reveman  <davidr@novell.com>
 
 	* src/egl/glitz_egl_info.c (glitz_egl_get_proc_address): Shut up
