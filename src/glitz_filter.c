@@ -102,7 +102,7 @@ glitz_filter_set_params (glitz_surface_t *surface,
   
   switch (filter) {
   case GLITZ_FILTER_CONVOLUTION: {
-    glitz_float_t dm, dn, sum;
+    glitz_float_t dm, dn;
     int cx, cy, m, n, j;
     
     _glitz_filter_params_set (&dm, 3.0f, &params, &n_params);
@@ -122,7 +122,6 @@ glitz_filter_set_params (glitz_surface_t *surface,
     cx = m / 2;
     cy = n / 2;
 
-    sum = 0.0f;
     for (i = 0; i < m; i++) {
       glitz_vec4_t *vec;
       glitz_float_t weight;
@@ -135,18 +134,9 @@ glitz_filter_set_params (glitz_surface_t *surface,
           vec->v[1] = (cy - j) * surface->texture.texcoord_height_unit;
           vec->v[2] = weight;
           vec->v[3] = 0.0f;
-          sum += weight;
         }
       }
     }
-
-    /* normalize */
-    if (sum != 0.0f)
-      sum = 1.0f / sum;
-    
-    for (i = 0; i < surface->filter_params->id; i++)
-      vecs[i].v[2] *= sum;
-    
   } break;
   case GLITZ_FILTER_GAUSSIAN: {
     glitz_float_t radius, sigma, alpha, scale, xy_scale, sum;

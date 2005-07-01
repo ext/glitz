@@ -1,3 +1,8 @@
+2005-07-01  David Reveman  <davidr@novell.com>
+
+	* src/glitz_filter.c (glitz_filter_set_params): Removed normalization
+	of convolution filters.
+
 2005-06-29  David Reveman  <davidr@novell.com>
 
 	* src/glx/glitz_glxint.h: 
