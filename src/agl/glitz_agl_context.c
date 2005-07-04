@@ -192,6 +192,14 @@ _glitz_agl_make_current (void *abstract_context,
   
   if (update)
   {
+      if (drawable->thread_info->cctx)
+      {
+          glitz_context_t *ctx = drawable->thread_info->cctx;
+
+          if (ctx->lose_current)
+              ctx->lose_current (ctx->closure);
+      }
+   
       if (drawable->pbuffer) {
           aglSetPBuffer (context->context, drawable->pbuffer, 0, 0,
                          aglGetVirtualScreen (context->context));
@@ -205,7 +213,7 @@ _glitz_agl_make_current (void *abstract_context,
           }
           aglSetDrawable (context->context, drawable->drawable);
       }
-
+      
       aglSetCurrentContext (context->context);
   }
   

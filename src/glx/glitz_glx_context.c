@@ -180,8 +180,17 @@ _glitz_glx_make_current (void *abstract_context,
   
   if ((glXGetCurrentContext () != context->context) ||
       (glXGetCurrentDrawable () != drawable->drawable))
-    glXMakeCurrent (display_info->display, drawable->drawable,
-                    context->context);
+  {
+   if (display_info->thread_info->cctx)
+   {
+       glitz_context_t *ctx = display_info->thread_info->cctx;
+
+       if (ctx->lose_current)
+           ctx->lose_current (ctx->closure);
+   }
+   glXMakeCurrent (display_info->display, drawable->drawable,
+                   context->context);
+  }
 
   display_info->thread_info->cctx = &context->base;
 }

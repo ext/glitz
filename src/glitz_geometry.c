@@ -360,9 +360,10 @@ _glitz_draw_rectangle (glitz_gl_proc_address_list_t *gl,
                        glitz_box_t                  *bounds,
                        int                          damage)
 {
-    glitz_box_t         *clip = dst->clip;
-    int                 n_clip = dst->n_clip;
-    glitz_box_t         box;
+    glitz_box_t *clip = dst->clip;
+    int         n_clip = dst->n_clip;
+    glitz_box_t box;
+    int         target_height = SURFACE_DRAWABLE_HEIGHT (dst);
     
     while (n_clip--)
     {
@@ -382,7 +383,7 @@ _glitz_draw_rectangle (glitz_gl_proc_address_list_t *gl,
         if (box.x1 < box.x2 && box.y1 < box.y2)
         {
             gl->scissor (box.x1 + dst->x,
-                         dst->attached->height - dst->y - box.y2,
+                         target_height - dst->y - box.y2,
                          box.x2 - box.x1, box.y2 - box.y1);
 
             gl->draw_arrays (GLITZ_GL_QUADS, 0, 4);
@@ -409,6 +410,7 @@ _glitz_draw_vertex_arrays (glitz_gl_proc_address_list_t *gl,
     glitz_box_t         *clip = dst->clip;
     int                 i, n_clip = dst->n_clip;
     glitz_box_t         box;
+    int                 target_height = SURFACE_DRAWABLE_HEIGHT (dst);
     
     while (n_clip--)
     {
@@ -428,7 +430,7 @@ _glitz_draw_vertex_arrays (glitz_gl_proc_address_list_t *gl,
         if (box.x1 < box.x2 && box.y1 < box.y2)
         {
             gl->scissor (box.x1 + dst->x,
-                         dst->attached->height - dst->y - box.y2,
+                         target_height - dst->y - box.y2,
                          box.x2 - box.x1, box.y2 - box.y1);
 
             gl->push_matrix ();
@@ -532,6 +534,7 @@ _glitz_draw_bitmap_arrays (glitz_gl_proc_address_list_t *gl,
     int                 byte_offset, pixel_offset = 0;
     glitz_float_t       x_off, y_off;
     glitz_box_t         box;
+    int                 target_height = SURFACE_DRAWABLE_HEIGHT (dst);
     
     if (dst->geometry.u.b.top_down)
     {
@@ -597,7 +600,7 @@ _glitz_draw_bitmap_arrays (glitz_gl_proc_address_list_t *gl,
         if (box.x1 < box.x2 && box.y1 < box.y2)
         {
             gl->scissor (box.x1 + dst->x,
-                         dst->attached->height - dst->y - box.y2,
+                         target_height - dst->y - box.y2,
                          box.x2 - box.x1, box.y2 - box.y1);
 
             x_off = dst->x + dst->geometry.off.v[0];
@@ -608,8 +611,7 @@ _glitz_draw_bitmap_arrays (glitz_gl_proc_address_list_t *gl,
                 x_off += array->off->v[0];
                 y_off += array->off->v[1];
 
-                glitz_set_raster_pos (gl, x_off,
-                                      dst->attached->height - y_off);
+                glitz_set_raster_pos (gl, x_off, target_height - y_off);
 
                 for (i = 0, n = array->n_arrays; n--; i++)
                 {    
@@ -633,8 +635,7 @@ _glitz_draw_bitmap_arrays (glitz_gl_proc_address_list_t *gl,
             }
             else
             {
-                glitz_set_raster_pos (gl, x_off,
-                                      dst->attached->height - y_off);
+                glitz_set_raster_pos (gl, x_off, target_height - y_off);
                 
                 BITMAP_SETUP (dst,
                               dst->geometry.first,

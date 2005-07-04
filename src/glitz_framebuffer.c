@@ -39,7 +39,8 @@ void
 glitz_framebuffer_fini (glitz_gl_proc_address_list_t *gl,
                         glitz_framebuffer_t          *framebuffer)
 {
-    gl->delete_framebuffers (1, &framebuffer->name);
+    if (framebuffer->name)
+        gl->delete_framebuffers (1, &framebuffer->name);
 }
 
 void
@@ -59,6 +60,7 @@ glitz_framebuffer_complete (glitz_gl_proc_address_list_t *gl,
             glitz_texture_allocate (gl, texture);
         
         gl->gen_framebuffers (1, &framebuffer->name);
+
         gl->bind_framebuffer (GLITZ_GL_FRAMEBUFFER, framebuffer->name);
     
         gl->framebuffer_texture_2d (GLITZ_GL_FRAMEBUFFER,

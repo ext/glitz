@@ -166,6 +166,15 @@ glitz_texture_allocate (glitz_gl_proc_address_list_t *gl,
                     texture->width, texture->height, 0,
                     GLITZ_GL_ALPHA, GLITZ_GL_UNSIGNED_BYTE, data);
 
+  gl->tex_parameter_i (texture->target,
+                       GLITZ_GL_TEXTURE_MAG_FILTER,
+                       GLITZ_GL_NEAREST);
+  gl->tex_parameter_i (texture->target,
+                       GLITZ_GL_TEXTURE_MIN_FILTER,
+                       GLITZ_GL_NEAREST);
+  
+  texture->filter = GLITZ_GL_NEAREST;
+
   glitz_texture_unbind (gl, texture);
 
   if (data)

@@ -538,6 +538,10 @@ typedef struct _glitz_geometry {
 #define SURFACE_PROJECTIVE_TRANSFORM(surface) \
   ((surface)->flags & GLITZ_SURFACE_FLAG_PROJECTIVE_TRANSFORM_MASK)
 
+#define SURFACE_DRAWABLE_HEIGHT(surface) \
+  (((surface)->attached) ? \
+   (surface)->attached->height: surface->texture.height)
+
 typedef struct _glitz_filter_params_t glitz_filter_params_t;
 
 typedef struct _glitz_matrix {

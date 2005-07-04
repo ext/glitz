@@ -397,7 +397,10 @@ glitz_copy_area (glitz_surface_t *src,
     status = GLITZ_STATUS_NOT_SUPPORTED;
     if (glitz_surface_push_current (dst, GLITZ_DRAWABLE_CURRENT))
     {
-        if (src->attached == dst->attached)
+        int target_height = SURFACE_DRAWABLE_HEIGHT (dst);
+        int source_height = SURFACE_DRAWABLE_HEIGHT (src);
+        
+        if (src == dst || (dst->attached && src->attached == dst->attached))
         {
             glitz_box_t box, *clip = dst->clip;
             int         n_clip = dst->n_clip;
@@ -435,16 +438,15 @@ glitz_copy_area (glitz_surface_t *src,
                 {
                     glitz_set_raster_pos (gl,
                                           dst->x + box.x1,
-                                          dst->attached->height -
-                                          (dst->y + box.y2));
+                                          target_height - (dst->y + box.y2));
 
                     gl->scissor (dst->x + box.x1,
-                                 dst->attached->height - (dst->y + box.y2),
+                                 target_height - (dst->y + box.y2),
                                  box.x2 - box.x1,
                                  box.y2 - box.y1);
 
                     gl->copy_pixels (x_src + (box.x1 - x_dst),
-                                     src->attached->height -
+                                     source_height -
                                      (y_src + (box.y2 - y_dst)),
                                      box.x2 - box.x1, box.y2 - box.y1,
                                      GLITZ_GL_COLOR);
@@ -489,7 +491,7 @@ glitz_copy_area (glitz_surface_t *src,
                     int           vertices = 0;
                     glitz_box_t   box, *clip = dst->clip;
                     int           n_clip = dst->n_clip;
-                    
+
                     ptr = malloc (n_clip * 8 * sizeof (glitz_float_t));
                     if (!ptr) {
                         glitz_surface_pop_current (dst);
@@ -538,8 +540,7 @@ glitz_copy_area (glitz_surface_t *src,
                     if (vertices)
                     {
                         gl->scissor (bounds.x1 + dst->x,
-                                     dst->attached->height - dst->y -
-                                     bounds.y2,
+                                     (target_height - dst->y) - bounds.y2,
                                      bounds.x2 - bounds.x1,
                                      bounds.y2 - bounds.y1);
 
@@ -568,7 +569,7 @@ glitz_copy_area (glitz_surface_t *src,
 
     glitz_surface_pop_current (dst);
 
-    if (status)
+    if (status && src->attached)
     {
         if (glitz_surface_push_current (src, GLITZ_DRAWABLE_CURRENT))
         {

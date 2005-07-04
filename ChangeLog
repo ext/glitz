@@ -1,3 +1,22 @@
+2005-07-04  David Reveman  <davidr@novell.com>
+
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.4.
+
+	* configure.in: Bump version to 0.4.4. 
+
+	* src/glitz.c: 
+	* src/glitz.h: 
+	* src/glitz_framebuffer.c: 
+	* src/glitz_geometry.c: 
+	* src/glitz_pixel.c: 
+	* src/glitz_rect.c: 
+	* src/glitz_surface.c: 
+	* src/glitz_texture.c: 
+	* src/glitzint.h: 
+	* src/agl/glitz_agl_context.c: 
+	* src/glx/glitz_glx_context.c: 
+	Fix GL_EXT_framebuffer_object support.
+
 2005-07-01  David Reveman  <davidr@novell.com>
 
 	* src/glitz_filter.c (glitz_filter_set_params): Removed normalization

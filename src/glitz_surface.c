@@ -124,9 +124,9 @@ glitz_surface_destroy (glitz_surface_t *surface)
 
   if (surface->texture.name) {
     glitz_surface_push_current (surface, GLITZ_ANY_CONTEXT_CURRENT);
-    if (surface->framebuffer.name)
-        glitz_framebuffer_fini (&surface->drawable->backend->gl,
-                                &surface->framebuffer);
+
+    glitz_framebuffer_fini (&surface->drawable->backend->gl,
+                            &surface->framebuffer);
     glitz_texture_fini (&surface->drawable->backend->gl, &surface->texture);
   
     glitz_surface_pop_current (surface);
@@ -390,7 +390,7 @@ glitz_surface_damage (glitz_surface_t *surface,
         if (what & GLITZ_DAMAGE_DRAWABLE_MASK)
             REGION_UNION (&surface->drawable_damage, box);
 
-        if (what & GLITZ_DAMAGE_TEXTURE_MASK)
+        if (surface->attached && (what & GLITZ_DAMAGE_TEXTURE_MASK))
             REGION_UNION (&surface->texture_damage, box);
     }
     else
@@ -401,7 +401,7 @@ glitz_surface_damage (glitz_surface_t *surface,
             REGION_INIT (&surface->drawable_damage, &surface->box);
         }
         
-        if (what & GLITZ_DAMAGE_TEXTURE_MASK)
+        if (surface->attached && (what & GLITZ_DAMAGE_TEXTURE_MASK))
         {
             REGION_EMPTY (&surface->texture_damage);
             REGION_INIT (&surface->texture_damage, &surface->box);
@@ -594,13 +594,26 @@ glitz_surface_pop_current (glitz_surface_t *surface)
 {
   glitz_surface_t *other;
   
-  if (surface->attached)
+  if (surface->attached) {
     other = surface->attached->backend->pop_current (surface->attached);
-  else
+  } else {
+    if (surface->framebuffer.name)
+        glitz_framebuffer_unbind (&surface->drawable->backend->gl);
+    
     other = surface->drawable->backend->pop_current (surface->drawable);
+  }
 
-  if (other)
+  if (other) {
+    if ((!other->attached) &&
+        (other->drawable->backend->feature_mask &
+         GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK))
+    {
+        glitz_framebuffer_complete (&other->drawable->backend->gl,
+                                    &other->framebuffer,
+                                    &other->texture);
+    }
     _glitz_surface_update_state (other);
+  }
 }
 
 void
@@ -905,5 +918,10 @@ slim_hidden_def(glitz_surface_set_clip_region);
 glitz_bool_t
 glitz_surface_valid_target (glitz_surface_t *surface)
 {
-    return glitz_surface_push_current (surface, GLITZ_DRAWABLE_CURRENT);
+    glitz_bool_t valid;
+
+    valid = glitz_surface_push_current (surface, GLITZ_DRAWABLE_CURRENT);
+    glitz_surface_pop_current (surface);
+
+    return valid;
 }

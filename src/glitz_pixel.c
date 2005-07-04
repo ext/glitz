@@ -725,7 +725,7 @@ glitz_set_pixels (glitz_surface_t      *dst,
                                               &dst->format->color,
                                               feature_mask);
     }
-  
+
     glitz_surface_push_current (dst, GLITZ_ANY_CONTEXT_CURRENT);
 
     texture = glitz_surface_get_texture (dst, 1);
@@ -973,13 +973,12 @@ glitz_get_pixels (glitz_surface_t      *src,
     return;
   }
 
-  if (glitz_surface_push_current (src, GLITZ_DRAWABLE_CURRENT)) {
-    from_drawable = 1;
-    color = &src->attached->format->color;
+  color = &src->format->color;
+  from_drawable = glitz_surface_push_current (src, GLITZ_DRAWABLE_CURRENT);
+  if (from_drawable) {
+      if (src->attached)
+          color = &src->attached->format->color;
   } else {
-    from_drawable = 0;
-    color = &src->format->color;
-    
     texture = glitz_surface_get_texture (src, 0);
     if (!texture) {
       glitz_surface_pop_current (src);
@@ -1065,7 +1064,7 @@ glitz_get_pixels (glitz_surface_t      *src,
     gl->disable (GLITZ_GL_SCISSOR_TEST);
 
     gl->read_pixels (x_src + src->x,
-                     src->attached->height - (y_src + src->y) - height,
+                     SURFACE_DRAWABLE_HEIGHT (src) - (y_src + src->y) - height,
                      width, height,
                      gl_format->format, gl_format->type,
                      pixels);
