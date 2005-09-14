@@ -6,7 +6,7 @@ dnl ===========================================================================
 
 # Package version number, (as distinct from shared library version)
 # This must be manually synchronized with the version in src/glitz.h
-GLITZ_VERSION=0.4.4
+GLITZ_VERSION=0.5.0
 # libtool shared library version
 
 # Increment if the interface has additions, changes, removals.
@@ -122,7 +122,7 @@ if test "x$use_glx" = "xyes"; then
     AC_MSG_CHECKING([for XTHREADS in Xlib])
     AC_RUN_IFELSE(
       [AC_LANG_PROGRAM([[#include <X11/Xlib.h>]],
-        [[return XInitThreads() == 0 ? 0 : 1;]])],
+          [[return XInitThreads() == 0 ? 0 : 1;]])],
       [xthreads=no],
       [xthreads=yes],
       [xthreads=yes])
@@ -168,7 +168,7 @@ if test "x$use_agl" = "xyes"; then
   AC_TRY_LINK_FUNC(aglCreateContext, [use_agl=yes], [use_agl=no])
   LIBS="$save_libs"
   AC_MSG_RESULT([$use_agl])
-  
+
   if test "x$use_agl" = "xyes"; then
     save_libs="$LIBS"
     LIBS="-lpthread"

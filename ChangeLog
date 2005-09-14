@@ -1,20 +1,32 @@
+2005-09-02  David Reveman  <davidr@novell.com>
+
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.0.
+
+	* configure.in: Bump version to 0.5.0.
+
+	New GL_EXT_framebuffer_object interface.
+
+2005-08-29  David Reveman  <davidr@novell.com>
+
+	Indent and white-space cleanup.
+
 2005-07-04  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.4.
 
-	* configure.in: Bump version to 0.4.4. 
+	* configure.in: Bump version to 0.4.4.
 
-	* src/glitz.c: 
-	* src/glitz.h: 
-	* src/glitz_framebuffer.c: 
-	* src/glitz_geometry.c: 
-	* src/glitz_pixel.c: 
-	* src/glitz_rect.c: 
-	* src/glitz_surface.c: 
-	* src/glitz_texture.c: 
-	* src/glitzint.h: 
-	* src/agl/glitz_agl_context.c: 
-	* src/glx/glitz_glx_context.c: 
+	* src/glitz.c:
+	* src/glitz.h:
+	* src/glitz_framebuffer.c:
+	* src/glitz_geometry.c:
+	* src/glitz_pixel.c:
+	* src/glitz_rect.c:
+	* src/glitz_surface.c:
+	* src/glitz_texture.c:
+	* src/glitzint.h:
+	* src/agl/glitz_agl_context.c:
+	* src/glx/glitz_glx_context.c:
 	Fix GL_EXT_framebuffer_object support.
 
 2005-07-01  David Reveman  <davidr@novell.com>
@@ -24,8 +36,8 @@
 
 2005-06-29  David Reveman  <davidr@novell.com>
 
-	* src/glx/glitz_glxint.h: 
-	* src/glx/glitz-glx.h: 
+	* src/glx/glitz_glxint.h:
+	* src/glx/glitz-glx.h:
 	* src/glx/glitz_glx_format.c (_glitz_add_format): Add drawable
 	formats for all GLX visuals.
 	Add glitz_glx_find_drawable_format_for_visual. (Radek Doulík)
@@ -42,55 +54,55 @@
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.3.
 
-	* configure.in: Bump version to 0.4.3. 
+	* configure.in: Bump version to 0.4.3.
 
 2005-06-06  David Reveman  <davidr@novell.com>
 
 	* src/glx/glitz_glx_context.c (_glitz_glx_context_update): Fix minor
 	synchronization issue.
 
-	* src/glitz_surface.c (glitz_surface_push_current): 
+	* src/glitz_surface.c (glitz_surface_push_current):
 	* src/glitz_compose.c (glitz_composite_op_init): Fix framebuffer object
 	issues.
 
-	* src/glitzint.h: 
-	* src/glitz_context.c: 
+	* src/glitzint.h:
+	* src/glitz_context.c:
 	* src/glitz.h: Remove temporary context functions.
 
 	* src/glitz.c (glitz_copy_area): Run more efficiently on Xgl.
 
 2005-05-19  David Reveman  <davidr@novell.com>
 
-	* src/Makefile.am: 
+	* src/Makefile.am:
 	* configure.in: Add EGL backend.
 
 2005-04-12  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.4.2.
 
-	* configure.in: Bump version to 0.4.2. 
+	* configure.in: Bump version to 0.4.2.
 
-	* src/glx/glitz_glx_context.c (_glitz_glx_context_make_current): 
-	* src/agl/glitz_agl_context.c: 
+	* src/glx/glitz_glx_context.c (_glitz_glx_context_make_current):
+	* src/agl/glitz_agl_context.c:
 	(_glitz_agl_context_make_current): Call glFinish before switching
 	context.
 
-	* src/Makefile.am (libglitz_la_SOURCES): 
-	* src/agl/glitz_glx_info.c: 
-	* src/agl/glitz_agl_info.c: 
+	* src/Makefile.am (libglitz_la_SOURCES):
+	* src/agl/glitz_glx_info.c:
+	* src/agl/glitz_agl_info.c:
 	* src/glx/glitz_glx_context.c:
 	* src/agl/glitz_agl_context.c:
-	* src/glitzint.h: 
+	* src/glitzint.h:
 	* src/glitz.h: Added glitz_context_t interface.
 
-	* src/agl/glitz_glxint.h: 
-	* src/agl/glitz_aglint.h: 
-	* src/agl/glitz_glx_info.c: 
-	* src/agl/glitz_agl_info.c: 
-	* src/agl/glitz_glx_drawable.c: 
-	* src/agl/glitz_agl_drawable.c: 
-	* src/glitzint.h: 
-	* src/glitz_surface.c: 
+	* src/agl/glitz_glxint.h:
+	* src/agl/glitz_aglint.h:
+	* src/agl/glitz_glx_info.c:
+	* src/agl/glitz_agl_info.c:
+	* src/agl/glitz_glx_drawable.c:
+	* src/agl/glitz_agl_drawable.c:
+	* src/glitzint.h:
+	* src/glitz_surface.c:
 	* src/glitz.c (glitz_copy_area): Removed use of "make current read".
 
 2005-03-16  David Reveman  <davidr@novell.com>
@@ -164,7 +176,7 @@
 
 	* src/glitz_buffer.c: Important bug fix. Bind default buffer
 	object after map and bind named buffer object before unmap.
-	Thanks to Luca Barbieri. 
+	Thanks to Luca Barbieri.
 
 2004-11-03  David Reveman  <c99drn@cs.umu.se>
 
@@ -236,12 +248,12 @@
 	glitz_glx_context_create.
 	glitz_glx_context_create_glx13 -> glitz_glx_context_create_fbconfig.
 	GLX function pointers are now stored in screen_info.
-	(glitz_glx_context_proc_address_lookup): 
+	(glitz_glx_context_proc_address_lookup):
 	Function address lookup updates.
 
 	* src/glitz_gl.h: Added viewport and texture size tokens.
 
-	* src/glitz_geometry.c: Update default geometry to current clipping 
+	* src/glitz_geometry.c: Update default geometry to current clipping
 	box.
 
 	* src/glitz_compose.c: Check for GLITZ_FEATURE_BLEND_COLOR_MASK
@@ -261,9 +273,9 @@
 	* src/glitz_agl_extension.c: Check for GL_EXT_blend_color.
 	(_glitz_agl_extension_query_gl): gl_extensions_strings ->
 	gl_extensions_string.
-	(glitz_agl_query_extensions): Check GL_EXT_blend_color. 
+	(glitz_agl_query_extensions): Check GL_EXT_blend_color.
 
-	* src/glitz_agl_context.c (glitz_agl_context_proc_address_lookup): 
+	* src/glitz_agl_context.c (glitz_agl_context_proc_address_lookup):
 	Function address lookup updates.
 
 	* src/glitz.h: Added GLITZ_FEATURE_BLEND_COLOR_MASK.
@@ -271,7 +283,7 @@
 
 2004-09-21  David Reveman  <c99drn@cs.umu.se>
 
-	* src/glitz_glxint.h: Added create_new_context to 
+	* src/glitz_glxint.h: Added create_new_context to
 	glitz_glx_static_proc_address_list_t.
 	A GLXContext as parameter to glitz_glx_context_make_current.
 
@@ -290,7 +302,7 @@
 	* src/glitz_glx_context.c (_glitz_glx_context_create_glx12): Use
 	GLITZ_GL_TRUE instead of 1 for GL_TRUE.
 	(_glitz_glx_context_create_glx13): If now visual could be found
-	for a format the context should be created with glXCreateNewContext. 
+	for a format the context should be created with glXCreateNewContext.
 	(glitz_glx_context_make_current): The default GLXContext is now a
 	parameter.
 	(glitz_glx_context_update): Use root context as new context if no
@@ -385,9 +397,9 @@
 	GLITZ_GL_CONSTANT_COLOR tokens.
 	Added glitz_gl_blend_color_t prototype.
 
-	* src/glitz_glx_context.c: 
+	* src/glitz_glx_context.c:
 	* src/glitz_glx_extension.c:
-	* src/glitz_agl_extension.c:	
+	* src/glitz_agl_extension.c:
 	* src/glitz.h: GLITZ_FEATURE_COMPONENT_ALPHA_MASK ->
 	GLITZ_FEATURE_PER_COMPONENT_RENDERING_MASK.
 
@@ -414,7 +426,7 @@
 	Fixed order of pixel color components.
 
 	* src/glitz.c (glitz_composite): Oh, I'm good at these, not the
-	first time I accidentally replaced x with y. 
+	first time I accidentally replaced x with y.
 
 2004-09-10  David Reveman  <c99drn@cs.umu.se>
 
@@ -501,7 +513,7 @@
 
 	* src/glitzint.h: Allow use of a version number to check presence of
 	an extension.
-	
+
 	* src/glitz_util.c (glitz_extensions_query): Allow use of a version
 	number to check presence of an extension.
 
@@ -510,7 +522,7 @@
 
 	* src/glitz_glx_extension.c: Improved extension checking.
 
-	* src/glitz_glx_context.c (glitz_glx_context_proc_address_lookup): 
+	* src/glitz_glx_context.c (glitz_glx_context_proc_address_lookup):
 	Lookup correct symbols.
 
 	* src/glitz_agl_info.c (glitz_agl_thread_info_init): Don't query
@@ -552,7 +564,7 @@
 	Added GLITZ_SURFACE_FLAG_SIMPLE_TRANSFORM_MASK, which mean no
 	transform or translate only transform.
 
-	* src/glitz_rect.c (glitz_set_rectangles): 
+	* src/glitz_rect.c (glitz_set_rectangles):
 	GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
 
 	* src/glitz_pixel.c (glitz_set_pixels): texture->box
@@ -566,9 +578,9 @@
 	* src/glitz_glx_surface.c: Added texture flags.
 	GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
 
-	* src/glitz_glx_info.c: texture_mask goes away. 
+	* src/glitz_glx_info.c: texture_mask goes away.
 
-	* src/glitz_glx_extension.c (glitz_glx_query_extensions): 
+	* src/glitz_glx_extension.c (glitz_glx_query_extensions):
 	texture_mask goes away.
 
 	* src/glitz_geometry.c (glitz_set_geometry): GLITZ_FLAG ->
@@ -588,7 +600,7 @@
 	* src/glitz_agl_surface.c: Added texture flags.
 	GLITZ_FLAG -> GLITZ_SURFACE_FLAGS.
 
-	* src/glitz_agl_extension.c (glitz_agl_query_extensions): 
+	* src/glitz_agl_extension.c (glitz_agl_query_extensions):
 	texture_mask goes away.
 
 	* src/glitz.c (glitz_composite): no need to pass surface height
@@ -736,7 +748,7 @@
 
 	* src/glitz.h: Switch to the new trapezoid type.
 	Added GLITZ_FILTER_GAUSSIAN.
-	Added fill type CLIP, which works the same way as X Render; no image 
+	Added fill type CLIP, which works the same way as X Render; no image
 	transformation, then dst rectangle is clipped to surface size. image
 	transformation, fill type transparent is used.
 	Removed correctness hint as highest quality is now always used.
@@ -776,7 +788,7 @@
 
 	* src/glitzint.h: New composite interface.
 	New filter system.
-	Improved OpenGL state updating. 
+	Improved OpenGL state updating.
 	Removed programmatic surface.
 
 	* src/glitz_util.c: Removed glitz_intersect_bounding_box_double.
@@ -801,7 +813,7 @@
 	Added _glitz_surface_solid_store and glitz_surface_ensure_solid
 	functions for solid color handling.
 	(glitz_surface_set_transform): New filter system.
-	(glitz_surface_get_affine_transform): Added 
+	(glitz_surface_get_affine_transform): Added
 	glitz_surface_get_affine_transform so that affine transform is only
 	computed when actually needed.
 	Added glitz_surface_set_fill.
@@ -815,7 +827,7 @@
 
 	* src/glitz_status.c: Added glitz_status_to_status_mask.
 
-	* src/glitz_render.c: Added support for component alpha with solid 
+	* src/glitz_render.c: Added support for component alpha with solid
 	surfaces.
 	Filters moved into glitz_filter.c.
 	Updated all of the render interface to match the new composite
@@ -863,12 +875,12 @@
 	tokens.
 	Added glitz_gl_load_matrix_d_t and glitz_gl_mult_matrix_d_t prototypes.
 
-	* src/glitz_filter.c: Added new filter interface, which matches the 
+	* src/glitz_filter.c: Added new filter interface, which matches the
 	X Render extensions filter interface.
 
 	* src/glitz_aglint.h: Removed ARB from feature names.
 	Switched to static context stack allocation.
-	
+
 
 	* src/glitz_agl_surface.c (_glitz_agl_surface_push_current): Lazy
 	allocation of pbuffers.
@@ -922,7 +934,7 @@
 	glitz_agl_thread_info_destroy is now used for manual thread info
 	destruction and _tsd_destroy is now destruction call-back function.
 
-	* src/glitz_glx_info.c (glitz_glx_create_root_context): 
+	* src/glitz_glx_info.c (glitz_glx_create_root_context):
 	Store root_colormap in screen_info.
 	(glitz_glx_screen_destroy): Free root colormap.
 	(glitz_glx_fini): Use glitz_glx_thread_info_destroy for thread info
@@ -943,7 +955,7 @@
 	* src/glitz_surface.c (glitz_surface_fini): More safe and
 	efficient texture deallocation.
 
-	* src/glitz_programmatic.c (_glitz_programmatic_surface_create): 
+	* src/glitz_programmatic.c (_glitz_programmatic_surface_create):
 	Fixed serious memory leak in programmatic surfaces. This caused
 	a texture name allocation at each composite operation with a
 	programmatic surface.
@@ -973,7 +985,7 @@
 	scales very well, is much easier to understand and is more efficient.
 
 	* src/glitz_programmatic.c: GLITZ_PROGRAMMATIC_SURFACE_LINEAR_TYPE ->
-	GLITZ_PROGRAMMATIC_SURFACE_TYPE_LINEAR and 
+	GLITZ_PROGRAMMATIC_SURFACE_TYPE_LINEAR and
 	GLITZ_PROGRAMMATIC_SURFACE_RADIAL_TYPE ->
 	GLITZ_PROGRAMMATIC_SURFACE_TYPE_RADIAL.
 	(_glitz_programmatic_surface_create): Use MAXSHORT for static surface
@@ -985,8 +997,8 @@
 	* src/glitz_program.c: Cleaned up and moved some that should be in
 	glitz_render.c. Added support for component-alpha.
 
-	* src/glitz_pixel.c: Added new pixel buffer interface, which 
-	allows for asynchronous pixel transfers and access to 
+	* src/glitz_pixel.c: Added new pixel buffer interface, which
+	allows for asynchronous pixel transfers and access to
 	high-performance memory. Modified pixel transfer functions
 	to use the new pixel buffer interface.
 
@@ -1014,7 +1026,7 @@
 	* src/glitz_glx_extension.c: Check for GL_ARB_texture_env_combine,
 	GL_ARB_texture_env_dot3 and GL_EXT_pixel_buffer_object.
 
-	* src/glitz_glx_context.c (glitz_glx_context_proc_address_lookup): 
+	* src/glitz_glx_context.c (glitz_glx_context_proc_address_lookup):
 	Lookup pixel buffer object function pointers.
 
 	* src/glitz_gl.h: Added a bunch of new tokens and function
@@ -1129,7 +1141,7 @@
 	* src/glitz_format.c: Added new texture format detection system and
 	full support for non 24-bit formats.
 
-	* src/glitz_color_range.c (glitz_color_range_bind): Compile time 
+	* src/glitz_color_range.c (glitz_color_range_bind): Compile time
 	byte-order check.
 
 	* src/glitz_agl_surface.c (_glitz_agl_surface_update_size): Use
@@ -1143,7 +1155,7 @@
 
 	* src/glitz_agl_format.c: Use new texture format detection system.
 
-	* src/glitz_agl_context.c 
+	* src/glitz_agl_context.c
 	(glitz_agl_context_set_surface_anti_aliasing): Support new
 	polyedge smooth hint.
 
@@ -1178,7 +1190,7 @@
 
 	* src/glitz_surface.c: Removed transform stack as it's no longer
 	needed.
-	(glitz_surface_create_intermediate): Added 
+	(glitz_surface_create_intermediate): Added
 	GLITZ_INTERMEDIATE_RGBA_STENCIL.
 	Removed enable/disable program functions in favor of new render
 	interface.
@@ -1206,7 +1218,7 @@
 	* src/glitz_matrix.c: Removed glitz_matrix_translate as it's no
 	longer used.
 
-	* src/glitz_gl.h: Added GLITZ_GL_LESS, GLITZ_GL_LEQUAL, 
+	* src/glitz_gl.h: Added GLITZ_GL_LESS, GLITZ_GL_LEQUAL,
 	GLITZ_GL_COMPILE and display list function prototypes.
 
 	* src/glitz_agl_info.c: Added display list functions.
@@ -1247,7 +1259,7 @@
 
 2004-05-29  David Reveman  <c99drn@cs.umu.se>
 
-	* src/glitz_matrix.c (glitz_matrix_transform_bounding_box): Fixed 
+	* src/glitz_matrix.c (glitz_matrix_transform_bounding_box): Fixed
 	another typo.
 
 2004-05-28  David Reveman  <c99drn@cs.umu.se>
@@ -1261,7 +1273,7 @@
 
 	* src/glitz_glxint.h: screen_info to proc_address_lookup.
 
-	* src/glitz_glx_context.c (glitz_glx_context_proc_address_lookup): 
+	* src/glitz_glx_context.c (glitz_glx_context_proc_address_lookup):
 	Only check the number of texture indirections if fragment program
 	extension is supported.
 	(glitz_glx_context_make_current): screen_info to proc_address_lookup.
@@ -1279,14 +1291,14 @@
 
 	* src/glitzint.h: Added support for read-only surfaces.
 
-	* src/glitz_tri.c (glitz_int_composite_triangles): Use 
+	* src/glitz_tri.c (glitz_int_composite_triangles): Use
 	create_intermediate.
 
-	* src/glitz_trap.c (glitz_composite_trapezoids): Use 
+	* src/glitz_trap.c (glitz_composite_trapezoids): Use
 	create_intermediate.
 
 	* src/glitz_surface.c: Added support for read-only surfaces.
-	Added glitz_surface_find_similar_format and 
+	Added glitz_surface_find_similar_format and
 	glitz_surface_find_similar_standard_format.
 
 	* src/glitz_programmatic.c: Added support for read-only surfaces.
@@ -1334,12 +1346,12 @@
 	read/draw buffer interface. Minor updates to matrix functions. Added
 	glitz_function_pointer_t type.
 
-	* src/glitz_texture.c (glitz_texture_copy_surface): Added new 
+	* src/glitz_texture.c (glitz_texture_copy_surface): Added new
 	read/draw buffer interface.
 
 	* src/glitz_surface.c (glitz_surface_init): Added new read/draw buffer
 	interface.
-	Added _gl_buffer, glitz_surface_set_read_buffer, 
+	Added _gl_buffer, glitz_surface_set_read_buffer,
 	glitz_surface_set_draw_buffer and glitz_surface_swap_buffers.
 	(glitz_surface_dirty): Only mark dirty if draw_buffer != read_buffer.
 	(glitz_surface_setup_environment): Added new read/draw buffer
@@ -1388,7 +1400,7 @@
 	* src/glitz.c (glitz_copy_area): Fixed obvious memory leak.
 	(glitz_copy_area): Fixed default texture to drawable copy.
 
-	* src/glitz_glx_surface.c (_glitz_glx_surface_make_current_read): 
+	* src/glitz_glx_surface.c (_glitz_glx_surface_make_current_read):
 	Temporarily disabled glXMakeContextCurrent until I get it working
 	properly.
 
@@ -1400,13 +1412,13 @@
 
 	* src/glitz_glx_surface.c: Added _glitz_glx_surface_make_current_read.
 
-	* src/glitz_glx_info.c (glitz_glx_proc_address_lookup): Lookup 
+	* src/glitz_glx_info.c (glitz_glx_proc_address_lookup): Lookup
 	function glXMakeContextCurrent.
 
-	* src/glitz_glxext.h: Added use of GLX 1.3 function 
+	* src/glitz_glxext.h: Added use of GLX 1.3 function
 	glXMakeContextCurrent.
 
-	* src/glitz_glxint.h: Added use of GLX 1.3 function 
+	* src/glitz_glxint.h: Added use of GLX 1.3 function
 	glXMakeContextCurrent.
 
 	* src/glitz_surface.c: Added glitz_surface_make_current_read.
@@ -1494,11 +1506,11 @@
 2004-05-09  David Reveman  <c99drn@cs.umu.se>
 
 	* TODO: Added library cleanup functions.
-	
+
 	* src/glitzint.h: Fixed program identifier types. Added
 	glitz_programs_fini.
 
-	* src/glitz_program.c: Fixed program identifier types. Added 
+	* src/glitz_program.c: Fixed program identifier types. Added
 	glitz_programs_fini.
 
 	* src/glitz_glxint.h: GLX procedure addresses are now thread
@@ -1521,7 +1533,7 @@
 	* src/glitz_glx_format.c: GLX procedure addresses are now thread
 	specific.
 
-	* src/glitz_glx_extension.c (glitz_glx_query_extensions): GLX 
+	* src/glitz_glx_extension.c (glitz_glx_query_extensions): GLX
 	procedure addresses are now thread specific.
 
 	* src/glitz_glx_context.c: GLX procedure addresses are now thread
@@ -1567,11 +1579,11 @@
 	* src/glitz_glx_format.c (_glitz_glx_format_compare): Higher
 	priority to multisample formats.
 
-	* src/glitz_agl_surface.c (_glitz_agl_set_features): The feature 
+	* src/glitz_agl_surface.c (_glitz_agl_set_features): The feature
 	mask should not represent the features of the current surface
 	but the features of the graphics hardware.
 
-	* src/glitz_glx_surface.c (_glitz_glx_set_features): The feature 
+	* src/glitz_glx_surface.c (_glitz_glx_set_features): The feature
 	mask should not represent the features of the current surface
 	but the features of the graphics hardware.
 
@@ -1591,7 +1603,7 @@
 
 2004-05-01  David Reveman  <c99drn@cs.umu.se>
 
-	* src/glitz_agl_format.c (glitz_agl_query_formats): Cleaned up 
+	* src/glitz_agl_format.c (glitz_agl_query_formats): Cleaned up
 	creation of fake offscreen formats.
 
 	* src/glitz_glx_info.c (glitz_glx_thread_info_get): Do
@@ -1634,7 +1646,7 @@
 	* src/glitzint.h: Added internal_format to glitz_texture_t. Added
 	SURFACE_SOLID macro. Removed glitz_format_find_sufficient_standard.
 
-	* src/glitz_util.c (glitz_get_gl_format_from_bpp): 
+	* src/glitz_util.c (glitz_get_gl_format_from_bpp):
 	Use GLITZ_GL_LUMINANCE_ALPHA instead of GLITZ_GL_ALPHA for
 	A8 surfaces.
 
@@ -1654,14 +1666,14 @@
 	* src/glitz_format.c: Removed glitz_format_find_sufficient_standard.
 
 	* src/glitz_glxint.h: Added GLITZ_AGL_FEATURE_ARB_MULTITEXTURE_MASK.
-	
+
 	* src/glitz_aglint.h: Added GLITZ_AGL_FEATURE_ARB_MULTITEXTURE_MASK.
 
-	* src/glitz_glx_surface.c (_glitz_glx_surface_create_similar): 
+	* src/glitz_glx_surface.c (_glitz_glx_surface_create_similar):
 	Always use glitz_format_find_standard for similar surface formats.
 	(_glitz_glx_surface_push_current): Fixed invalid set of surface status.
-	
-	* src/glitz_agl_surface.c (_glitz_agl_surface_create_similar): 
+
+	* src/glitz_agl_surface.c (_glitz_agl_surface_create_similar):
 	Always use glitz_format_find_standard for similar surface formats.
 	(_glitz_agl_surface_push_current): Fixed invalid set of surface status.
 
@@ -1669,7 +1681,7 @@
 	format for pbuffer.
 
 	* src/glitz_glx_extension.c: Detect GL_ARB_multitexture extension.
-	
+
 	* src/glitz_agl_extension.c: Detect GL_ARB_multitexture extension.
 
 	* src/glitz.h (GLITZ_FEATURE_OFFSCREEN_MULTISAMPLE_MASK): Added
@@ -1718,7 +1730,7 @@
 2004-04-03  David Reveman  <c99drn@cs.umu.se>
 
 	* src/glitz_agl_surface.c (_glitz_agl_set_features):
-	* src/glitz_glx_surface.c (_glitz_glx_set_features): Fixed 
+	* src/glitz_glx_surface.c (_glitz_glx_set_features): Fixed
 	detection of convolution filter support.
 
 	* src/glitz_glx_pbuffer.c:
@@ -1757,13 +1769,13 @@
 
 2004-03-14  David Reveman  <c99drn@cs.umu.se>
 
-	* src/Makefile.am: Don't install GL extension headers. 
+	* src/Makefile.am: Don't install GL extension headers.
 
 	Fixed polygon bounds.
 
 2004-03-13  David Reveman  <c99drn@cs.umu.se>
 
-	* src/glc_glx_format.c: Use GLX13 to find visual info if GLX13 is 
+	* src/glc_glx_format.c: Use GLX13 to find visual info if GLX13 is
 	present.
 
 2004-03-12  David Reveman  <c99drn@cs.umu.se>
@@ -1772,7 +1784,7 @@
 
 2004-03-08  David Reveman  <c99drn@cs.umu.se>
 
-	Fragment program updates. Added support for combined 
+	Fragment program updates. Added support for combined
 	convolution and solid programmatic surface operation.
 
 2004-03-06  David Reveman  <c99drn@cs.umu.se>
@@ -1815,14 +1827,14 @@
 
 2004-02-23  David Reveman  <c99drn@cs.umu.se>
 
-	* src/glc_glx_format.c (glc_glx_query_formats_glx13): 
+	* src/glc_glx_format.c (glc_glx_query_formats_glx13):
 	Use GLC_GLX_FEATURE_GLX13_MASK.
 
 	* src/glc_glx_context.c (glc_glx_context_get): Check
-	GLC_GLX_FEATURE_GLX13_MASK instead of 
+	GLC_GLX_FEATURE_GLX13_MASK instead of
 	GLC_FEATURE_OFFSCREEN_DRAWING_MASK.
 
-	* src/glc_glx_extension.c (glc_glx_query_extensions): 
+	* src/glc_glx_extension.c (glc_glx_query_extensions):
 	Added GLC_GLX_FEATURE_GLX13_MASK.
 
 	* src/glcint.h: Added GLC_GLX_FEATURE_GLX13_MASK.
@@ -1865,7 +1877,7 @@
 
 	* src/glc_glx_surface.c: Tracking changes of format pointer location.
 
-	Merged fragment program code. 
+	Merged fragment program code.
 
 2004-02-06  David Reveman  <c99drn@cs.umu.se>
 
@@ -1892,7 +1904,7 @@
 	* src/glc_format.c (glc_format_find_standard): All componenets must
 	match exactly when searching for standard formats.
 
-	* src/glc_glx_format.c (glc_glx_query_formats_glx12): 
+	* src/glc_glx_format.c (glc_glx_query_formats_glx12):
 	Fixed so that the correct visual IDs are retrieved.
 
 2004-02-05  David Reveman  <c99drn@cs.umu.se>
@@ -1918,7 +1930,7 @@
 	* src/glc_glx_format.c (_glc_add_options): Force single buffering
 	when double buffering is not specified.
 
-	Restructuring of internal rendering model. 
+	Restructuring of internal rendering model.
 	AGL backend added.
 
 2003-12-13  David Reveman  <c99drn@cs.umu.se>
@@ -1943,7 +1955,7 @@
 
 	* src/glcint.h: Moved out extension check functions from glx backend.
 
-	* src/glc_glx_extension.c: Check for client glx extensions and 
+	* src/glc_glx_extension.c: Check for client glx extensions and
 	validate fbconfig and pbuffer support.
 
 	* src/glc_surface.c (glc_surface_draw_pixels): Do not draw to both
@@ -1951,15 +1963,15 @@
 
 2003-12-09  Peter Nilsson  <c99pnn@cs.umu.se>
 
-	* src/glc.h: Moved read/draw pixels from glx backend to glc 
-	core.  
-	
-	* src/glc_glx_surface.c: Moved read/draw pixels from glx backend to glc 
-	core.  
+	* src/glc.h: Moved read/draw pixels from glx backend to glc
+	core.
 
-	* src/glc_surface.c: Moved read/draw pixels from glx backend to glc 
-	core. 
-	
+	* src/glc_glx_surface.c: Moved read/draw pixels from glx backend to glc
+	core.
+
+	* src/glc_surface.c: Moved read/draw pixels from glx backend to glc
+	core.
+
 2003-12-08  David Reveman  <c99drn@cs.umu.se>
 
 	Texture format fixes. Linux and MacOSX ATI drivers should now work.
@@ -1980,9 +1992,9 @@
 
 	* src/glcint.h: Added glc_intersect_region function.
 
-	* src/glc_util.c: Added glc_intersect_region function. 
+	* src/glc_util.c: Added glc_intersect_region function.
 
-	* src/glc.c (glc_composite): Added support for combined repeat and 
+	* src/glc.c (glc_composite): Added support for combined repeat and
 	transformations.
 
 	* Added conditional backend building.
@@ -1994,18 +2006,18 @@
 
 	* src/glc_operator.c: Removed GLC_OPERATOR_MASK.
 
-	* src/glcint.h: Removed GLC_OPERATOR_MASK. 
+	* src/glcint.h: Removed GLC_OPERATOR_MASK.
 
-	* src/glc_texture.c (glc_texture_create): Use GL_RGBA as internal 
+	* src/glc_texture.c (glc_texture_create): Use GL_RGBA as internal
 	texture format instead of GL_RGBA8.
 
 	* src/glc_glx_surface.c (glc_glx_surface_draw_pixels): Added glFlush
 	after glTexSubImage2D.
 
-	* src/glc_tri.c (glc_color_triangles): Added glFlush after 
+	* src/glc_tri.c (glc_color_triangles): Added glFlush after
 	glCopyTexSubImage2D.
 
-	* src/glc_trap.c (glc_color_trapezoids): Added glFlush after 
+	* src/glc_trap.c (glc_color_trapezoids): Added glFlush after
 	glCopyTexSubImage2D.
 
 	* src/glc_rect.c: Added glFlush after glCopyTexSubImage2D.
@@ -2040,13 +2052,13 @@
 
 	* src/glc_surface.c (glc_surface_setup_environment): Set polygon mode.
 	(glc_surface_set_transform): New transformation model.
-	
+
 	* src/glc_tri.c (glc_color_triangles): glCopyTexSubImage Y offset fix.
 
 	* src/glc_trap.c (glc_color_trapezoids): glCopyTexSubImage Y offset
 	fix.
 
-	* src/glc_glx_surface.c (glc_glx_surface_draw_pixels): Texture Y 
+	* src/glc_glx_surface.c (glc_glx_surface_draw_pixels): Texture Y
 	offset fix.
 
 2003-12-01  David Reveman  <c99drn@cs.umu.se>
@@ -2054,10 +2066,10 @@
 	* src/glc.c (glc_composite): Only pop matrix if transformations has
 	been used.
 
-	* src/glc_tri.c (glc_color_triangles): Removed unwanted 
+	* src/glc_tri.c (glc_color_triangles): Removed unwanted
 	transformations.
 
-	* src/glc_trap.c (glc_color_trapezoids): Removed unwanted 
+	* src/glc_trap.c (glc_color_trapezoids): Removed unwanted
 	transformations.
 
 	* src/glc_rect.c: Removed unwanted transformations.
@@ -2076,4 +2088,3 @@
 	* src/glc_glx_context.c: Use XID instead of GLXFBConfigID.
 
 	* src/glc_glxint.h: Use XID instead of GLXFBConfigID.
-

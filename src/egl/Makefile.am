@@ -15,7 +15,6 @@ libglitz_egl_la_SOURCES =     \
 	glitz_egl_extension.c \
 	glitz_egl_context.c   \
 	glitz_egl_pbuffer.c   \
-	glitz_eglext.h	      \
 	glitz_eglint.h
 
 libglitz_egl_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined
@@ -34,7 +33,6 @@ EXTRA_DIST =		      \
 	glitz_egl_extension.c \
 	glitz_egl_context.c   \
 	glitz_egl_pbuffer.c   \
-	glitz_eglext.h	      \
 	glitz_eglint.h	      \
 	glitz-egl.pc.in	      \
 	glitz-egl.man
