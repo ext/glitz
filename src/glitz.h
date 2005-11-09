@@ -26,16 +26,6 @@
 #ifndef GLITZ_H_INCLUDED
 #define GLITZ_H_INCLUDED
 
-#if defined(__SVR4) && defined(__sun)
-#  include <sys/int_types.h>
-#else
-#  if defined(__OpenBSD__)
-#    include <inttypes.h>
-#  else
-#    include <stdint.h>
-#  endif
-#endif
-
 #define GLITZ_MAJOR    0
 #define GLITZ_MINOR    5
 #define GLITZ_REVISION 0

@@ -26,12 +26,35 @@
 #ifndef GLITZINT_H_INCLUDED
 #define GLITZINT_H_INCLUDED
 
+#ifdef _MSC_VER
+#define _USE_MATH_DEFINES
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include <math.h>
 
 #include "glitz.h"
+
+#if defined(__SVR4) && defined(__sun)
+#  include <sys/int_types.h>
+#elif defined(_MSC_VER)
+  typedef __int8 int8_t;
+  typedef unsigned __int8 uint8_t;
+  typedef __int16 int16_t;
+  typedef unsigned __int16 uint16_t;
+  typedef __int32 int32_t;
+  typedef unsigned __int32 uint32_t;
+  typedef __int64 int64_t;
+  typedef unsigned __int64 uint64_t;
+#else
+#  if defined(__OpenBSD__)
+#    include <inttypes.h>
+#  else
+#    include <stdint.h>
+#  endif
+#endif
 
 #if defined(__APPLE__) || defined(__sun__)
 # define floorf(a)    floor (a)
@@ -942,7 +965,7 @@ _glitz_context_fini (glitz_context_t *context);
 
 /* Fixed point updates from Carl Worth, USC, Information Sciences Institute */
 
-#ifdef WIN32
+#ifdef _MSC_VER
 typedef __int64 glitz_fixed_32_32;
 #else
 #  if defined(__alpha__) || defined(__alpha) || \
@@ -994,6 +1017,18 @@ typedef glitz_fixed_16_16 glitz_fixed;
 
 #define POWER_OF_TWO(v) ((v & (v - 1)) == 0)
 
+/*
+ * VC's math.h is pretty horrible
+ */
+#ifdef _MSC_VER
+#define ceilf(_X)  ((float)ceil((double)(_X)))
+#define sqrtf(_X)  ((float)sqrt((double)(_X)))
+#define floorf(_X)  ((float)floor((double)(_X)))
+#define sinf(_X) ((float)sin((double)(_X)))
+#define cosf(_X) ((float)cos((double)(_X)))
+#define atan2f(_X,_Y) ((float)atan2((double)(_X),(double)(_Y)))
+#define sqrtf(_X) ((float)sqrt((double)(_X)))
+#endif
 
 /* Avoid unnecessary PLT entries. */
 

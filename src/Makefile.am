@@ -1,4 +1,12 @@
-SUBDIRS = . glx agl egl
+SUBDIRS = . glx agl egl wgl
+
+if OS_WIN32
+glitz_def = $(srcdir)/glitz.def
+libglitz_export_symbols = -export-symbols $(glitz_def)
+else
+glitz_def =
+libglitz_export_symbols =
+endif
 
 lib_LTLIBRARIES = libglitz.la
 include_HEADERS = glitz.h
@@ -28,12 +36,13 @@ libglitz_la_SOURCES =	    \
 	glitz_gl.h	    \
 	glitzint.h
 
-libglitz_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined
-libglitz_la_LIBADD = -lm
+libglitz_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined $(libglitz_export_symbols)
+libglitz_la_LIBADD = $(LIBM)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = glitz.pc
 
 EXTRA_DIST =	     \
+	glitz.def    \
 	glitz.pc.in  \
 	glitz.man

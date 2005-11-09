@@ -1,5 +1,7 @@
 2005-11-09  David Reveman  <davidr@novell.com>
 
+	* Add WGL backend. Thanks to Vladimir Vukicevic and Tor Lillqvist.
+
 	* src/agl/glitz_aglint.h: AGL backend updates (Vladimir Vukicevic)
 
 2005-09-02  David Reveman  <davidr@novell.com>
