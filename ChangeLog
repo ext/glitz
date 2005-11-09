@@ -1,3 +1,7 @@
+2005-11-09  David Reveman  <davidr@novell.com>
+
+	* src/agl/glitz_aglint.h: AGL backend updates (Vladimir Vukicevic)
+
 2005-09-02  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.0.
