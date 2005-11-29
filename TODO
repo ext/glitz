@@ -1,5 +1,10 @@
+* More YUV surface formats (YUY2, UYVY, I420..).
+
+* Automatic texture coordinate generation for non-transformed source surfaces
+  that can not be used with wrap mode GL_REPEAT.
+
+* Support for logical ops.
+
+* Tiled bitmap geometry.
+
 * API documentation.
-
-* WGL (Windows GL) backend.
-
-* Mesa-solo backend.

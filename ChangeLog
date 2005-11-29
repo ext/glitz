@@ -1,5 +1,7 @@
 2005-11-29  David Reveman  <davidr@novell.com>
 
+	* TODO: Updated.
+
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.1.
 
 	* configure.in: Bump version to 0.5.1.
