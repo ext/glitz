@@ -90,7 +90,10 @@ glitz_surface_create (glitz_drawable_t           *drawable,
 
     glitz_texture_init (&surface->texture, width, height,
 			drawable->backend->texture_formats[format->id],
+			surface->format->color.fourcc,
 			feature_mask, unnormalized);
+
+    glitz_surface_set_filter (surface, GLITZ_FILTER_NEAREST, NULL, 0);
 
     if (width > 64 || height > 64)
     {
@@ -490,7 +493,7 @@ glitz_surface_attach (glitz_surface_t         *surface,
 	    if (surface == drawable->front)
 		return;
 
-	    if (surface->format->type != GLITZ_FORMAT_TYPE_COLOR)
+	    if (surface->format->color.fourcc != GLITZ_FOURCC_RGB)
 		drawable = NULL;
 
 	    if (drawable)
@@ -510,7 +513,7 @@ glitz_surface_attach (glitz_surface_t         *surface,
 	    if (surface == drawable->back)
 		return;
 
-	    if (surface->format->type != GLITZ_FORMAT_TYPE_COLOR)
+	    if (surface->format->color.fourcc != GLITZ_FOURCC_RGB)
 		drawable = NULL;
 
 	    if (drawable)
@@ -847,13 +850,25 @@ glitz_surface_set_filter (glitz_surface_t    *surface,
     } else {
 	switch (filter) {
 	case GLITZ_FILTER_NEAREST:
-	    surface->flags &= ~GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+	    switch (surface->format->color.fourcc) {
+	    case GLITZ_FOURCC_YV12:
+		surface->flags |= GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+		break;
+	    default:
+		surface->flags &= ~GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+	    }
 	    surface->flags &= ~GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
 	    surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK;
 	    surface->flags &= ~GLITZ_SURFACE_FLAG_EYE_COORDS_MASK;
 	    break;
 	case GLITZ_FILTER_BILINEAR:
-	    surface->flags &= ~GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+	    switch (surface->format->color.fourcc) {
+	    case GLITZ_FOURCC_YV12:
+		surface->flags |= GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+		break;
+	    default:
+		surface->flags &= ~GLITZ_SURFACE_FLAG_FRAGMENT_FILTER_MASK;
+	    }
 	    surface->flags |= GLITZ_SURFACE_FLAG_LINEAR_TRANSFORM_FILTER_MASK;
 	    surface->flags &= ~GLITZ_SURFACE_FLAG_IGNORE_WRAP_MASK;
 	    surface->flags &= ~GLITZ_SURFACE_FLAG_EYE_COORDS_MASK;

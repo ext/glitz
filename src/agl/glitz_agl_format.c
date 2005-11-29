@@ -153,6 +153,9 @@ _glitz_agl_format_compare (const void *elem1,
     i = score[0] = score[1] = 0;
 
     for (; i < 2; i++) {
+	if (format[i]->d.color.fourcc != GLITZ_FOURCC_RGB)
+	    score[i] -= 1000;
+
 	if (format[i]->d.color.red_size) {
 	    if (format[i]->d.color.red_size == 8)
 		score[i] += 5;
@@ -232,6 +235,7 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
 
     format.types	= GLITZ_DRAWABLE_TYPE_WINDOW_MASK;
     format.d.id		= 0
+    format.color.fourcc = GLITZ_FOURCC_RGB;
 
     n_attribs_list = sizeof (_attribs_list) / sizeof (GLint *);
 

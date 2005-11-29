@@ -110,6 +110,11 @@ void
 glitz_context_make_current (glitz_context_t  *context,
 			    glitz_drawable_t *drawable)
 {
+    glitz_lose_current_function_t lose_current;
+
+    lose_current = context->lose_current;
+    context->lose_current = 0;
+
     if (drawable != context->drawable)
     {
 	glitz_drawable_reference (drawable);
@@ -144,6 +149,8 @@ glitz_context_make_current (glitz_context_t  *context,
 			      GLITZ_DAMAGE_TEXTURE_MASK |
 			      GLITZ_DAMAGE_SOLID_MASK);
     }
+
+    context->lose_current = lose_current;
 
     drawable->backend->make_current (drawable, context);
 }
