@@ -1,3 +1,7 @@
+2005-11-30  David Reveman  <davidr@novell.com>
+
+	* TODO: Removed automatic texture coordinate generation.
+
 2005-11-29  David Reveman  <davidr@novell.com>
 
 	* TODO: Updated.
