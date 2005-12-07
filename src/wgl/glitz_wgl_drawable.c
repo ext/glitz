@@ -202,6 +202,7 @@ glitz_wgl_destroy (void *abstract_drawable)
 	glitz_wgl_push_current (abstract_drawable, NULL, GLITZ_CONTEXT_CURRENT);
 	glitz_program_map_fini (drawable->base.backend->gl,
 				&drawable->screen_info->program_map);
+	glitz_program_map_init (&drawable->screen_info->program_map);
 	glitz_wgl_pop_current (abstract_drawable);
     }
 

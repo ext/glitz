@@ -1,5 +1,10 @@
 2005-12-07  Vladimir Vukicevic  <vladimir@pobox.com>
 
+	* src/agl/glitz_wgl_drawable.c: Add program_map_init after fini
+	in drawable_destroy (same as changes to glx/agl code).
+
+2005-12-07  Vladimir Vukicevic  <vladimir@pobox.com>
+
         * src/agl/glitz_agl_format.c: AGL backend compilation fixes.
 
 2005-11-30  David Reveman  <davidr@novell.com>
