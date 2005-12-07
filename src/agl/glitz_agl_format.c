@@ -145,32 +145,28 @@ static int
 _glitz_agl_format_compare (const void *elem1,
 			   const void *elem2)
 {
-    int i, score[2];
-    glitz_drawable_format_t *format[2];
+    glitz_int_drawable_format_t *format[2];
+    int				i, score[2];
 
-    format[0] = (glitz_drawable_format_t *) elem1;
-    format[1] = (glitz_drawable_format_t *) elem2;
+    format[0] = (glitz_int_drawable_format_t *) elem1;
+    format[1] = (glitz_int_drawable_format_t *) elem2;
     i = score[0] = score[1] = 0;
 
-    for (; i < 2; i++) {
-	if (format[i]->d.color.fourcc != GLITZ_FOURCC_RGB)
-	    score[i] -= 1000;
-
-	if (format[i]->d.color.red_size) {
-	    if (format[i]->d.color.red_size == 8)
+    for (; i < 2; i++)
+    {
+	if (format[i]->d.color.red_size)
+	{
+	    if (format[i]->d.color.red_size >= 8)
 		score[i] += 5;
+
 	    score[i] += 10;
 	}
 
-	if (format[i]->d.color.green_size) {
-	    if (format[i]->d.color.green_size == 8)
+	if (format[i]->d.color.alpha_size)
+	{
+	    if (format[i]->d.color.alpha_size >= 8)
 		score[i] += 5;
-	    score[i] += 10;
-	}
 
-	if (format[i]->d.color.alpha_size) {
-	    if (format[i]->d.color.alpha_size == 8)
-		score[i] += 5;
 	    score[i] += 10;
 	}
 
@@ -184,7 +180,7 @@ _glitz_agl_format_compare (const void *elem1,
 	    score[i] += 10;
 
 	if (format[i]->d.samples > 1)
-	    score[i] -= (20 - format[i]->samples);
+	    score[i] -= (20 - format[i]->d.samples);
 
 	if (format[i]->types & GLITZ_DRAWABLE_TYPE_WINDOW_MASK)
 	    score[i] += 10;
@@ -200,9 +196,9 @@ _glitz_agl_format_compare (const void *elem1,
 }
 
 static void
-_glitz_add_format (glitz_agl_thread_info_t *thread_info,
-		   glitz_drawable_format_t *format,
-		   AGLPixelFormat          pixel_format)
+_glitz_agl_add_format (glitz_agl_thread_info_t     *thread_info,
+		       glitz_int_drawable_format_t *format,
+		       AGLPixelFormat               pixel_format)
 {
     if (!glitz_drawable_format_find (thread_info->formats,
 				     thread_info->n_formats,
@@ -233,9 +229,8 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
     AGLPixelFormat pixel_format, *new_pfs;
     int n_attribs_list, i;
 
-    format.types	= GLITZ_DRAWABLE_TYPE_WINDOW_MASK;
-    format.d.id		= 0
-    format.color.fourcc = GLITZ_FOURCC_RGB;
+    format.types = GLITZ_DRAWABLE_TYPE_WINDOW_MASK;
+    format.d.id = 0;
 
     n_attribs_list = sizeof (_attribs_list) / sizeof (GLint *);
 
@@ -368,3 +363,4 @@ glitz_agl_find_pbuffer_format (unsigned long                 mask,
 				       mask, &itempl, count);
 }
 slim_hidden_def(glitz_agl_find_pbuffer_format);
+
