@@ -175,6 +175,7 @@ _glitz_wgl_query_formats (glitz_wgl_screen_info_t *screen_info)
 	format.d.color.green_size = pfd.cGreenBits;
 	format.d.color.blue_size = pfd.cBlueBits;
 	format.d.color.alpha_size = pfd.cAlphaBits;
+	format.d.color.fourcc = GLITZ_FOURCC_RGB;
 
 	format.d.depth_size = pfd.cDepthBits;
 	format.d.stencil_size = pfd.cStencilBits;
@@ -210,6 +211,7 @@ _glitz_wgl_query_formats_using_pixel_format (glitz_wgl_screen_info_t *screen_inf
     for (i = 1; i <= num_pixel_formats; i++) {
 	format.d.id = 0;
 	format.types = 0;
+	format.d.color.fourcc = GLITZ_FOURCC_RGB;
 
 #define ASK_QUESTION(q,a) (question=(q),wgl->get_pixel_format_attrib_iv (screen_info->root_dc, i, 0, 1, &question,(a)))
 

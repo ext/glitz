@@ -1,3 +1,7 @@
+2005-12-12  Vladimir Vukicevic  <vladimir@pobox.com>
+
+	* src/wgl/glitz_wgl_format.c: Set GLITZ_FOURCC_RGB on all formats
+
 2005-12-07  Vladimir Vukicevic  <vladimir@pobox.com>
 
 	* src/agl/glitz_wgl_drawable.c: Add program_map_init after fini
