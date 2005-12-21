@@ -208,7 +208,8 @@ _glitz_surface_sync_texture (glitz_surface_t *surface)
 
 	glitz_surface_push_current (surface, GLITZ_DRAWABLE_CURRENT);
 
-	gl->read_buffer (surface->buffer);
+	surface->drawable->backend->read_buffer (surface->drawable,
+						 surface->buffer);
 
 	gl->disable (GLITZ_GL_SCISSOR_TEST);
 
@@ -273,8 +274,8 @@ glitz_surface_sync_drawable (glitz_surface_t *surface)
 		       GLITZ_GL_REPLACE);
 	gl->color_4us (0x0, 0x0, 0x0, 0xffff);
 
-	param.filter[0] = param.filter[1] = GLITZ_GL_CLAMP_TO_EDGE;
-	param.wrap[0] = param.wrap[1] = GLITZ_GL_NEAREST;
+	param.filter[0] = param.filter[1] = GLITZ_GL_NEAREST;
+	param.wrap[0] = param.wrap[1] = GLITZ_GL_CLAMP_TO_EDGE;
 
 	glitz_texture_ensure_parameters (gl, texture, &param);
 
@@ -473,7 +474,7 @@ _glitz_surface_update_state (glitz_surface_t *surface)
 	drawable->update_all = 0;
     }
 
-    gl->draw_buffer (surface->buffer);
+    drawable->backend->draw_buffer (drawable, surface->buffer);
 
     if (SURFACE_DITHER (surface))
 	gl->enable (GLITZ_GL_DITHER);

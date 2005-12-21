@@ -1509,7 +1509,7 @@ glitz_get_pixels (glitz_surface_t      *src,
 
     if (from_drawable)
     {
-	gl->read_buffer (src->buffer);
+	src->drawable->backend->read_buffer (src->drawable, src->buffer);
 
 	gl->disable (GLITZ_GL_SCISSOR_TEST);
 

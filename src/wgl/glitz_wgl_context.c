@@ -193,6 +193,9 @@ glitz_wgl_context_get (glitz_wgl_screen_info_t          *screen_info,
     context->backend.make_current = _glitz_wgl_make_current;
     context->backend.get_proc_address = _glitz_wgl_context_get_proc_address;
 
+    context->backend.draw_buffer = _glitz_drawable_draw_buffer;
+    context->backend.read_buffer = _glitz_drawable_read_buffer;
+
     context->backend.drawable_formats = screen_info->formats;
     context->backend.n_drawable_formats = screen_info->n_formats;
 

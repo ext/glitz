@@ -407,6 +407,14 @@ typedef struct glitz_backend {
   (*make_current)              (void *drawable,
 				void *context);
 
+  void
+  (*draw_buffer)               (void                  *drawable,
+				const glitz_gl_enum_t buffer);
+
+  void
+  (*read_buffer)               (void                  *drawable,
+				const glitz_gl_enum_t buffer);
+
   glitz_function_pointer_t
   (*get_proc_address)          (void       *context,
 				const char *name);
@@ -494,7 +502,6 @@ typedef struct _glitz_texture {
   int             height;
 
   glitz_box_t     box;
-  glitz_box_t     box_internal;
 
   glitz_float_t   texcoord_width_unit;
   glitz_float_t   texcoord_height_unit;
@@ -940,6 +947,14 @@ _glitz_drawable_init (glitz_drawable_t	          *drawable,
 		      int		          width,
 		      int		          height);
 
+void
+_glitz_drawable_draw_buffer (void                  *abstract_drawable,
+			     const glitz_gl_enum_t buffer);
+
+void
+_glitz_drawable_read_buffer (void                  *abstract_drawable,
+			     const glitz_gl_enum_t buffer);
+
 extern glitz_drawable_t __internal_linkage *
 _glitz_fbo_drawable_create (glitz_drawable_t	        *other,
 			    glitz_int_drawable_format_t *format,
@@ -1085,5 +1100,7 @@ slim_hidden_proto(glitz_context_set_user_data)
 slim_hidden_proto(glitz_context_get_proc_address)
 slim_hidden_proto(glitz_context_make_current)
 slim_hidden_proto(glitz_context_bind_texture)
+slim_hidden_proto(glitz_context_draw_buffers)
+slim_hidden_proto(glitz_context_read_buffer)
 
 #endif /* GLITZINT_H_INCLUDED */

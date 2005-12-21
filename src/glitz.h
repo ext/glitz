@@ -28,7 +28,7 @@
 
 #define GLITZ_MAJOR    0
 #define GLITZ_MINOR    5
-#define GLITZ_REVISION 1
+#define GLITZ_REVISION 2
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -476,6 +476,15 @@ glitz_context_make_current (glitz_context_t  *context,
 void
 glitz_context_bind_texture (glitz_context_t        *context,
 			    glitz_texture_object_t *texture);
+
+void
+glitz_context_draw_buffers (glitz_context_t	          *context,
+			    const glitz_drawable_buffer_t *buffers,
+			    int				  n);
+
+void
+glitz_context_read_buffer (glitz_context_t		 *context,
+			   const glitz_drawable_buffer_t buffer);
 
 
 /* glitz_rect.c */
