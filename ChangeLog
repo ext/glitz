@@ -1,3 +1,11 @@
+2006-01-02  David Reveman  <davidr@novell.com>
+
+	* src/egl/glitz_egl_context.c (_glitz_egl_make_current): 0 -> EGL_READ.
+	(Dave Airlie)
+
+	* src/egl/glitz_egl_config.c (_glitz_egl_format_compare): Track changes
+	to glitz_int_drawable_format_t. (Dave Airlie)
+
 2005-12-21  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.2.

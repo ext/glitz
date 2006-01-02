@@ -122,7 +122,7 @@ _glitz_egl_make_current (void *abstract_drawable,
 					 drawable->base.height);
 
     if ((eglGetCurrentContext () != context->egl_context) ||
-	(eglGetCurrentSurface ( 0 ) != drawable->egl_surface))
+	(eglGetCurrentSurface ( EGL_READ ) != drawable->egl_surface))
     {
 	if (display_info->thread_info->cctx)
 	{

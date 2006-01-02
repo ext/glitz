@@ -45,7 +45,7 @@ _glitz_egl_format_compare (const void *elem1,
 
     for (; i < 2; i++)
     {
-	if (format[i]->color.fourcc != GLITZ_FOURCC_RGB)
+	if (format[i]->d.color.fourcc != GLITZ_FOURCC_RGB)
 	    score[i] -= 1000;
 
 	if (format[i]->d.color.red_size)
