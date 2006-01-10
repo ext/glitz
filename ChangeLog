@@ -1,3 +1,7 @@
+2006-01-10  Vladimir Vukicevic  <vladimir@pobox.com>
+
+	* src/agl/glitz_wgl_format.c: Set GLITZ_FOURCC_RGB on all formats
+
 2006-01-02  David Reveman  <davidr@novell.com>
 
 	* src/egl/glitz_egl_context.c (_glitz_egl_make_current): 0 -> EGL_READ.
