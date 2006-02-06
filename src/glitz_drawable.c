@@ -306,7 +306,8 @@ glitz_drawable_swap_buffer_region (glitz_drawable_t *drawable,
 		box++;
 	    }
 	}
-	drawable->backend->gl->finish ();
+
+	drawable->backend->gl->flush ();
 
 	if (surface)
 	    glitz_surface_pop_current (surface);
