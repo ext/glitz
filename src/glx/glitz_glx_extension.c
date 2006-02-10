@@ -44,6 +44,7 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info,
 			    glitz_gl_float_t        glx_version)
 {
     const char *glx_extensions_string;
+    const char *vendor;
 
     glx_extensions_string =
 	glXQueryExtensionsString (screen_info->display_info->display,
@@ -54,18 +55,24 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info,
 				glx_extensions_string,
 				glx_extensions);
 
-    if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_MULTISAMPLE_MASK) {
-	const char *vendor;
+    vendor = glXGetClientString (screen_info->display_info->display,
+				 GLX_VENDOR);
 
-	vendor = glXGetClientString (screen_info->display_info->display,
-				     GLX_VENDOR);
-
-	if (vendor) {
-
+    if (vendor)
+    {
+	if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_MULTISAMPLE_MASK)
+	{
 	    /* NVIDIA's driver seem to support multisample with pbuffers */
 	    if (!strncmp ("NVIDIA", vendor, 6))
 		screen_info->glx_feature_mask |=
 		    GLITZ_GLX_FEATURE_PBUFFER_MULTISAMPLE_MASK;
+	}
+
+	if (screen_info->glx_version < 1.3f)
+	{
+	    /* ATI's driver emulates GLX 1.3 support */
+	    if (!strncmp ("ATI", vendor, 3))
+		screen_info->glx_version = 1.3f;
 	}
     }
 }
