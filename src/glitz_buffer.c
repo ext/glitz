@@ -177,7 +177,7 @@ glitz_pixel_buffer_create (glitz_drawable_t    *drawable,
     }
 
     if (drawable->backend->feature_mask &
-        GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
+	GLITZ_FEATURE_PIXEL_BUFFER_OBJECT_MASK)
 	status = _glitz_buffer_init (buffer, drawable, data, size, hint);
     else
 	status = _glitz_buffer_init (buffer, NULL, data, size, hint);

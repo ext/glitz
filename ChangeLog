@@ -1,6 +1,11 @@
+2006-02-14  David Reveman  <davidr@novell.com>
+
+	* src/glx/glitz_glx_extension.c: GLX 1.3 or later includes fbconfig and
+	pbuffer support.
+
 2006-02-10  David Reveman  <davidr@novell.com>
 
-	* src/glx/glitz_glx_extension.c (glitz_glx_query_extensions): 
+	* src/glx/glitz_glx_extension.c (glitz_glx_query_extensions):
 	Pretend we have GLX 1.3 if vendor is ATI.
 
 2006-02-06  David Reveman  <davidr@novell.com>
