@@ -598,8 +598,10 @@ _glitz_pixel_transform (unsigned long transform,
 
     for (y = 0; y < height; y++) {
 	if (src->format->scanline_order != dst->format->scanline_order)
-	    src_op.line = &src->data[(src->height - (y + y_src) - 1) *
+	{
+	    src_op.line = &src->data[(src->height + y_src - y - 1) *
 				     src_stride];
+	}
 	else
 	    src_op.line = &src->data[(y + y_src) * src_stride];
 
@@ -609,12 +611,12 @@ _glitz_pixel_transform (unsigned long transform,
 	    {
 		src_op.line2 =
 		    &src->data[src_planeoffset +
-			       (((src->height - (y + y_src) - 1) >> 1))
+			       (((src->height + y_src - y - 1) >> 1))
 			       * (src_stride >> 1)];
 		src_op.line3 =
 		    &src->data[src_planeoffset +
 			       (src_planeoffset >> 2) +
-			       (((src->height - (y + y_src) - 1) >> 1))
+			       (((src->height + y_src - y - 1) >> 1))
 			       * (src_stride >> 1)];
 	    }
 	    else
@@ -1555,6 +1557,7 @@ glitz_get_pixels (glitz_surface_t      *src,
     if (transform)
     {
 	glitz_image_t src_image, dst_image;
+	int           y1;
 
 	src_image.data   = data;
 	src_image.format = &gl_format->pixel;
@@ -1587,12 +1590,18 @@ glitz_get_pixels (glitz_surface_t      *src,
 
 	    if (box.x1 < box.x2 && box.y1 < box.y2)
 	    {
+		if (format->scanline_order ==
+		    GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP)
+		    y1 = height - (box.y2 + y_src);
+		else
+		    y1 = box.y1 - y_src;
+
 		_glitz_pixel_transform (transform,
 					&src_image,
 					&dst_image,
-					box.x1 - x_src, box.y1 - y_src,
+					box.x1 - x_src, y1,
 					format->xoffset + box.x1 - x_src,
-					format->skip_lines + box.y1 - y_src,
+					format->skip_lines + y1,
 					box.x2 - box.x1, box.y2 - box.y1);
 	    }
 	    clip++;
