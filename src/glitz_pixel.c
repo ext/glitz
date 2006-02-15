@@ -1590,10 +1590,11 @@ glitz_get_pixels (glitz_surface_t      *src,
 
 	    if (box.x1 < box.x2 && box.y1 < box.y2)
 	    {
-		if (format->scanline_order ==
+#if 0		if (format->scanline_order ==
 		    GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP)
 		    y1 = height - (box.y2 + y_src);
 		else
+#endif
 		    y1 = box.y1 - y_src;
 
 		_glitz_pixel_transform (transform,
