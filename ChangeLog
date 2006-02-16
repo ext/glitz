@@ -1,5 +1,9 @@
 2006-02-16  David Reveman  <davidr@novell.com>
 
+	* src/glitz_texture.c: Fix so that GL_ARB_texture_rectangle
+	and GL_ARB_texture_border_clamp are not required for texture
+	object creation.
+
 	* TODO: Add note about removing some complexity.
 
 	* src/glitz_pixel.c (glitz_get_pixels): Patch together clipped
