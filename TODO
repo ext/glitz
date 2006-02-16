@@ -1,3 +1,9 @@
+* Remove some complexity. Surfaces currently include x and y offsets
+  that are not longer used, removing these will make a lot of code easier to
+  read. get_pixels and set_pixels currently use both the clip rects and
+  the rect given as parameter. clip rects should be enough and it would
+  simplify the code in glitz_pixel.c a bit.
+
 * More YUV surface formats (YUY2, UYVY, I420..).
 
 * Support for logical ops.

@@ -1266,7 +1266,7 @@ glitz_get_pixels (glitz_surface_t      *src,
     char		    *pixels, *data = NULL;
     glitz_gl_pixel_format_t *gl_format = NULL;
     unsigned long	    transform = 0;
-    int			    src_x = 0, src_y = 0;
+    int			    src_x = x_src, src_y = y_src;
     int			    src_w = width, src_h = height;
     int			    bytes_per_line, bytes_per_pixel;
     glitz_color_format_t    *color;
@@ -1557,7 +1557,7 @@ glitz_get_pixels (glitz_surface_t      *src,
     if (transform)
     {
 	glitz_image_t src_image, dst_image;
-	int           y1;
+	int           y;
 
 	src_image.data   = data;
 	src_image.format = &gl_format->pixel;
@@ -1588,22 +1588,26 @@ glitz_get_pixels (glitz_surface_t      *src,
 	    if (y_src + height < box.y2)
 		box.y2 = y_src + height;
 
+	    if (format->scanline_order == GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP)
+	    {
+		src_image.data = data + bytes_per_line * (src_h - box.y2);
+		y =  height - box.y2 + y_src;
+	    }
+	    else
+	    {
+		src_image.data = data - bytes_per_line * (box.y1 - src_y);
+		y = box.y1 - y_src;
+	    }
+
 	    if (box.x1 < box.x2 && box.y1 < box.y2)
 	    {
-#if 0	
-          if (format->scanline_order ==
-		    GLITZ_PIXEL_SCANLINE_ORDER_BOTTOM_UP)
-		    y1 = height - (box.y2 + y_src);
-		else
-#endif
-		    y1 = box.y1 - y_src;
-
 		_glitz_pixel_transform (transform,
 					&src_image,
 					&dst_image,
-					box.x1 - x_src, y1,
-					format->xoffset + box.x1 - x_src,
-					format->skip_lines + y1,
+					box.x1 - src_x,
+					0,
+					format->xoffset + (box.x1 - x_src),
+					format->skip_lines + y,
 					box.x2 - box.x1, box.y2 - box.y1);
 	    }
 	    clip++;
