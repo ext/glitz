@@ -1,5 +1,9 @@
 2006-02-16  David Reveman  <davidr@novell.com>
 
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.3.
+
+	* configure.in: Bump version to 0.5.3.
+
 	* src/glitz_texture.c: Fix so that GL_ARB_texture_rectangle
 	and GL_ARB_texture_border_clamp are not required for texture
 	object creation.

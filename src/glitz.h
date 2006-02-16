@@ -28,7 +28,7 @@
 
 #define GLITZ_MAJOR    0
 #define GLITZ_MINOR    5
-#define GLITZ_REVISION 2
+#define GLITZ_REVISION 3
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
