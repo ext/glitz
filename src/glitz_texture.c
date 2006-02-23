@@ -388,12 +388,25 @@ glitz_texture_object_set_filter (glitz_texture_object_t      *texture,
 				 glitz_texture_filter_type_t type,
 				 glitz_texture_filter_t      filter)
 {
-    static glitz_gl_enum_t filters[] = {
-	GLITZ_GL_NEAREST,
-	GLITZ_GL_LINEAR
+    static glitz_gl_enum_t filters[2][6] = {
+	{
+	    GLITZ_GL_NEAREST,
+	    GLITZ_GL_LINEAR,
+	    GLITZ_GL_NEAREST,
+	    GLITZ_GL_LINEAR,
+	    GLITZ_GL_NEAREST,
+	    GLITZ_GL_LINEAR
+	}, {
+	    GLITZ_GL_NEAREST,
+	    GLITZ_GL_LINEAR,
+	    GLITZ_GL_NEAREST_MIPMAP_NEAREST,
+	    GLITZ_GL_LINEAR_MIPMAP_NEAREST,
+	    GLITZ_GL_NEAREST_MIPMAP_LINEAR,
+	    GLITZ_GL_LINEAR_MIPMAP_LINEAR
+	}
     };
 
-    texture->param.filter[type] = filters[filter];
+    texture->param.filter[type] = filters[type][filter];
 }
 
 void

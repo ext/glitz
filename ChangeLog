@@ -1,3 +1,13 @@
+2006-02-23  David Reveman  <davidr@novell.com>
+
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.4.
+
+	* configure.in: Bump version to 0.5.4.
+
+	* src/glitz_texture.c (glitz_texture_object_set_filter):
+	* src/glitz_gl.h:
+	* src/glitz.h: Mipmap filters.
+
 2006-02-16  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.3.
