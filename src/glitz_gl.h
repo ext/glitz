@@ -116,6 +116,9 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_TEXTURE_HEIGHT       0x1001
 #define GLITZ_GL_TEXTURE_BORDER_COLOR 0x1004
 
+#define GLITZ_GL_TEXTURE_BINDING_2D        0x8069
+#define GLITZ_GL_TEXTURE_BINDING_RECTANGLE 0x84F6
+
 #define GLITZ_GL_TEXTURE_ENV            0x2300
 #define GLITZ_GL_TEXTURE_ENV_MODE       0x2200
 #define GLITZ_GL_TEXTURE_2D             0x0DE1

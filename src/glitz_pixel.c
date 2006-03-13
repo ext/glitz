@@ -901,6 +901,11 @@ glitz_set_pixels (glitz_surface_t      *dst,
     glitz_image_t           src_image, dst_image;
     unsigned long           color_mask;
     glitz_box_t             box;
+    glitz_surface_t         *surface;
+    glitz_bool_t            restore_state;
+    glitz_gl_int_t          unpackrowlength, unpackalignment;
+    glitz_gl_int_t          unpackskiprows, unpackskippixels;
+    glitz_gl_int_t          t2d, tbind2d, trect, tbindrect;
 
     GLITZ_GL_SURFACE (dst);
 
@@ -1041,12 +1046,49 @@ glitz_set_pixels (glitz_surface_t      *dst,
 					      feature_mask);
     }
 
-    glitz_surface_push_current (dst, GLITZ_ANY_CONTEXT_CURRENT);
+    /* avoid context switch in this case */
+    if (!dst->attached &&
+	TEXTURE_ALLOCATED (&dst->texture) &&
+	!REGION_NOTEMPTY (&dst->texture_damage))
+    {
+	dst->drawable->backend->push_current (dst->drawable, dst,
+					      GLITZ_ANY_CONTEXT_CURRENT,
+					      &restore_state);
+	texture = &dst->texture;
 
-    texture = glitz_surface_get_texture (dst, 1);
-    if (!texture) {
-	glitz_surface_pop_current (dst);
-	return;
+	/* we are using a foreign context so we must restore all state when we
+	   are done */
+	if (restore_state)
+	{
+	    /* get pixel store state */
+	    gl->get_integer_v (GLITZ_GL_UNPACK_ROW_LENGTH,  &unpackrowlength);
+	    gl->get_integer_v (GLITZ_GL_UNPACK_ALIGNMENT,   &unpackalignment);
+	    gl->get_integer_v (GLITZ_GL_UNPACK_SKIP_ROWS,   &unpackskiprows);
+	    gl->get_integer_v (GLITZ_GL_UNPACK_SKIP_PIXELS, &unpackskippixels);
+
+	    /* get texture bindings */
+	    gl->get_integer_v (GLITZ_GL_TEXTURE_2D,                &t2d);
+	    gl->get_integer_v (GLITZ_GL_TEXTURE_BINDING_2D,        &tbind2d);
+	    gl->get_integer_v (GLITZ_GL_TEXTURE_RECTANGLE,         &trect);
+	    gl->get_integer_v (GLITZ_GL_TEXTURE_BINDING_RECTANGLE, &tbindrect);
+
+	    /* TODO: save PBO state */
+	}
+
+	surface = NULL;
+    }
+    else
+    {
+	glitz_surface_push_current (dst, GLITZ_ANY_CONTEXT_CURRENT);
+
+	texture = glitz_surface_get_texture (dst, 1);
+	if (!texture) {
+	    glitz_surface_pop_current (dst);
+	    return;
+	}
+
+	restore_state = 0;
+	surface = dst;
     }
 
     if (height > 1) {
@@ -1247,7 +1289,39 @@ glitz_set_pixels (glitz_surface_t      *dst,
 
 BAIL:
     glitz_texture_unbind (gl, texture);
-    glitz_surface_pop_current (dst);
+
+    if (surface)
+    {
+	glitz_surface_pop_current (surface);
+    }
+    else
+    {
+	dst->drawable->backend->pop_current (dst->drawable);
+    }
+
+    if (restore_state)
+    {
+	/* pixel store state */
+	gl->pixel_store_i (GLITZ_GL_UNPACK_ROW_LENGTH,  unpackrowlength);
+	gl->pixel_store_i (GLITZ_GL_UNPACK_ALIGNMENT,   unpackalignment);
+	gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_ROWS,   unpackskiprows);
+	gl->pixel_store_i (GLITZ_GL_UNPACK_SKIP_PIXELS, unpackskippixels);
+
+	/* get texture bindings */
+	if (t2d)
+	    gl->enable (GLITZ_GL_TEXTURE_2D);
+	else
+	    gl->disable (GLITZ_GL_TEXTURE_2D);
+
+	gl->bind_texture (GLITZ_GL_TEXTURE_2D, tbind2d);
+
+	if (trect)
+	    gl->enable (GLITZ_GL_TEXTURE_RECTANGLE);
+	else
+	    gl->disable (GLITZ_GL_TEXTURE_RECTANGLE);
+
+	gl->bind_texture (GLITZ_GL_TEXTURE_RECTANGLE, tbindrect);
+    }
 }
 
 void

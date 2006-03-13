@@ -57,7 +57,7 @@ _glitz_glx_create_drawable (glitz_glx_screen_info_t *screen_info,
 			  width, height);
 
     if (!context->initialized) {
-	glitz_glx_push_current (drawable, NULL, GLITZ_CONTEXT_CURRENT);
+	glitz_glx_push_current (drawable, NULL, GLITZ_CONTEXT_CURRENT, NULL);
 	glitz_glx_pop_current (drawable);
     }
 
@@ -213,7 +213,7 @@ glitz_glx_destroy (void *abstract_drawable)
 	 * be our last chance to have a context current.
 	 */
 	glitz_glx_push_current (abstract_drawable, NULL,
-				GLITZ_CONTEXT_CURRENT);
+				GLITZ_CONTEXT_CURRENT, NULL);
 	glitz_program_map_fini (drawable->base.backend->gl,
 				&drawable->screen_info->program_map);
 	glitz_program_map_init (&drawable->screen_info->program_map);

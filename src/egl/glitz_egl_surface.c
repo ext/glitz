@@ -55,7 +55,7 @@ _glitz_egl_create_surface (glitz_egl_screen_info_t *screen_info,
 			  width, height);
 
     if (!context->initialized) {
-	glitz_egl_push_current (surface, NULL, GLITZ_CONTEXT_CURRENT);
+	glitz_egl_push_current (surface, NULL, GLITZ_CONTEXT_CURRENT, NULL);
 	glitz_egl_pop_current (surface);
     }
 
@@ -212,10 +212,10 @@ glitz_egl_destroy (void *abstract_drawable)
 	 * be our last chance to have a context current.
 	 */
 	glitz_egl_push_current (abstract_drawable, NULL,
-				GLITZ_CONTEXT_CURRENT);
+				GLITZ_CONTEXT_CURRENT, NULL);
 	glitz_program_map_fini (surface->base.backend->gl,
 				&surface->screen_info->program_map);
-        glitz_program_map_init (&surface->screen_info->program_map);
+	glitz_program_map_init (&surface->screen_info->program_map);
 	glitz_egl_pop_current (abstract_drawable);
     }
 

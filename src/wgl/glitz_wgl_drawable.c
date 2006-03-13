@@ -75,7 +75,7 @@ _glitz_wgl_create_drawable (glitz_wgl_screen_info_t *screen_info,
 			  height);
 
     if (!context->initialized) {
-	glitz_wgl_push_current (drawable, NULL, GLITZ_CONTEXT_CURRENT);
+	glitz_wgl_push_current (drawable, NULL, GLITZ_CONTEXT_CURRENT, NULL);
 	glitz_wgl_pop_current (drawable);
     }
 
@@ -199,7 +199,8 @@ glitz_wgl_destroy (void *abstract_drawable)
 	 * Last drawable? We have to destroy all fragment programs as this may
 	 * be our last chance to have a context current.
 	 */
-	glitz_wgl_push_current (abstract_drawable, NULL, GLITZ_CONTEXT_CURRENT);
+	glitz_wgl_push_current (abstract_drawable, NULL, GLITZ_CONTEXT_CURRENT,
+				NULL);
 	glitz_program_map_fini (drawable->base.backend->gl,
 				&drawable->screen_info->program_map);
 	glitz_program_map_init (&drawable->screen_info->program_map);

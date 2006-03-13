@@ -53,6 +53,8 @@ _glitz_drawable_init (glitz_drawable_t	          *drawable,
     drawable->viewport.height = 65535;
 
     drawable->update_all = 1;
+    drawable->flushed    = 0;
+    drawable->finished   = 0;
 }
 
 void
@@ -273,7 +275,7 @@ glitz_drawable_swap_buffer_region (glitz_drawable_t *drawable,
     if (!surface)
     {
 	if (drawable->backend->push_current (drawable, NULL,
-					     GLITZ_DRAWABLE_CURRENT))
+					     GLITZ_DRAWABLE_CURRENT, NULL))
 	{
 	    drawable->update_all = 1;
 
@@ -341,6 +343,7 @@ glitz_drawable_swap_buffer_region (glitz_drawable_t *drawable,
     }
 
     drawable->backend->gl->flush ();
+    drawable->flushed = 1;
 
     if (surface)
 	glitz_surface_pop_current (surface);
@@ -365,18 +368,30 @@ slim_hidden_def(glitz_drawable_swap_buffers);
 void
 glitz_drawable_flush (glitz_drawable_t *drawable)
 {
-    drawable->backend->push_current (drawable, NULL, GLITZ_DRAWABLE_CURRENT);
+    if (drawable->flushed)
+	return;
+
+    drawable->backend->push_current (drawable, NULL, GLITZ_DRAWABLE_CURRENT,
+				     NULL);
     drawable->backend->gl->flush ();
     drawable->backend->pop_current (drawable);
+
+    drawable->flushed = 1;
 }
 slim_hidden_def(glitz_drawable_flush);
 
 void
 glitz_drawable_finish (glitz_drawable_t *drawable)
 {
-    drawable->backend->push_current (drawable, NULL, GLITZ_DRAWABLE_CURRENT);
+    if (drawable->finished)
+	return;
+
+    drawable->backend->push_current (drawable, NULL, GLITZ_DRAWABLE_CURRENT,
+				     NULL);
     drawable->backend->gl->finish ();
     drawable->backend->pop_current (drawable);
+
+    drawable->finished = drawable->flushed = 1;
 }
 slim_hidden_def(glitz_drawable_finish);
 

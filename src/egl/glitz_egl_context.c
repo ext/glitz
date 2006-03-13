@@ -325,6 +325,8 @@ _glitz_egl_context_update (glitz_egl_surface_t *drawable,
 {
     EGLContext egl_context;
 
+    drawable->base.flushed = drawable->base.finished = 0;
+
     switch (constraint) {
     case GLITZ_NONE:
 	break;
@@ -365,11 +367,15 @@ _glitz_egl_context_update (glitz_egl_surface_t *drawable,
 glitz_bool_t
 glitz_egl_push_current (void               *abstract_drawable,
 			glitz_surface_t    *surface,
-			glitz_constraint_t constraint)
+			glitz_constraint_t constraint,
+			glitz_bool_t       *restore_state)
 {
     glitz_egl_surface_t *drawable = (glitz_egl_surface_t *) abstract_drawable;
     glitz_egl_context_info_t *context_info;
     int index;
+
+    if (restore_state)
+	*restore_state = 0;
 
     index = drawable->screen_info->context_stack_size++;
 

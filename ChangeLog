@@ -1,5 +1,28 @@
 2006-03-13  David Reveman  <davidr@novell.com>
 
+	* src/glitz_pixel.c (glitz_set_pixels):
+	* src/glitz_gl.h:
+	Add experimental code for avoiding context switches when uploading
+	pixel data.
+
+	* src/agl/glitz_glx_context.c:
+	* src/agl/glitz_glx_drawable.c:
+	* src/agl/glitz_glxint.h:
+	* src/agl/glitz_egl_context.c:
+	* src/agl/glitz_egl_surface.c:
+	* src/agl/glitz_eglint.h:
+	* src/agl/glitz_wgl_context.c:
+	* src/agl/glitz_wgl_drawable.c:
+	* src/agl/glitz_wglint.h:
+	* src/agl/glitz_agl_context.c:
+	* src/agl/glitz_agl_drawable.c:
+	* src/agl/glitz_aglint.h:
+	* src/glitzint.h:
+	* src/glitz_surface.c:
+	* src/glitz_framebuffer.c:
+	* src/glitz_drawable.c:
+	* src/glitz_buffer.c: Add support for avoiding context switches.
+
 	* src/egl/glitz_egl_context.c (glitz_egl_context_get):
 	* src/egl/glitz_wgl_context.c (glitz_wgl_context_get):
 	* src/egl/glitz_agl_context.c (glitz_agl_context_get):
