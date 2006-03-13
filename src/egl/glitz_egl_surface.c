@@ -242,3 +242,13 @@ glitz_egl_swap_buffers (void *abstract_drawable)
 
     return 1;
 }
+
+glitz_bool_t
+glitz_egl_copy_sub_buffer (void *abstract_drawable,
+			   int  x,
+			   int  y,
+			   int  width,
+			   int  height)
+{
+    return 0;
+}

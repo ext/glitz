@@ -129,6 +129,7 @@ typedef enum {
 #define GLITZ_FEATURE_PACKED_PIXELS_MASK            (1L << 14)
 #define GLITZ_FEATURE_MULTI_DRAW_ARRAYS_MASK        (1L << 15)
 #define GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK       (1L << 16)
+#define GLITZ_FEATURE_COPY_SUB_BUFFER_MASK          (1L << 17)
 
 
 /* glitz_format.c */

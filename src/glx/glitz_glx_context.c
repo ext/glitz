@@ -279,6 +279,7 @@ glitz_glx_context_get (glitz_glx_screen_info_t *screen_info,
     context->backend.attach_notify = _glitz_glx_notify_dummy;
     context->backend.detach_notify = _glitz_glx_notify_dummy;
     context->backend.swap_buffers = glitz_glx_swap_buffers;
+    context->backend.copy_sub_buffer = glitz_glx_copy_sub_buffer;
 
     context->backend.create_context = _glitz_glx_create_context;
     context->backend.destroy_context = _glitz_glx_context_destroy;
@@ -363,6 +364,9 @@ _glitz_glx_context_initialize (glitz_glx_screen_info_t *screen_info,
 		~GLITZ_FEATURE_TEXTURE_NON_POWER_OF_TWO_MASK;
 	}
     }
+
+    if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_COPY_SUB_BUFFER_MASK)
+	context->backend.feature_mask |= GLITZ_FEATURE_COPY_SUB_BUFFER_MASK;
 
     context->initialized = 1;
 }

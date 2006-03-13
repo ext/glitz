@@ -390,6 +390,12 @@ typedef struct glitz_backend {
   glitz_bool_t
   (*swap_buffers)              (void *drawable);
 
+  glitz_bool_t
+  (*copy_sub_buffer)           (void *drawable,
+				int  x,
+				int  y,
+				int  width,
+				int  height);
 
   glitz_context_t *
   (*create_context)            (void                    *drawable,

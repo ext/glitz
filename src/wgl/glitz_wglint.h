@@ -187,6 +187,13 @@ glitz_wgl_destroy (void *abstract_drawable);
 extern glitz_bool_t __internal_linkage
 glitz_wgl_swap_buffers (void *abstract_drawable);
 
+extern glitz_bool_t __internal_linkage
+glitz_wgl_copy_sub_buffer (void *abstract_drawable,
+			   int  x,
+			   int  y,
+			   int  width,
+			   int  height);
+
 extern void __internal_linkage
 glitz_wgl_print_win32_error_string (int error_code);
 

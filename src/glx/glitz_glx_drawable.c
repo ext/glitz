@@ -241,3 +241,25 @@ glitz_glx_swap_buffers (void *abstract_drawable)
 
     return 1;
 }
+
+glitz_bool_t
+glitz_glx_copy_sub_buffer (void *abstract_drawable,
+			   int  x,
+			   int  y,
+			   int  width,
+			   int  height)
+{
+    glitz_glx_drawable_t    *drawable = (glitz_glx_drawable_t *)
+	abstract_drawable;
+    glitz_glx_screen_info_t *screen_info = drawable->screen_info;
+
+    if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_COPY_SUB_BUFFER_MASK)
+    {
+	screen_info->glx.copy_sub_buffer (screen_info->display_info->display,
+					  drawable->drawable,
+					  x, y, width, height);
+	return 1;
+    }
+
+    return 0;
+}

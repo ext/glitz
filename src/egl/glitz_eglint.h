@@ -161,6 +161,13 @@ glitz_egl_destroy (void *abstract_drawable);
 extern glitz_bool_t __internal_linkage
 glitz_egl_swap_buffers (void *abstract_drawable);
 
+extern glitz_bool_t __internal_linkage
+glitz_egl_copy_sub_buffer (void *abstract_drawable,
+			   int  x,
+			   int  y,
+			   int  width,
+			   int  height);
+
 /* Avoid unnecessary PLT entries. */
 
 slim_hidden_proto(glitz_egl_init)

@@ -39,16 +39,27 @@ static glitz_extension_map glx_extensions[] = {
     { 0.0, NULL, 0 }
 };
 
+/* XXX: only checking for client side support right now */
+static glitz_extension_map glx_client_extensions[] = {
+    { 0.0, "GLX_MESA_copy_sub_buffer", GLITZ_GLX_FEATURE_COPY_SUB_BUFFER_MASK },
+    { 0.0, NULL, 0 }
+};
+
 void
 glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info,
 			    glitz_gl_float_t        glx_version)
 {
     const char *glx_extensions_string;
+    const char *glx_client_extensions_string;
     const char *vendor;
 
     glx_extensions_string =
 	glXQueryExtensionsString (screen_info->display_info->display,
 				  screen_info->screen);
+
+    glx_client_extensions_string =
+	glXGetClientString (screen_info->display_info->display,
+			    GLX_EXTENSIONS);
 
     vendor = glXGetClientString (screen_info->display_info->display,
 				 GLX_VENDOR);
@@ -67,6 +78,11 @@ glitz_glx_query_extensions (glitz_glx_screen_info_t *screen_info,
 	glitz_extensions_query (glx_version,
 				glx_extensions_string,
 				glx_extensions);
+
+    screen_info->glx_feature_mask |=
+	glitz_extensions_query (glx_version,
+				glx_client_extensions_string,
+				glx_client_extensions);
 
     if (vendor)
     {

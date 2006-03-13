@@ -302,6 +302,7 @@ glitz_agl_context_get (glitz_agl_thread_info_t *thread_info,
     context->backend.attach_notify = _glitz_agl_notify_dummy;
     context->backend.detach_notify = _glitz_agl_notify_dummy;
     context->backend.swap_buffers = glitz_agl_swap_buffers;
+    context->backend.copy_sub_buffer = glitz_agl_copy_sub_buffer;
 
     context->backend.create_context = _glitz_agl_create_context;
     context->backend.destroy_context = _glitz_agl_context_destroy;

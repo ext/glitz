@@ -43,6 +43,7 @@
 #define GLITZ_GLX_FEATURE_GET_PROC_ADDRESS_MASK    (1L << 4)
 #define GLITZ_GLX_FEATURE_MULTISAMPLE_MASK         (1L << 5)
 #define GLITZ_GLX_FEATURE_PBUFFER_MULTISAMPLE_MASK (1L << 6)
+#define GLITZ_GLX_FEATURE_COPY_SUB_BUFFER_MASK     (1L << 7)
 
 typedef struct _glitz_glx_drawable glitz_glx_drawable_t;
 typedef struct _glitz_glx_screen_info_t glitz_glx_screen_info_t;
@@ -58,6 +59,7 @@ typedef struct _glitz_glx_static_proc_address_list_t {
     glitz_glx_query_drawable_t           query_drawable;
     glitz_glx_make_context_current_t     make_context_current;
     glitz_glx_create_new_context_t       create_new_context;
+    glitz_glx_copy_sub_buffer_t          copy_sub_buffer;
 } glitz_glx_static_proc_address_list_t;
 
 typedef struct _glitz_glx_thread_info_t {
@@ -182,6 +184,13 @@ glitz_glx_destroy (void *abstract_drawable);
 
 extern glitz_bool_t __internal_linkage
 glitz_glx_swap_buffers (void *abstract_drawable);
+
+extern glitz_bool_t __internal_linkage
+glitz_glx_copy_sub_buffer (void *abstract_drawable,
+			   int  x,
+			   int  y,
+			   int  width,
+			   int  height);
 
 /* Avoid unnecessary PLT entries. */
 

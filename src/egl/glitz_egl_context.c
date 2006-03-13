@@ -199,6 +199,7 @@ glitz_egl_context_get (glitz_egl_screen_info_t *screen_info,
     context->backend.attach_notify = _glitz_egl_notify_dummy;
     context->backend.detach_notify = _glitz_egl_notify_dummy;
     context->backend.swap_buffers = glitz_egl_swap_buffers;
+    context->backend.copy_sub_buffer = glitz_egl_copy_sub_buffer;
 
     context->backend.create_context = _glitz_egl_create_context;
     context->backend.destroy_context = _glitz_egl_context_destroy;
