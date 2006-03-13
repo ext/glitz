@@ -1,5 +1,9 @@
 2006-03-13  David Reveman  <davidr@novell.com>
 
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.5.
+
+	* configure.in: Bump version to 0.5.5.
+
 	* src/glitz_pixel.c (glitz_set_pixels):
 	* src/glitz_gl.h:
 	Add experimental code for avoiding context switches when uploading
