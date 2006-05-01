@@ -1,3 +1,8 @@
+2006-05-02  David Reveman  <davidr@novell.com>
+
+	* src/agl/glitz_agl_format.c (glitz_agl_query_formats):
+	Fix typo in AGL format initialization. (Junji Takagi)
+
 2006-03-13  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.5.

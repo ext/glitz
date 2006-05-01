@@ -229,9 +229,9 @@ glitz_agl_query_formats (glitz_agl_thread_info_t *thread_info)
     AGLPixelFormat pixel_format, *new_pfs;
     int n_attribs_list, i;
 
-    format.types	= GLITZ_DRAWABLE_TYPE_WINDOW_MASK;
-    format.d.id		= 0;
-    format.color.fourcc = GLITZ_FOURCC_RGB;
+    format.types	  = GLITZ_DRAWABLE_TYPE_WINDOW_MASK;
+    format.d.id		  = 0;
+    format.d.color.fourcc = GLITZ_FOURCC_RGB;
 
     n_attribs_list = sizeof (_attribs_list) / sizeof (GLint *);
 
