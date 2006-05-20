@@ -1,3 +1,9 @@
+2006-05-20  David Reveman  <davidr@novell.com>
+
+	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.6.
+
+	* configure.in: Bump version to 0.5.6.
+
 2006-05-02  David Reveman  <davidr@novell.com>
 
 	* src/agl/glitz_agl_format.c (glitz_agl_query_formats):
