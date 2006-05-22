@@ -442,14 +442,14 @@ _glitz_glx_context_update (glitz_glx_drawable_t *drawable,
 	    _glitz_glx_context_make_current (drawable, (context)? 1: 0);
 	break;
     case GLITZ_DRAWABLE_CURRENT:
-	if (!dinfo->thread_info->cctx)
-	    context = glXGetCurrentContext ();
-
 	if (drawable->base.width  != drawable->width ||
 	    drawable->base.height != drawable->height)
 	    _glitz_glx_drawable_update_size (drawable,
 					     drawable->base.width,
 					     drawable->base.height);
+
+	if (!dinfo->thread_info->cctx)
+	    context = glXGetCurrentContext ();
 
 	if ((context != drawable->context->context) ||
 	    (glXGetCurrentDrawable () != drawable->drawable))

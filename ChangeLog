@@ -1,3 +1,12 @@
+2006-05-22  David Reveman  <davidr@novell.com>
+
+	* src/glx/glitz_glx_context.c (_glitz_glx_context_update): Update
+	drawable size before getting the current context.
+
+	* src/glx/glitz_glx_drawable.c (_glitz_glx_drawable_update_size):
+	Make no context current if pbuffer drawable we're about to destroy
+	is current. (bnc #175637)
+
 2006-05-20  David Reveman  <davidr@novell.com>
 
 	* src/glitz.h (GLITZ_REVISION): Bump version to 0.5.6.

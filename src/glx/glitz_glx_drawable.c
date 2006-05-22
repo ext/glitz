@@ -79,6 +79,10 @@ _glitz_glx_drawable_update_size (glitz_glx_drawable_t *drawable,
 {
     if (drawable->pbuffer)
     {
+	if (glXGetCurrentDrawable () == drawable->drawable)
+	    glXMakeCurrent (drawable->screen_info->display_info->display,
+			    None, NULL);
+
 	glitz_glx_pbuffer_destroy (drawable->screen_info, drawable->pbuffer);
 	drawable->drawable = drawable->pbuffer =
 	    glitz_glx_pbuffer_create (drawable->screen_info,
