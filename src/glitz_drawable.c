@@ -408,3 +408,36 @@ glitz_drawable_get_format (glitz_drawable_t *drawable)
     return &drawable->format->d;
 }
 slim_hidden_def(glitz_drawable_get_format);
+
+const char *
+glitz_drawable_get_gl_string (glitz_drawable_t  *drawable,
+			      glitz_gl_string_t name)
+{
+    const glitz_gl_ubyte_t *string;
+    glitz_gl_enum_t	   gl_name;
+
+    switch (name) {
+    case GLITZ_GL_STRING_VENDOR:
+	gl_name = GLITZ_GL_VENDOR;
+	break;
+    case GLITZ_GL_STRING_RENDERER:
+	gl_name = GLITZ_GL_RENDERER;
+	break;
+    case GLITZ_GL_STRING_VERSION:
+	gl_name = GLITZ_GL_VERSION;
+	break;
+    case GLITZ_GL_STRING_EXTENSIONS:
+	gl_name = GLITZ_GL_EXTENSIONS;
+	break;
+    default:
+	return NULL;
+    }
+
+    drawable->backend->push_current (drawable, NULL, GLITZ_CONTEXT_CURRENT,
+				     NULL);
+    string = drawable->backend->gl->get_string (gl_name);
+    drawable->backend->pop_current (drawable);
+
+    return (const char *) string;
+}
+slim_hidden_def(glitz_drawable_get_gl_string);

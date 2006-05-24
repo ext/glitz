@@ -368,6 +368,9 @@ _glitz_glx_context_initialize (glitz_glx_screen_info_t *screen_info,
     if (screen_info->glx_feature_mask & GLITZ_GLX_FEATURE_COPY_SUB_BUFFER_MASK)
 	context->backend.feature_mask |= GLITZ_FEATURE_COPY_SUB_BUFFER_MASK;
 
+    if (glXIsDirect (screen_info->display_info->display, context->context))
+	context->backend.feature_mask |= GLITZ_FEATURE_DIRECT_RENDERING_MASK;
+
     context->initialized = 1;
 }
 

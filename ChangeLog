@@ -1,3 +1,12 @@
+2006-05-24  David Reveman  <davidr@novell.com>
+
+	* src/glx/glitz_glx_context.c (_glitz_glx_context_initialize):
+	* src/glitz.h: Add direct rendering to feature mask.
+
+	* src/glitz_drawable.c:
+	* src/glitzint.h:
+	* src/glitz.h: Add glitz_drawable_get_gl_string.
+
 2006-05-22  David Reveman  <davidr@novell.com>
 
 	* src/glx/glitz_glx_context.c (_glitz_glx_context_update): Update

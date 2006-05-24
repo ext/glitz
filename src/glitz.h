@@ -130,6 +130,7 @@ typedef enum {
 #define GLITZ_FEATURE_MULTI_DRAW_ARRAYS_MASK        (1L << 15)
 #define GLITZ_FEATURE_FRAMEBUFFER_OBJECT_MASK       (1L << 16)
 #define GLITZ_FEATURE_COPY_SUB_BUFFER_MASK          (1L << 17)
+#define GLITZ_FEATURE_DIRECT_RENDERING_MASK         (1L << 18)
 
 
 /* glitz_format.c */
@@ -281,6 +282,17 @@ glitz_drawable_get_features (glitz_drawable_t *drawable);
 
 glitz_drawable_format_t *
 glitz_drawable_get_format (glitz_drawable_t *drawable);
+
+typedef enum {
+    GLITZ_GL_STRING_VENDOR,
+    GLITZ_GL_STRING_RENDERER,
+    GLITZ_GL_STRING_VERSION,
+    GLITZ_GL_STRING_EXTENSIONS
+} glitz_gl_string_t;
+
+const char *
+glitz_drawable_get_gl_string (glitz_drawable_t  *drawable,
+			      glitz_gl_string_t name);
 
 
 /* glitz_surface.c */

@@ -60,6 +60,8 @@ typedef ptrdiff_t glitz_gl_sizeiptr_t;
 #define GLITZ_GL_NO_ERROR          0x0
 #define GLITZ_GL_INVALID_OPERATION 0x0502
 
+#define GLITZ_GL_VENDOR                      0x1F00
+#define GLITZ_GL_RENDERER                    0x1F01
 #define GLITZ_GL_VERSION                     0x1F02
 #define GLITZ_GL_EXTENSIONS                  0x1F03
 
