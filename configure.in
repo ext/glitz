@@ -1,12 +1,20 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(src/glitz.h)
+# Package version number, (as distinct from shared library version)
+# This must be manually synchronized with the version in src/glitz.h
+m4_define([GLITZ_VERSION], 0.5.6)
+
+AC_INIT(glitz, [GLITZ_VERSION])
+
+AC_CONFIG_AUX_DIR(config)
+
+AM_INIT_AUTOMAKE([dist-bzip2 foreign])
+AM_CONFIG_HEADER(config.h)
+
+AM_MAINTAINER_MODE
 
 dnl ===========================================================================
 
-# Package version number, (as distinct from shared library version)
-# This must be manually synchronized with the version in src/glitz.h
-GLITZ_VERSION=0.5.6
 # libtool shared library version
 
 # Increment if the interface has additions, changes, removals.
@@ -25,13 +33,6 @@ VERSION_INFO="$LT_CURRENT:$LT_REVISION:$LT_AGE"
 AC_SUBST(VERSION_INFO)
 
 dnl ===========================================================================
-
-AC_CONFIG_AUX_DIR(config)
-
-AM_INIT_AUTOMAKE(glitz, $GLITZ_VERSION)
-AM_CONFIG_HEADER(config.h)
-
-AM_MAINTAINER_MODE
 
 AC_ISC_POSIX
 AC_PROG_CC
