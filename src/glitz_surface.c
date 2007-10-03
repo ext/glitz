@@ -79,13 +79,13 @@ glitz_surface_create (glitz_drawable_t           *drawable,
 	surface->flags |= GLITZ_SURFACE_FLAG_SOLID_MASK;
 	surface->solid.alpha = 0xffff;
 
-	REGION_INIT (&surface->texture_damage, &surface->box);
-	REGION_INIT (&surface->drawable_damage, &surface->box);
+	GLITZ_REGION_INIT (&surface->texture_damage, &surface->box);
+	GLITZ_REGION_INIT (&surface->drawable_damage, &surface->box);
     }
     else
     {
-	REGION_INIT (&surface->texture_damage, NULL_BOX);
-	REGION_INIT (&surface->drawable_damage, NULL_BOX);
+	GLITZ_REGION_INIT (&surface->texture_damage, GLITZ_NULL_BOX);
+	GLITZ_REGION_INIT (&surface->drawable_damage, GLITZ_NULL_BOX);
     }
 
     glitz_texture_init (&surface->texture, width, height,
@@ -141,8 +141,8 @@ glitz_surface_destroy (glitz_surface_t *surface)
 	glitz_surface_pop_current (surface);
     }
 
-    REGION_UNINIT (&surface->texture_damage);
-    REGION_UNINIT (&surface->drawable_damage);
+    GLITZ_REGION_UNINIT (&surface->texture_damage);
+    GLITZ_REGION_UNINIT (&surface->drawable_damage);
 
     if (surface->geometry.buffer)
 	glitz_buffer_destroy (surface->geometry.buffer);
@@ -173,7 +173,7 @@ glitz_surface_reference (glitz_surface_t *surface)
 void
 _glitz_surface_sync_texture (glitz_surface_t *surface)
 {
-    if (REGION_NOTEMPTY (&surface->texture_damage))
+    if (GLITZ_REGION_NOTEMPTY (&surface->texture_damage))
     {
 	glitz_box_t *box;
 	int         n_box;
@@ -202,7 +202,7 @@ _glitz_surface_sync_texture (glitz_surface_t *surface)
 				      GLITZ_GL_FLOAT, color);
 		glitz_texture_unbind (gl, &surface->texture);
 	    }
-	    REGION_EMPTY (&surface->texture_damage);
+	    GLITZ_REGION_EMPTY (&surface->texture_damage);
 	    return;
 	}
 
@@ -215,8 +215,8 @@ _glitz_surface_sync_texture (glitz_surface_t *surface)
 
 	glitz_texture_bind (gl, &surface->texture);
 
-	box = REGION_RECTS (&surface->texture_damage);
-	n_box = REGION_NUM_RECTS (&surface->texture_damage);
+	box = GLITZ_REGION_RECTS (&surface->texture_damage);
+	n_box = GLITZ_REGION_NUM_RECTS (&surface->texture_damage);
 
 	while (n_box--)
 	{
@@ -233,7 +233,7 @@ _glitz_surface_sync_texture (glitz_surface_t *surface)
 	    box++;
 	}
 
-	REGION_EMPTY (&surface->texture_damage);
+	GLITZ_REGION_EMPTY (&surface->texture_damage);
 
 	glitz_texture_unbind (gl, &surface->texture);
 
@@ -246,7 +246,7 @@ _glitz_surface_sync_texture (glitz_surface_t *surface)
 void
 glitz_surface_sync_drawable (glitz_surface_t *surface)
 {
-    if (REGION_NOTEMPTY (&surface->drawable_damage))
+    if (GLITZ_REGION_NOTEMPTY (&surface->drawable_damage))
     {
 	glitz_texture_t		   *texture;
 	glitz_texture_parameters_t param;
@@ -259,9 +259,9 @@ glitz_surface_sync_drawable (glitz_surface_t *surface)
 	if (!texture)
 	    return;
 
-	box = REGION_RECTS (&surface->drawable_damage);
-	ext = REGION_EXTENTS (&surface->drawable_damage);
-	n_box = REGION_NUM_RECTS (&surface->drawable_damage);
+	box = GLITZ_REGION_RECTS (&surface->drawable_damage);
+	ext = GLITZ_REGION_EXTENTS (&surface->drawable_damage);
+	n_box = GLITZ_REGION_NUM_RECTS (&surface->drawable_damage);
 
 	glitz_texture_bind (gl, texture);
 
@@ -329,7 +329,7 @@ glitz_surface_sync_drawable (glitz_surface_t *surface)
 
 	glitz_texture_unbind (gl, texture);
 
-	REGION_EMPTY (&surface->drawable_damage);
+	GLITZ_REGION_EMPTY (&surface->drawable_damage);
     }
 }
 
@@ -374,7 +374,7 @@ glitz_surface_get_texture (glitz_surface_t *surface,
 {
     GLITZ_GL_SURFACE (surface);
 
-    if (REGION_NOTEMPTY (&surface->texture_damage))
+    if (GLITZ_REGION_NOTEMPTY (&surface->texture_damage))
     {
 	_glitz_surface_sync_texture (surface);
     }
@@ -400,23 +400,23 @@ glitz_surface_damage (glitz_surface_t *surface,
 	if (box)
 	{
 	    if (what & GLITZ_DAMAGE_DRAWABLE_MASK)
-		REGION_UNION (&surface->drawable_damage, box);
+		GLITZ_REGION_UNION (&surface->drawable_damage, box);
 
 	    if (surface->attached && (what & GLITZ_DAMAGE_TEXTURE_MASK))
-		REGION_UNION (&surface->texture_damage, box);
+		GLITZ_REGION_UNION (&surface->texture_damage, box);
 	}
 	else
 	{
 	    if (what & GLITZ_DAMAGE_DRAWABLE_MASK)
 	    {
-		REGION_EMPTY (&surface->drawable_damage);
-		REGION_INIT (&surface->drawable_damage, &surface->box);
+		GLITZ_REGION_EMPTY (&surface->drawable_damage);
+		GLITZ_REGION_INIT (&surface->drawable_damage, &surface->box);
 	    }
 
 	    if (surface->attached && (what & GLITZ_DAMAGE_TEXTURE_MASK))
 	    {
-		REGION_EMPTY (&surface->texture_damage);
-		REGION_INIT (&surface->texture_damage, &surface->box);
+		GLITZ_REGION_EMPTY (&surface->texture_damage);
+		GLITZ_REGION_INIT (&surface->texture_damage, &surface->box);
 	    }
 	}
     }
@@ -544,7 +544,7 @@ glitz_surface_attach (glitz_surface_t         *surface,
 	    glitz_surface_damage (surface, NULL, GLITZ_DAMAGE_DRAWABLE_MASK);
 
 	if ((!SURFACE_SOLID (surface)) || SURFACE_SOLID_DAMAGE (surface))
-	    REGION_EMPTY (&surface->texture_damage);
+	    GLITZ_REGION_EMPTY (&surface->texture_damage);
     }
 }
 
@@ -554,7 +554,7 @@ glitz_surface_detach (glitz_surface_t *surface)
     if (!surface->attached)
 	return;
 
-    if (REGION_NOTEMPTY (&surface->texture_damage))
+    if (GLITZ_REGION_NOTEMPTY (&surface->texture_damage))
     {
 	glitz_surface_push_current (surface, GLITZ_DRAWABLE_CURRENT);
 	_glitz_surface_sync_texture (surface);
@@ -573,8 +573,8 @@ glitz_surface_detach (glitz_surface_t *surface)
 
     surface->attached = NULL;
 
-    REGION_EMPTY (&surface->drawable_damage);
-    REGION_INIT (&surface->drawable_damage, &surface->box);
+    GLITZ_REGION_EMPTY (&surface->drawable_damage);
+    GLITZ_REGION_INIT (&surface->drawable_damage, &surface->box);
 }
 
 glitz_drawable_t *
@@ -913,7 +913,7 @@ glitz_surface_flush (glitz_surface_t *surface)
 
     if (!DRAWABLE_IS_FBO (surface->attached))
     {
-	if (REGION_NOTEMPTY (&surface->drawable_damage))
+	if (GLITZ_REGION_NOTEMPTY (&surface->drawable_damage))
 	{
 	    glitz_surface_push_current (surface, GLITZ_DRAWABLE_CURRENT);
 	    glitz_surface_pop_current (surface);

@@ -124,7 +124,7 @@ glitz_context_make_current (glitz_context_t  *context,
 
     if (drawable->front)
     {
-	if (REGION_NOTEMPTY (&drawable->front->drawable_damage))
+	if (GLITZ_REGION_NOTEMPTY (&drawable->front->drawable_damage))
 	{
 	    glitz_surface_push_current (drawable->front,
 					GLITZ_DRAWABLE_CURRENT);
@@ -138,7 +138,7 @@ glitz_context_make_current (glitz_context_t  *context,
 
     if (drawable->back)
     {
-	if (REGION_NOTEMPTY (&drawable->back->drawable_damage))
+	if (GLITZ_REGION_NOTEMPTY (&drawable->back->drawable_damage))
 	{
 	    glitz_surface_push_current (drawable->back,
 					GLITZ_DRAWABLE_CURRENT);
@@ -162,7 +162,7 @@ glitz_context_bind_texture (glitz_context_t	   *context,
 {
     glitz_gl_proc_address_list_t *gl = context->drawable->backend->gl;
 
-    if (REGION_NOTEMPTY (&texture->surface->texture_damage))
+    if (GLITZ_REGION_NOTEMPTY (&texture->surface->texture_damage))
     {
 	glitz_lose_current_function_t lose_current;
 

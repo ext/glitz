@@ -1049,7 +1049,7 @@ glitz_set_pixels (glitz_surface_t      *dst,
     /* avoid context switch in this case */
     if (!dst->attached &&
 	TEXTURE_ALLOCATED (&dst->texture) &&
-	!REGION_NOTEMPTY (&dst->texture_damage))
+	!GLITZ_REGION_NOTEMPTY (&dst->texture_damage))
     {
 	dst->drawable->backend->push_current (dst->drawable, dst,
 					      GLITZ_ANY_CONTEXT_CURRENT,

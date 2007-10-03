@@ -416,7 +416,7 @@ glitz_copy_area (glitz_surface_t *src,
 		glitz_box_t box, *clip = dst->clip;
 		int         n_clip = dst->n_clip;
 
-		if (REGION_NOTEMPTY (&src->drawable_damage))
+		if (GLITZ_REGION_NOTEMPTY (&src->drawable_damage))
 		{
 		    glitz_surface_push_current (src, GLITZ_DRAWABLE_CURRENT);
 		    glitz_surface_pop_current (src);

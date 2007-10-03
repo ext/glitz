@@ -224,7 +224,7 @@ glitz_drawable_swap_buffer_region (glitz_drawable_t *drawable,
 	    {
 		if (drawable->front)
 		{
-		    REGION_EMPTY (&drawable->front->drawable_damage);
+		    GLITZ_REGION_EMPTY (&drawable->front->drawable_damage);
 		    glitz_surface_damage (drawable->front, NULL,
 					  GLITZ_DAMAGE_TEXTURE_MASK |
 					  GLITZ_DAMAGE_SOLID_MASK);

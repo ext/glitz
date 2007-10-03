@@ -285,9 +285,9 @@ typedef struct _glitz_region_t {
   int         size;
 } glitz_region_t;
 
-#define NULL_BOX ((glitz_box_t *) 0)
+#define GLITZ_NULL_BOX ((glitz_box_t *) 0)
 
-#define REGION_INIT(region, __box) \
+#define GLITZ_REGION_INIT(region, __box) \
   { \
     if (__box) { \
       (region)->extents = *(__box); \
@@ -303,7 +303,7 @@ typedef struct _glitz_region_t {
     } \
   }
 
-#define REGION_EMPTY(region) \
+#define GLITZ_REGION_EMPTY(region) \
   { \
     (region)->extents.x1 = 0; \
     (region)->extents.y1 = 0; \
@@ -313,28 +313,28 @@ typedef struct _glitz_region_t {
     (region)->n_box = 0; \
   }
 
-#define REGION_UNINIT(region) \
+#define GLITZ_REGION_UNINIT(region) \
   { \
-    REGION_EMPTY (region); \
+    GLITZ_REGION_EMPTY (region); \
     if ((region)->data) \
       free ((region)->data); \
     (region)->data = NULL; \
     (region)->size = 0; \
   }
 
-#define REGION_NOTEMPTY(region) \
+#define GLITZ_REGION_NOTEMPTY(region) \
   ((region)->n_box)
 
-#define REGION_RECTS(region) \
+#define GLITZ_REGION_RECTS(region) \
   ((region)->box)
 
-#define REGION_NUM_RECTS(region) \
+#define GLITZ_REGION_NUM_RECTS(region) \
   ((region)->n_box)
 
-#define REGION_EXTENTS(region) \
+#define GLITZ_REGION_EXTENTS(region) \
  (&(region)->extents)
 
-#define REGION_UNION(region, box) \
+#define GLITZ_REGION_UNION(region, box) \
   glitz_region_union (region, box)
 
 extern glitz_status_t __internal_linkage

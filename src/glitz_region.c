@@ -29,7 +29,7 @@
 
 #include "glitzint.h"
 
-#define REGION_ALLOC_CHUNK 16
+#define GLITZ_REGION_ALLOC_CHUNK 16
 
 #define BOX_SUBSUMS_BOX(b1, b2)                 \
     ((b2)->x1 >= (b1)->x1 &&                    \
@@ -146,7 +146,7 @@ glitz_region_union (glitz_region_t *region,
      * Add box to region
      */
     if (region->size < (region->n_box + 1)) {
-	region->size += REGION_ALLOC_CHUNK;
+	region->size += GLITZ_REGION_ALLOC_CHUNK;
 	region->data = (void *) realloc (region->data,
 					 sizeof (glitz_box_t) * region->size);
 	if (!region->data)

@@ -210,7 +210,7 @@ _glitz_fbo_attach_notify (void            *abstract_drawable,
 	    return;
     }
 
-    REGION_EMPTY (&surface->drawable_damage);
+    GLITZ_REGION_EMPTY (&surface->drawable_damage);
 }
 
 static void
