@@ -9,7 +9,7 @@ libglitz_export_symbols =
 endif
 
 lib_LTLIBRARIES = libglitz.la
-include_HEADERS = glitz.h
+include_HEADERS = glitz.h glitz_gl.h glitzint.h
 
 libglitz_la_SOURCES =	    \
 	glitz.h		    \
