@@ -2,7 +2,7 @@
 
 # Package version number, (as distinct from shared library version)
 # This must be manually synchronized with the version in src/glitz.h
-m4_define([GLITZ_VERSION], 0.5.6)
+m4_define([GLITZ_VERSION], 0.5.7)
 
 AC_INIT(glitz, [GLITZ_VERSION])
 
