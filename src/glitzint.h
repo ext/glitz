@@ -69,7 +69,7 @@
 # define sqrtf(a)     sqrt (a)
 #endif
 
-#if __GNUC__ >= 3 && defined(__ELF__)
+#if __GNUC__ >= 3 && defined(__ELF__) && 0
 # define slim_hidden_proto(name)	slim_hidden_proto1(name, INT_##name)
 # define slim_hidden_def(name)		slim_hidden_def1(name, INT_##name)
 # define slim_hidden_proto1(name, internal)				\
