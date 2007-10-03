@@ -1,5 +1,6 @@
 Makefile
 Makefile.in
+*.o
 aclocal.m4
 autom4te.cache
 config.cache
@@ -12,6 +13,8 @@ glitz.pc
 glitz-glx.pc
 glitz-agl.pc
 libtool
+src/egl/glitz-egl.pc
+src/wgl/glitz-wgl.pc
 stamp-h
 stamp-h.in
 stamp-h1
