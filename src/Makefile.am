@@ -1,4 +1,4 @@
-SUBDIRS = . glx agl egl wgl
+SUBDIRS = . dummy glx agl egl wgl
 
 if OS_WIN32
 glitz_def = $(srcdir)/glitz.def

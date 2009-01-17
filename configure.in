@@ -120,6 +120,18 @@ AC_SUBST(LIBM)
 
 dnl ===========================================================================
 
+AC_ARG_ENABLE(dummy,
+  AC_HELP_STRING([--disable-dummy], [Disable glitz's dummy backend]),
+  [use_dummy=$enableval], [use_dummy=yes])
+
+if test "x$use_dummy" = "xyes"; then
+  AM_CONDITIONAL(GLITZ_BUILD_DUMMY_BACKEND, true)
+else
+  AM_CONDITIONAL(GLITZ_BUILD_DUMMY_BACKEND, false)
+fi
+
+dnl ===========================================================================
+
 AC_ARG_ENABLE(glx,
   AC_HELP_STRING([--disable-glx], [Disable glitz's GLX backend]),
   [use_glx=$enableval], [use_glx=yes])
@@ -287,11 +299,13 @@ dnl ===========================================================================
 AC_OUTPUT([
 Makefile
 src/Makefile
+src/dummy/Makefile
 src/glx/Makefile
 src/agl/Makefile
 src/egl/Makefile
 src/wgl/Makefile
 src/glitz.pc
+src/dummy/glitz-dummy.pc
 src/glx/glitz-glx.pc
 src/agl/glitz-agl.pc
 src/egl/glitz-egl.pc
@@ -302,6 +316,7 @@ dnl ===========================================================================
 
 echo ""
 echo "glitz will be compiled with the following backends:"
+echo "  Dummy: $use_dummy"
 echo "  GLX: $use_glx"
 echo "  AGL: $use_agl"
 echo "  EGL: $use_egl"
